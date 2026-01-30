@@ -37,12 +37,18 @@ export function clearTokens() {
   localStorage.removeItem(REFRESH_KEY);
 }
 
-export async function apiFetch(path, { method = 'GET', body = null, headers = {}, skipAuth = false } = {}) {
+export async function apiFetch(
+  path,
+  { method = 'GET', body = null, headers = {}, skipAuth = false, timeoutMs = 30000 } = {},
+) {
   const finalHeaders = { ...headers };
   const token = getToken();
   if (!skipAuth && token) {
     finalHeaders.Authorization = `Bearer ${token}`;
   }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   let payload = body;
   if (body && !(body instanceof FormData)) {
@@ -50,11 +56,22 @@ export async function apiFetch(path, { method = 'GET', body = null, headers = {}
     payload = JSON.stringify(body);
   }
 
-  const response = await fetch(`${getApiBase()}${path}`, {
-    method,
-    headers: finalHeaders,
-    body: payload,
-  });
+  let response;
+  try {
+    response = await fetch(`${getApiBase()}${path}`, {
+      method,
+      headers: finalHeaders,
+      body: payload,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('请求超时，请检查网络或稍后重试');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (response.status === 204) {
     return null;
@@ -68,6 +85,9 @@ export async function apiFetch(path, { method = 'GET', body = null, headers = {}
   }
 
   if (!response.ok) {
+    if (response.status === 401 && !skipAuth) {
+      clearTokens();
+    }
     const message = data?.detail || data?.error || response.statusText;
     throw new Error(message);
   }
