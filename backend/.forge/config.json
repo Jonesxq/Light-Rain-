@@ -1,0 +1,29 @@
+{
+  "project_name": "official_proj_2.0",
+  "database": {
+    "type": "MySQL",
+    "orm": "SQLModel",
+    "migration_tool": "Alembic"
+  },
+  "features": {
+    "auth": {
+      "type": "complete",
+      "refresh_token": true,
+      "features": [
+        "Email Verification",
+        "Password Reset",
+        "Email Service"
+      ]
+    },
+    "cors": true,
+    "dev_tools": true,
+    "testing": true,
+    "docker": false,
+    "redis": true,
+    "celery": true
+  },
+  "metadata": {
+    "created_at": "2026-01-18T13:08:49.115190",
+    "forge_version": "0.1.8.5"
+  }
+}

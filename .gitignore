@@ -1,0 +1,51 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+.venv/
+venv/
+ENV/
+env/
+
+# Logs
+*.log
+logs/
+backend/logs/
+
+# Backend secrets & uploads
+backend/secret/.env.development
+backend/secret/.env.production
+backend/secret/.env
+backend/secret/.env.*
+!backend/secret/.env.example
+backend/static/uploads/
+backend/static/uploads/**
+backend/app/static/uploads/
+backend/app/static/uploads/**
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
