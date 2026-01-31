@@ -1,6 +1,19 @@
-# official_proj2.0
+# light-rain
 
 一个包含后端（FastAPI + RAG + 工具调用）与前端（Vue 3 + Vite）的知识库/对话系统项目。
+
+登录界面
+<img width="1533" height="732" alt="image" src="https://github.com/user-attachments/assets/208f792f-7285-40a8-bb47-a0bf6a4eaf62" />
+聊天主界面
+<img width="1571" height="872" alt="image" src="https://github.com/user-attachments/assets/24c4c582-caac-4800-ad8b-2b902fc06c15" />
+点击知识库问答后，会让用户选择使用哪个知识库。
+<img width="1533" height="856" alt="image" src="https://github.com/user-attachments/assets/91fe5de5-5bd3-4cdf-a978-d9f91fbdb654" />
+知识库问答时助手回复，会带引用来源。
+<img width="1509" height="842" alt="image" src="https://github.com/user-attachments/assets/2c1df7b5-16e6-4bd8-b267-fd6be61d845b" />
+知识库界面，可以上传文件。
+<img width="1503" height="854" alt="image" src="https://github.com/user-attachments/assets/38b87b42-9eb1-463b-848a-f6b20e49847d" />
+
+
 
 ## 项目结构
 
