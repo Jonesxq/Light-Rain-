@@ -104,6 +104,7 @@ class KnowledgeCRUD:
         self,
         db: AsyncSession,
         doc_id: int,
+        parent_id: str,
         content: str,
         vector_id: str,
         chunk_index: int,
@@ -113,6 +114,7 @@ class KnowledgeCRUD:
         """记录文档切片信息"""
         chunk = DocumentChunk(
             doc_id=doc_id,
+            parent_id=parent_id,
             content=content,
             vector_id=vector_id,
             chunk_index=chunk_index,
@@ -157,6 +159,16 @@ class KnowledgeCRUD:
             .join(Document, Document.id == DocumentChunk.doc_id)
             .where(Document.kb_id == kb_id, Document.status == DocStatus.COMPLETED)
             .order_by(DocumentChunk.id.asc())
+        )
+        result = await db.execute(statement)
+        return list(result.scalars().all())
+
+    async def get_completed_documents(self, db: AsyncSession, kb_id: int) -> List[Document]:
+        """获取知识库下已完成处理的文档列表"""
+        statement = (
+            select(Document)
+            .where(Document.kb_id == kb_id, Document.status == DocStatus.COMPLETED)
+            .order_by(desc(Document.created_at))
         )
         result = await db.execute(statement)
         return list(result.scalars().all())

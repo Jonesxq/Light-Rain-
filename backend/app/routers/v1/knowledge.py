@@ -1,10 +1,13 @@
 import os
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select, desc
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.user import User
+from app.models.knowledge import DocStatus, Document, DocumentChunk
 from app.crud.knowledge import kb_crud
 from app.services.knowledge import kb_service
 from app.services.rag_evaluation import rag_evaluation_service
@@ -14,6 +17,7 @@ from app.schemas.knowledge import (
     KnowledgeBaseCreate,
     KnowledgeEvalRequest,
     KnowledgeEvalResponse,
+    KnowledgeChunkPreviewResponse,
 )
 
 router = APIRouter(prefix="/knowledge", tags=["Knowledge Base"])
@@ -63,7 +67,7 @@ async def delete_kb(
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
 
-    success = await kb_crud.delete_kb(db, kb_id)
+    success = await kb_service.delete_kb(kb_id)
     return {"success": success}
 
 @router.get("/{kb_id}/documents", response_model=list[DocumentResponse])
@@ -77,7 +81,94 @@ async def list_kb_documents(
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
 
-    return await kb_crud.get_kb_documents(db, kb_id)
+    statement = (
+        select(Document, func.count(DocumentChunk.id).label("processed_chunks"))
+        .outerjoin(DocumentChunk, DocumentChunk.doc_id == Document.id)
+        .where(Document.kb_id == kb_id)
+        .group_by(Document.id)
+        .order_by(desc(Document.created_at))
+    )
+    result = await db.execute(statement)
+    rows = result.all()
+
+    payload = []
+    for doc, processed_chunks in rows:
+        payload.append(
+            {
+                "id": doc.id,
+                "file_name": doc.file_name,
+                "status": doc.status,
+                "chunk_count": doc.chunk_count,
+                "processed_chunks": processed_chunks or 0,
+                "error_msg": doc.error_msg,
+                "created_at": doc.created_at,
+            }
+        )
+
+    return payload
+
+
+@router.get("/documents/{doc_id}/chunks/{chunk_index}", response_model=KnowledgeChunkPreviewResponse)
+async def get_chunk_preview(
+        doc_id: int,
+        chunk_index: int,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
+):
+    """预览指定文档的原文 chunk"""
+    doc = await kb_crud.get_document(db, doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    kb = await kb_crud.get_kb(db, doc.kb_id)
+    if not kb or kb.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if doc.status != DocStatus.COMPLETED:
+        raise HTTPException(status_code=409, detail="Document is still processing")
+
+    preview = kb_service.get_raw_chunk_preview(doc, chunk_index)
+    if not preview:
+        raise HTTPException(status_code=404, detail="Chunk not found")
+
+    structured_meta = preview.get("structured_meta") or {}
+    loc_meta = structured_meta.get("loc", {}) if isinstance(structured_meta.get("loc"), dict) else {}
+
+    return {
+        "doc_id": doc.id,
+        "chunk_index": chunk_index,
+        "file_name": doc.file_name,
+        "file_type": doc.file_type,
+        "content": preview.get("content") or "",
+        "pages": loc_meta.get("pages"),
+        "slides": loc_meta.get("slides"),
+        "paragraphs": loc_meta.get("paragraphs"),
+        "tables": loc_meta.get("tables"),
+        "md_headings": loc_meta.get("md_headings"),
+    }
+
+
+@router.post("/documents/{doc_id}/reindex")
+async def reindex_document(
+        doc_id: int,
+        background_tasks: BackgroundTasks,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
+):
+    """重建文档索引（重试/刷新入库）"""
+    doc = await kb_crud.get_document(db, doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    kb = await kb_crud.get_kb(db, doc.kb_id)
+    if not kb or kb.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if doc.status in (DocStatus.PROCESSING, DocStatus.UPLOADING):
+        raise HTTPException(status_code=409, detail="Document is still processing")
+
+    background_tasks.add_task(kb_service.reindex_document, doc_id)
+    return {"success": True}
 
 
 @router.delete("/{kb_id}/documents/{doc_id}")

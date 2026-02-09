@@ -158,6 +158,7 @@ class MySQLManager:
         from app.models.user import User
         from app.models.token import RefreshToken, VerificationCode
         from app.models.chat import ChatSession, ChatMessage  # 你新定义的智聊模型
+        from app.models.llm_settings import UserLLMSettings
         """运行同步建表命令"""
         # 在这里显式导入所有模型，确保它们被注册到 SQLModel.metadata 中
         # 如果不导入，SQLModel 就不知道有哪些表需要创建

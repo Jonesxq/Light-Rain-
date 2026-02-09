@@ -3,6 +3,7 @@ import LoginView from '../views/Login.vue';
 import RegisterView from '../views/Register.vue';
 import ChatView from '../views/Chat.vue';
 import KnowledgeView from '../views/Knowledge.vue';
+import SettingsView from '../views/Settings.vue';
 import { getToken } from '../api/client.js';
 
 const routes = [
@@ -11,6 +12,7 @@ const routes = [
   { path: '/register', component: RegisterView },
   { path: '/chat', component: ChatView, meta: { requiresAuth: true } },
   { path: '/knowledge', component: KnowledgeView, meta: { requiresAuth: true } },
+  { path: '/settings', component: SettingsView, meta: { requiresAuth: true } },
 ];
 
 const router = createRouter({

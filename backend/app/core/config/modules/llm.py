@@ -13,6 +13,12 @@ class LLMSettings(EnvBaseSettings):
         default="",
         description="DashScope API Key")
 
+    # 用户自定义 LLM API Key 加密密钥（Fernet，urlsafe base64）
+    USER_LLM_KEY_ENCRYPTION_KEY: str = Field(
+        default="",
+        description="Fernet key for encrypting user LLM API keys"
+    )
+
     # DashScope 兼容 OpenAI 的 Base URL
     QWEN_BASE_URL: str = Field(
         default="https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -29,6 +35,16 @@ class LLMSettings(EnvBaseSettings):
     SERPER_API_KEY: str = Field(
         default="",
         description="Serper API Key"
+    )
+
+    # 文生图模型配置（DashScope）
+    TEXT_TO_IMAGE_MODEL: str = Field(
+        default="qwen-image-plus",
+        description="Text-to-image model"
+    )
+    TEXT_TO_IMAGE_SIZE: str = Field(
+        default="1024*1024",
+        description="Text-to-image size"
     )
 
     # 默认模型 (如果你有 qwen3-max 权限，在这里配置默认值，或者用 qwen-max)
@@ -49,6 +65,10 @@ class LLMSettings(EnvBaseSettings):
     RAG_SEMANTIC_TOP_K: int = Field(default=20)
     # BM25 缓存 TTL（秒）
     RAG_BM25_CACHE_TTL: int = Field(default=600)  # seconds
+    # chunk 摘要最大字符数（用于向量入库）
+    RAG_SUMMARY_MAX_CHARS: int = Field(default=180)
+    # chunk 摘要并发度
+    RAG_SUMMARY_CONCURRENCY: int = Field(default=5)
     # 通用分块参数
     RAG_CHUNK_SIZE_DEFAULT: int = Field(default=600)
     RAG_CHUNK_OVERLAP_DEFAULT: int = Field(default=60)

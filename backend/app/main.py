@@ -17,7 +17,8 @@ from app.routers.v1 import (
     auth_router,
     user_router,
     chat_router,
-    knowledge_router
+    knowledge_router,
+    llm_settings_router
 )
 
 # Create LoggerManager instance
@@ -157,6 +158,7 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(user_router, prefix="/api/v1")
 app.include_router(chat_router, prefix="/api/v1")
 app.include_router(knowledge_router, prefix="/api/v1")
+app.include_router(llm_settings_router, prefix="/api/v1")
 
 
 # Health check endpoint

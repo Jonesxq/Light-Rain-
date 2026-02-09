@@ -34,11 +34,29 @@ class DocumentResponse(BaseModel):
     status: str
     # 分块数量
     chunk_count: int
+    # 已处理切片数量（用于进度展示）
+    processed_chunks: int = 0
+    # 错误原因（失败时）
+    error_msg: Optional[str] = None
     # 创建时间
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class KnowledgeChunkPreviewResponse(BaseModel):
+    """原文 chunk 预览响应"""
+    doc_id: int
+    chunk_index: int
+    file_name: str
+    file_type: str
+    content: str
+    pages: Optional[List[int]] = None
+    slides: Optional[List[int]] = None
+    paragraphs: Optional[List[int]] = None
+    tables: Optional[List[int]] = None
+    md_headings: Optional[str] = None
 
 
 class KnowledgeEvalRequest(BaseModel):

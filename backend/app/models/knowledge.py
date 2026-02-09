@@ -69,13 +69,15 @@ class Document(SQLModel, table=True):
 
 
 class DocumentChunk(SQLModel, table=True):
-    """文档分块表：记录每一个切片及其在 Milvus 中的对应关系"""
+    """文档分块表：记录摘要切片及其在 Milvus 中的对应关系"""
     __tablename__ = "kb_doc_chunks"
 
     id: Optional[int] = Field(default=None, primary_key=True)
     doc_id: int = Field(foreign_key="kb_documents.id", index=True)
+    # 摘要切片与原文切片的一对一映射键
+    parent_id: str = Field(max_length=128, index=True)
 
-    # 存储切片的文本内容（方便快速回显，不需要去向量库查原始文本）
+    # 存储摘要文本（原文 chunk 仅保存在本地 sidecar 文件）
     content: str = Field(sa_column=Column(Text))
 
     # 在向量库中的唯一标识 (Milvus 的 Entity ID)

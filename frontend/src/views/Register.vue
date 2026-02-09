@@ -1,5 +1,11 @@
 <template>
-  <div class="auth-page">
+  <div class="auth-page auth-split">
+    <div class="auth-globe" aria-hidden="true">
+      <div class="globe">
+        <div class="globe-texture"></div>
+        <div class="globe-clouds"></div>
+      </div>
+    </div>
     <div class="auth-card">
       <h1>注册</h1>
       <p>创建新账号后请完成邮箱验证。</p>

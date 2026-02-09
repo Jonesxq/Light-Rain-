@@ -1,7 +1,12 @@
 :root {
   font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
   color: #111827;
-  background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 50%, #ecfeff 100%);
+  background-color: #f7f9fc;
+  background-image:
+    radial-gradient(1100px circle at 12% 8%, rgba(56, 189, 248, 0.28), transparent 58%),
+    radial-gradient(900px circle at 88% 18%, rgba(14, 165, 233, 0.18), transparent 55%),
+    radial-gradient(1200px circle at 80% 90%, rgba(251, 191, 36, 0.12), transparent 60%),
+    linear-gradient(135deg, #f8fafc 0%, #f2f5fb 45%, #eef2f7 100%);
 }
 
 * {
@@ -328,6 +333,92 @@ button.ghost {
   justify-content: center;
 }
 
+.auth-page.auth-split {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(360px, 440px);
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  min-height: calc(100vh - 64px);
+}
+
+.auth-globe {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.globe {
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 28% 28%, #bfe6ff 0%, #3b82f6 40%, #1e3a8a 70%, #0b102a 100%);
+  box-shadow:
+    0 28px 55px rgba(15, 23, 42, 0.25),
+    inset -26px -30px 55px rgba(3, 7, 18, 0.45),
+    0 0 28px rgba(125, 211, 252, 0.45);
+  position: relative;
+  overflow: hidden;
+  border: 2px solid rgba(191, 219, 254, 0.6);
+  isolation: isolate;
+}
+
+.globe-texture {
+  position: absolute;
+  inset: 0;
+  background-image: url("./earth-daymap-2004-07.jpg");
+  background-repeat: repeat-x;
+  background-size: 200% 100%;
+  background-position: 65% 50%;
+  animation: globe-drift 28s linear infinite;
+  opacity: 1;
+  filter: saturate(1.05) contrast(1.02);
+  z-index: 1;
+}
+
+.globe-clouds {
+  position: absolute;
+  inset: -8%;
+  background-image: url("./earth-clouds-2048.jpg");
+  background-repeat: repeat-x;
+  background-size: 200% 100%;
+  background-position: 65% 50%;
+  animation: globe-clouds 18s linear infinite;
+  opacity: 0.55;
+  filter: blur(0.3px);
+  mix-blend-mode: screen;
+  z-index: 2;
+}
+
+.globe::before {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  background: radial-gradient(circle at 28% 28%, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0) 45%);
+  z-index: 2;
+  mix-blend-mode: screen;
+}
+
+.globe::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 70% 65%, rgba(5, 11, 29, 0.65), rgba(5, 11, 29, 0) 55%);
+  z-index: 3;
+}
+
+@keyframes globe-drift {
+  to {
+    background-position: -35% 50%;
+  }
+}
+
+@keyframes globe-clouds {
+  to {
+    background-position: -35% 50%;
+  }
+}
+
 .auth-card {
   width: 100%;
   max-width: 440px;
@@ -527,6 +618,23 @@ button.ghost {
 @media (max-width: 960px) {
   body {
     padding: 20px;
+  }
+
+  .auth-page.auth-split {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-globe {
+    order: 1;
+  }
+
+  .auth-card {
+    order: 2;
+  }
+
+  .globe {
+    width: 220px;
+    height: 220px;
   }
 
   .header {

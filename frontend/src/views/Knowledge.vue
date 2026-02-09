@@ -11,6 +11,7 @@
           <input v-model="apiBase" @change="persistApiBase" placeholder="http://127.0.0.1:8000/api/v1" />
         </label>
         <div class="actions">
+          <button class="ghost" @click="goSettings">模型设置</button>
           <button class="ghost" @click="goChat">返回聊天</button>
           <button class="ghost" @click="logout">退出登录</button>
         </div>
@@ -72,12 +73,32 @@
           <div>
             <strong>{{ doc.file_name }}</strong>
             <div class="doc-meta">
-              <span>状态：{{ doc.status }}</span>
-              <span>切片：{{ doc.chunk_count }}</span>
+              <span class="status-pill" :class="`status-${doc.status}`">{{ formatDocStatus(doc.status) }}</span>
+              <span v-if="doc.chunk_count">切片：{{ doc.processed_chunks || 0 }}/{{ doc.chunk_count }}</span>
+              <span v-else>切片：{{ doc.processed_chunks || 0 }}</span>
+            </div>
+            <div v-if="doc.status === 'processing' || doc.status === 'uploading'" class="doc-progress">
+              <div class="progress-bar" :class="{ indeterminate: !doc.chunk_count }">
+                <div
+                  class="progress-fill"
+                  :style="{ width: `${getDocProgress(doc)}%` }"
+                ></div>
+              </div>
+              <span class="progress-text">{{ getProgressText(doc) }}</span>
+            </div>
+            <div v-if="doc.status === 'failed' && doc.error_msg" class="doc-error">
+              失败原因：{{ doc.error_msg }}
             </div>
           </div>
           <div class="doc-actions">
             <span class="doc-time">{{ formatTime(doc.created_at) }}</span>
+            <button
+              v-if="doc.status === 'failed' || doc.status === 'completed'"
+              class="ghost doc-retry"
+              @click="reindexDocument(doc)"
+            >
+              {{ doc.status === 'failed' ? '重试' : '重建索引' }}
+            </button>
             <button class="doc-delete" @click="deleteDocument(doc)">删除</button>
           </div>
         </div>
@@ -107,10 +128,17 @@
             <div class="source-title">引用来源</div>
             <ul>
               <li v-for="(source, sIndex) in message.sources" :key="sIndex">
-                <span class="source-name">{{ source.file_name || '未知文档' }}</span>
-                <span v-if="formatSourceLoc(source)" class="source-meta">
-                  {{ formatSourceLoc(source) }}
-                </span>
+                <button
+                  class="source-link"
+                  type="button"
+                  :disabled="!canPreviewSource(source)"
+                  @click="openSourcePreview(source, resolveQueryForMessage(knowledgeMessages, index))"
+                >
+                  <span class="source-name">{{ source.file_name || '未知文档' }}</span>
+                  <span v-if="formatSourceLoc(source)" class="source-meta">
+                    {{ formatSourceLoc(source) }}
+                  </span>
+                </button>
               </li>
             </ul>
           </div>
@@ -118,18 +146,36 @@
       </div>
       <form class="chat-input" @submit.prevent="askKnowledge">
         <input v-model="knowledgeChat.message" placeholder="输入问题" />
-        <button type="submit">发送</button>
+        <button type="submit" :disabled="isStreaming">发送</button>
       </form>
     </section>
+
+    <Modal v-if="previewOpen" @close="closePreview">
+      <div class="source-preview">
+        <div class="source-preview-header">
+          <h3>引用预览</h3>
+          <div v-if="previewData" class="source-preview-meta">
+            <span class="source-preview-name">{{ previewData.file_name || '未知文档' }}</span>
+            <span v-if="formatPreviewLoc(previewData)" class="source-preview-loc">
+              {{ formatPreviewLoc(previewData) }}
+            </span>
+          </div>
+        </div>
+        <div v-if="previewLoading" class="source-preview-loading">正在加载...</div>
+        <div v-else-if="previewError" class="source-preview-error">{{ previewError }}</div>
+        <div v-else class="source-preview-content" v-html="previewHtml"></div>
+      </div>
+    </Modal>
 
     <CenterToast :message="successMessage" />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, reactive, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
-import { apiFetch, clearTokens, getApiBase, setApiBase } from '../api/client.js';
+import { apiFetch, apiStream, clearTokens, getApiBase, setApiBase } from '../api/client.js';
+import Modal from '../components/Modal.vue';
 import CenterToast from '../components/CenterToast.vue';
 import { useCenterToast } from '../composables/useCenterToast.js';
 
@@ -145,8 +191,17 @@ const uploadForm = ref({ file: null });
 const lastUpload = ref(null);
 const knowledgeChat = ref({ kbId: '', sessionId: '', message: '' });
 const knowledgeMessages = ref([]);
+const isStreaming = ref(false);
+let streamController = null;
 const activeKb = ref(null);
 const documents = ref({ items: [] });
+const previewOpen = ref(false);
+const previewLoading = ref(false);
+const previewError = ref('');
+const previewData = ref(null);
+const previewHtml = ref('');
+let previewRequestId = 0;
+let documentPollTimer = null;
 
 const setNotice = (message) => {
   showSuccess(message);
@@ -168,7 +223,16 @@ const goChat = () => {
   router.push('/chat');
 };
 
+const goSettings = () => {
+  router.push('/settings');
+};
+
 const logout = () => {
+  if (streamController) {
+    streamController.abort();
+    streamController = null;
+    isStreaming.value = false;
+  }
   clearTokens();
   router.push('/login');
 };
@@ -244,21 +308,51 @@ const deleteKnowledgeBase = async (kbId) => {
         await fetchDocuments();
       }
     }
+    updateDocumentPolling();
   } catch (err) {
     setError(`删除知识库失败：${err.message}`);
   }
 };
 
-const fetchDocuments = async () => {
+const hasProcessingDocs = () =>
+  (documents.value.items || []).some((doc) =>
+    ['processing', 'uploading'].includes(doc.status),
+  );
+
+const startDocumentPolling = () => {
+  if (documentPollTimer) return;
+  documentPollTimer = setInterval(() => {
+    fetchDocuments({ silent: true });
+  }, 3000);
+};
+
+const stopDocumentPolling = () => {
+  if (!documentPollTimer) return;
+  clearInterval(documentPollTimer);
+  documentPollTimer = null;
+};
+
+const updateDocumentPolling = () => {
+  if (hasProcessingDocs()) {
+    startDocumentPolling();
+  } else {
+    stopDocumentPolling();
+  }
+};
+
+const fetchDocuments = async ({ silent = false } = {}) => {
   if (!activeKb.value) {
-    setError('请选择知识库');
+    if (!silent) setError('请选择知识库');
     return;
   }
   try {
     const data = await apiFetch(`/knowledge/${activeKb.value.id}/documents`);
     documents.value.items = data || [];
+    updateDocumentPolling();
   } catch (err) {
-    setError(`获取文档失败：${err.message}`);
+    if (!silent) {
+      setError(`获取文档失败：${err.message}`);
+    }
   }
 };
 
@@ -270,6 +364,7 @@ const deleteDocument = async (doc) => {
     await apiFetch(`/knowledge/${activeKb.value.id}/documents/${doc.id}`, { method: 'DELETE' });
     documents.value.items = documents.value.items.filter((item) => item.id !== doc.id);
     setNotice('文档删除成功');
+    updateDocumentPolling();
   } catch (err) {
     setError(`删除文档失败：${err.message}`);
   }
@@ -281,34 +376,123 @@ const askKnowledge = async () => {
     return;
   }
   if (!knowledgeChat.value.message.trim()) return;
+  if (isStreaming.value) {
+    setError('正在生成回复，请稍候');
+    return;
+  }
 
   try {
+    isStreaming.value = true;
+    streamController = new AbortController();
+    const inputText = knowledgeChat.value.message;
     const payload = {
       kb_id: knowledgeChat.value.kbId,
-      message: knowledgeChat.value.message,
+      message: inputText,
     };
     if (knowledgeChat.value.sessionId) {
       payload.session_id = Number(knowledgeChat.value.sessionId);
     }
-    const data = await apiFetch('/chat/knowledge', {
+    knowledgeMessages.value.push({ role: 'user', content: inputText });
+    const assistantMessage = reactive({ role: 'assistant', content: '', sources: [], isLoading: true });
+    knowledgeMessages.value.push(assistantMessage);
+    knowledgeChat.value.message = '';
+
+    let streamError = false;
+    const handlePayload = (payloadData) => {
+      if (!payloadData) return;
+      if (typeof payloadData === 'object') {
+        if (payloadData.event === 'error') {
+          streamError = true;
+          const errMessage = payloadData.message || '生成失败';
+          assistantMessage.content = `发送失败：${errMessage}`;
+          assistantMessage.isLoading = false;
+          setError(`知识库问答失败：${errMessage}`);
+          return;
+        }
+        if (payloadData.event === 'done' && payloadData.message) {
+          assistantMessage.content = payloadData.message.content || assistantMessage.content;
+          assistantMessage.sources = payloadData.message.sources || [];
+          assistantMessage.isLoading = false;
+          return;
+        }
+        if (typeof payloadData.content === 'string') {
+          assistantMessage.content += payloadData.content;
+        }
+        return;
+      }
+      if (typeof payloadData === 'string') {
+        assistantMessage.content += payloadData;
+      }
+    };
+
+    await apiStream('/chat/knowledge/stream', {
       method: 'POST',
       body: payload,
+      signal: streamController.signal,
+      onMessage: handlePayload,
     });
-    knowledgeMessages.value.push({ role: 'user', content: knowledgeChat.value.message });
-    knowledgeMessages.value.push({
-      role: data.role,
-      content: data.content,
-      sources: data.sources || [],
-    });
-    knowledgeChat.value.message = '';
+
+    if (assistantMessage.isLoading) {
+      assistantMessage.isLoading = false;
+    }
+    if (!streamError && !assistantMessage.content) {
+      assistantMessage.content = '未收到回复，请稍后重试。';
+      setError('未收到回复，请稍后重试。');
+    }
   } catch (err) {
-    setError(`知识库问答失败：${err.message}`);
+    if (err.message !== '请求已取消') {
+      setError(`知识库问答失败：${err.message}`);
+    }
+  } finally {
+    isStreaming.value = false;
+    streamController = null;
   }
 };
 
 const formatTime = (time) => {
   if (!time) return '';
   return new Date(time).toLocaleString();
+};
+
+const STATUS_LABELS = {
+  uploading: '上传中',
+  processing: '处理中',
+  completed: '已完成',
+  failed: '失败',
+};
+
+const formatDocStatus = (status) => STATUS_LABELS[status] || status || '未知';
+
+const getDocProgress = (doc) => {
+  if (!doc) return 0;
+  const total = Number(doc.chunk_count || 0);
+  const processed = Number(doc.processed_chunks || 0);
+  if (!total) return 40;
+  const ratio = Math.min(1, Math.max(0, processed / total));
+  return Math.round(ratio * 100);
+};
+
+const getProgressText = (doc) => {
+  if (!doc) return '';
+  if (doc.chunk_count) return `进度 ${getDocProgress(doc)}%`;
+  return '处理中...';
+};
+
+const reindexDocument = async (doc) => {
+  if (!doc || !doc.id) return;
+  if (doc.status === 'processing' || doc.status === 'uploading') {
+    setError('文档正在处理中，请稍后再试');
+    return;
+  }
+  const confirmed = window.confirm(`确定要重建索引「${doc.file_name}」吗？`);
+  if (!confirmed) return;
+  try {
+    await apiFetch(`/knowledge/documents/${doc.id}/reindex`, { method: 'POST' });
+    setNotice('已提交重建任务，稍后会自动更新状态。');
+    await fetchDocuments({ silent: true });
+  } catch (err) {
+    setError(`重建失败：${err.message}`);
+  }
 };
 
 const escapeHtml = (text) =>
@@ -324,6 +508,52 @@ const formatInline = (text) =>
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
+const getApiRoot = () => {
+  const base = apiBase.value || '';
+  if (!base) return window.location.origin;
+  if (/^https?:\/\//i.test(base)) {
+    try {
+      const url = new URL(base);
+      url.pathname = url.pathname.replace(/\/api\/v1\/?$/, '');
+      return url.toString().replace(/\/$/, '');
+    } catch {
+      return base.replace(/\/api\/v1\/?$/, '');
+    }
+  }
+  if (base.startsWith('/')) {
+    return window.location.origin;
+  }
+  return base.replace(/\/api\/v1\/?$/, '');
+};
+
+const resolveMediaUrl = (rawUrl) => {
+  const url = (rawUrl || '').trim();
+  if (!url) return '';
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith('//')) return `${window.location.protocol}${url}`;
+  const root = getApiRoot();
+  if (url.startsWith('/')) return `${root}${url}`;
+  return `${root}/${url.replace(/^\.?\//, '')}`;
+};
+
+const mergeImageLines = (lines) => {
+  const merged = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const current = lines[i];
+    const trimmed = current.trim();
+    if (/^!\[[^\]]*\]$/.test(trimmed) && i + 1 < lines.length) {
+      const nextTrimmed = lines[i + 1].trim();
+      if (/^\([^)]+\)$/.test(nextTrimmed)) {
+        merged.push(`${trimmed}${nextTrimmed}`);
+        i += 1;
+        continue;
+      }
+    }
+    merged.push(current);
+  }
+  return merged;
+};
+
 const formatListLabel = (text) => {
   if (!text) return '';
   return text.replace(/^([^：:]+[：:])\s*/, '<strong>$1</strong> ');
@@ -335,7 +565,7 @@ const isEmojiHeading = (text) =>
 const formatMessage = (raw) => {
   if (!raw) return '';
   const escaped = escapeHtml(String(raw));
-  const lines = escaped.split(/\r?\n/);
+  const lines = mergeImageLines(escaped.split(/\r?\n/));
   let html = '';
   let inList = false;
 
@@ -359,6 +589,14 @@ const formatMessage = (raw) => {
     }
 
     closeList();
+
+    const imageMatch = trimmed.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (imageMatch) {
+      const altText = imageMatch[1] || 'image';
+      const resolvedUrl = resolveMediaUrl(imageMatch[2]);
+      html += `<div class="md-image"><img class="chat-image" src="${resolvedUrl}" alt="${altText}" loading="lazy" /></div>`;
+      continue;
+    }
 
     if (isEmojiHeading(trimmed)) {
       html += `<div class="md-emoji-heading">${formatInline(trimmed)}</div>`;
@@ -398,7 +636,122 @@ const formatSourceLoc = (source) => {
   return parts.join(' · ');
 };
 
+const canPreviewSource = (source) =>
+  source &&
+  source.doc_id !== undefined &&
+  source.doc_id !== null &&
+  source.chunk_index !== undefined &&
+  source.chunk_index !== null;
+
+const resolveQueryForMessage = (messages, index) => {
+  for (let i = index - 1; i >= 0; i -= 1) {
+    const message = messages[i];
+    if (message && message.role === 'user' && message.content && message.content.trim()) {
+      return message.content;
+    }
+  }
+  return '';
+};
+
+const STOPWORDS = new Set([
+  'the', 'and', 'for', 'with', 'that', 'this', 'from', 'are', 'was', 'were', 'you', 'your', 'about', 'have', 'has',
+  'had', 'will', 'would', 'could', 'should', 'what', 'which', 'when', 'where', 'why', 'how', 'please', 'than', 'then',
+  'also', 'into', 'over', 'under', 'between', 'after', 'before', 'there', 'their', 'them', 'they', 'ours', 'ourselves',
+  '这些', '那些', '什么', '怎么', '如何', '为什么', '是否', '可以', '一个', '我们', '你们', '他们', '以及', '进行', '相关', '需要',
+  '请问', '关于', '就是', '不是', '以及', '还有', '如果', '其中', '因为', '所以', '但是', '因为', '那么', '已经', '目前',
+]);
+
+const extractKeywords = (query) => {
+  if (!query) return [];
+  const matches =
+    String(query).match(/[A-Za-z0-9]{3,}|[\u4e00-\u9fff]{2,}|[\u3040-\u30ff]{2,}|[\uac00-\ud7af]{2,}/g) || [];
+  const seen = new Set();
+  const candidates = [];
+  let idx = 0;
+  for (const raw of matches) {
+    const term = raw.trim();
+    if (!term) continue;
+    const key = term.toLowerCase();
+    if (seen.has(key)) continue;
+    if (STOPWORDS.has(key) || STOPWORDS.has(term)) continue;
+    seen.add(key);
+    candidates.push({ term, index: idx });
+    idx += 1;
+  }
+  if (!candidates.length) return [];
+  const ranked = candidates
+    .sort((a, b) => {
+      if (b.term.length !== a.term.length) return b.term.length - a.term.length;
+      return a.index - b.index;
+    })
+    .slice(0, 8)
+    .map((item) => item.term);
+  return ranked;
+};
+
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const highlightChunk = (text, keywords) => {
+  let html = escapeHtml(String(text || ''));
+  if (keywords && keywords.length) {
+    const sorted = [...keywords].sort((a, b) => b.length - a.length);
+    const pattern = new RegExp(`(${sorted.map(escapeRegex).join('|')})`, 'gi');
+    html = html.replace(pattern, '<mark>$1</mark>');
+  }
+  return html.replace(/\r?\n/g, '<br>');
+};
+
+const formatPreviewLoc = (data) => {
+  if (!data) return '';
+  const parts = [];
+  if (data.md_headings) parts.push(data.md_headings);
+  if (data.pages && data.pages.length) parts.push(`页 ${data.pages.join(',')}`);
+  if (data.slides && data.slides.length) parts.push(`幻灯片 ${data.slides.join(',')}`);
+  if (data.paragraphs && data.paragraphs.length) parts.push(`段落 ${data.paragraphs.join(',')}`);
+  if (data.tables && data.tables.length) parts.push(`表格 ${data.tables.join(',')}`);
+  if (data.chunk_index !== undefined && data.chunk_index !== null) {
+    parts.push(`Chunk ${data.chunk_index}`);
+  }
+  return parts.join(' · ');
+};
+
+const openSourcePreview = async (source, query) => {
+  if (!canPreviewSource(source)) return;
+  previewRequestId += 1;
+  const requestId = previewRequestId;
+  previewOpen.value = true;
+  previewLoading.value = true;
+  previewError.value = '';
+  previewData.value = null;
+  previewHtml.value = '';
+  try {
+    const data = await apiFetch(`/knowledge/documents/${source.doc_id}/chunks/${source.chunk_index}`);
+    if (requestId !== previewRequestId) return;
+    previewData.value = data;
+    const keywords = extractKeywords(query || '');
+    previewHtml.value = highlightChunk(data.content || '', keywords) || '暂无内容';
+  } catch (err) {
+    if (requestId !== previewRequestId) return;
+    previewError.value = err.message || '加载失败';
+  } finally {
+    if (requestId === previewRequestId) {
+      previewLoading.value = false;
+    }
+  }
+};
+
+const closePreview = () => {
+  previewOpen.value = false;
+  previewLoading.value = false;
+  previewError.value = '';
+  previewData.value = null;
+  previewHtml.value = '';
+};
+
 fetchKnowledgeBases();
+onBeforeUnmount(() => {
+  stopDocumentPolling();
+});
 </script>
 
 <style scoped>
@@ -486,6 +839,11 @@ fetchKnowledgeBases();
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 12px 22px rgba(108, 125, 255, 0.25);
+}
+
+.knowledge-page button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .knowledge-page button.ghost {
@@ -581,6 +939,7 @@ fetchKnowledgeBases();
   font-size: 12px;
   color: #6b7390;
   margin-top: 6px;
+  align-items: center;
 }
 
 .knowledge-page .doc-time {
@@ -592,6 +951,85 @@ fetchKnowledgeBases();
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.knowledge-page .status-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 11px;
+  background: rgba(148, 163, 184, 0.2);
+  color: #475569;
+}
+
+.knowledge-page .status-pill.status-processing,
+.knowledge-page .status-pill.status-uploading {
+  background: rgba(59, 130, 246, 0.18);
+  color: #1d4ed8;
+}
+
+.knowledge-page .status-pill.status-completed {
+  background: rgba(34, 197, 94, 0.18);
+  color: #15803d;
+}
+
+.knowledge-page .status-pill.status-failed {
+  background: rgba(239, 68, 68, 0.18);
+  color: #b91c1c;
+}
+
+.knowledge-page .doc-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7390;
+}
+
+.knowledge-page .progress-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.18);
+  overflow: hidden;
+  position: relative;
+}
+
+.knowledge-page .progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  transition: width 0.4s ease;
+}
+
+.knowledge-page .progress-bar.indeterminate .progress-fill {
+  width: 40%;
+  position: absolute;
+  animation: progress-move 1.2s ease-in-out infinite;
+}
+
+.knowledge-page .doc-error {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #b91c1c;
+  background: rgba(254, 226, 226, 0.6);
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.knowledge-page .doc-retry {
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+@keyframes progress-move {
+  0% {
+    left: -40%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
 .knowledge-page .doc-delete {
@@ -647,6 +1085,38 @@ fetchKnowledgeBases();
   word-break: break-word;
 }
 
+.knowledge-page .message-content :deep(.md-image) {
+  margin: 8px 0;
+  display: flex;
+  justify-content: flex-start;
+  max-width: 320px;
+  width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  padding: 6px;
+}
+
+.knowledge-page .message-content :deep(.chat-image) {
+  width: 100%;
+  max-width: 320px;
+  max-height: 180px;
+  object-fit: contain;
+  display: block;
+  border-radius: 12px;
+  background: #fff;
+}
+
+@media (max-width: 900px) {
+  .knowledge-page .message-content :deep(.md-image) {
+    max-width: 240px;
+  }
+
+  .knowledge-page .message-content :deep(.chat-image) {
+    max-width: 240px;
+    max-height: 150px;
+  }
+}
+
 .knowledge-page .source-list {
   margin-top: 8px;
   padding: 8px 10px;
@@ -669,12 +1139,79 @@ fetchKnowledgeBases();
   gap: 4px;
 }
 
+.knowledge-page .source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.knowledge-page .source-link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.knowledge-page .source-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  text-decoration: none;
+}
+
 .knowledge-page .source-name {
   font-weight: 600;
 }
 
 .knowledge-page .source-meta {
   margin-left: 6px;
+  color: #6b7390;
+}
+
+.knowledge-page .source-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.knowledge-page .source-preview-header h3 {
+  margin: 0 0 6px;
+}
+
+.knowledge-page .source-preview-meta {
+  font-size: 12px;
+  color: #6b7390;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.knowledge-page .source-preview-name {
+  font-weight: 600;
+}
+
+.knowledge-page .source-preview-content {
+  max-height: 320px;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: #f8fafc;
+  line-height: 1.6;
+}
+
+.knowledge-page .source-preview-content mark {
+  background: #fde68a;
+  color: #7c2d12;
+  padding: 0 2px;
+  border-radius: 3px;
+}
+
+.knowledge-page .source-preview-loading,
+.knowledge-page .source-preview-error {
+  font-size: 13px;
   color: #6b7390;
 }
 

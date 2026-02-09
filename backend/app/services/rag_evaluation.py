@@ -23,12 +23,9 @@ from ragas.testset import TestsetGenerator
 from ragas.run_config import RunConfig
 
 from app.core.config.settings import settings
-from app.core.database import mysql_manager
 from app.core.logger import logger_manager
-from app.models.knowledge import Document, DocumentChunk, DocStatus
-from app.services.knowledge import kb_service
+from app.services.knowledge import ChunkCandidate, kb_service
 from app.constant.prompts import RAG_EVAL_ANSWER_PROMPT_TEMPLATE
-from sqlmodel import select
 
 logger = logger_manager.get_logger(__name__)
 
@@ -64,26 +61,12 @@ class RagEvaluationService:
         """将 LangChain Embeddings 包装成 RAGas 可用的 Embedding"""
         return LangchainEmbeddingsWrapper(self._build_embeddings())
 
-    async def _load_candidate_chunks(self, kb_id: int, sample_size: int) -> List[DocumentChunk]:
-        """加载评估候选切片（限制数量，避免全库扫描）"""
+    async def _load_candidate_chunks(self, kb_id: int, sample_size: int) -> List[ChunkCandidate]:
+        """加载评估候选切片（来自原文 sidecar）"""
         if sample_size <= 0:
             return []
 
-        # 适当放大候选池，提高问题多样性
-        limit = max(sample_size * 5, sample_size)
-        limit = min(limit, 200)
-
-        async with mysql_manager.async_session_maker() as db:
-            statement = (
-                select(DocumentChunk)
-                .join(Document, Document.id == DocumentChunk.doc_id)
-                .where(Document.kb_id == kb_id, Document.status == DocStatus.COMPLETED)
-                .order_by(DocumentChunk.id.desc())
-                .limit(limit)
-            )
-            result = await db.execute(statement)
-            chunks = list(result.scalars().all())
-        # 过滤过短的切片，避免生成无效问题
+        chunks = await kb_service.get_raw_chunk_candidates(kb_id)
         filtered = [c for c in chunks if c.content and len(c.content.strip()) >= 50]
         if not filtered:
             return []
@@ -92,14 +75,15 @@ class RagEvaluationService:
             return filtered
         return random.sample(filtered, sample_size)
 
-    def _build_langchain_docs(self, chunks: List[DocumentChunk]) -> List[LangChainDocument]:
+    def _build_langchain_docs(self, chunks: List[ChunkCandidate]) -> List[LangChainDocument]:
         """将切片转成 LangChain Document（供 RAGas 生成测试集）"""
         docs: List[LangChainDocument] = []
         for chunk in chunks:
             meta = chunk.structured_meta or {}
             doc_meta = meta.get("doc", {}) if isinstance(meta.get("doc"), dict) else {}
             loc_meta = meta.get("loc", {}) if isinstance(meta.get("loc"), dict) else {}
-            file_name = doc_meta.get("file_name") or f"doc_{chunk.doc_id}"
+            file_name = doc_meta.get("file_name") or "unknown"
+            doc_id = doc_meta.get("doc_id")
             # RAGas 的 HeadlineSplitter 需要 headlines 字段，缺失会报错
             raw_headlines = loc_meta.get("md_headings")
             if isinstance(raw_headlines, list):
@@ -115,7 +99,7 @@ class RagEvaluationService:
                     page_content=chunk.content,
                     metadata={
                         "filename": file_name,
-                        "doc_id": chunk.doc_id,
+                        "doc_id": doc_id,
                         "headlines": headlines,
                     }
                 )
@@ -268,14 +252,18 @@ class RagEvaluationService:
                 raise ValueError("未找到可用于评估的文档切片，请先确保知识库有已完成的文档。")
 
             # 2) 构建 LangChain 文档，截断内容长度
-            clipped_chunks = []
+            clipped_chunks: List[ChunkCandidate] = []
             for chunk in chunks:
                 content = (chunk.content or "").strip()
                 if not content:
                     continue
-                # 控制输入长度，避免生成过长
-                chunk.content = content[:max_chunk_chars]
-                clipped_chunks.append(chunk)
+                clipped_chunks.append(
+                    ChunkCandidate(
+                        parent_id=chunk.parent_id,
+                        content=content[:max_chunk_chars],
+                        structured_meta=chunk.structured_meta,
+                    )
+                )
 
             docs = self._build_langchain_docs(clipped_chunks)
             if not docs:

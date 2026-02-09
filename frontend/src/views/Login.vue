@@ -1,5 +1,11 @@
 <template>
-  <div class="auth-page">
+  <div class="auth-page auth-split">
+    <div class="auth-globe" aria-hidden="true">
+      <div class="globe">
+        <div class="globe-texture"></div>
+        <div class="globe-clouds"></div>
+      </div>
+    </div>
     <div class="auth-card">
       <h1>登录</h1>
       <p>使用邮箱或用户名登录系统。</p>

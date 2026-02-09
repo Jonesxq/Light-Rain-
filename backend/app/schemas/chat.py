@@ -96,7 +96,7 @@ class ChatRequest(BaseModel):
     # 用户输入的消息
     message: str
     # 使用的模型名称（默认值可按需调整）
-    model: str = "qwen3-max"  # 默认模型，可根据需要修改
+    model: Optional[str] = None
 
 
 
@@ -109,4 +109,4 @@ class KnowledgeChatRequest(BaseModel):
     # 关联已有会话（可选）
     session_id: Optional[int] = None
     # 使用的模型名称
-    model: Optional[str] = "qwen3-max"
+    model: Optional[str] = None
