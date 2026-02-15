@@ -1,5 +1,5 @@
-"""database connection managementgenerator"""
-
+﻿
+"""core/database/connection.py."""
 from typing import Any, Optional
 from app.core.logger import logger_manager
 from app.core.database.mysql import mysql_manager
@@ -8,17 +8,18 @@ logger = logger_manager.get_logger(__name__)
 
 
 class DatabaseConnectionManager:
-    """database connection managementgenerator - unifiedmanagementdatabase connection"""
     
+    """DatabaseConnectionManager ??"""
     def __init__(self):
+        """__init__ ???"""
         self.mysql_manager = mysql_manager
     
     async def initialize(self) -> None:
-        """Initializealldatabase connection"""
+        """initialize ?????"""
         await self.mysql_manager.initialize()
     
     async def test_connections(self) -> bool:
-        """testalldatabase connection"""
+        """test_connections ?????"""
         try:
             # testdatabase connection
             await self.mysql_manager.test_connection()
@@ -29,11 +30,11 @@ class DatabaseConnectionManager:
             raise
     
     async def close(self) -> None:
-        """closealldatabase connection"""
+        """close ?????"""
         await self.mysql_manager.close()
     
     async def __aenter__(self) -> "DatabaseConnectionManager":
-        """Enter context manager"""
+        """__aenter__ ?????"""
         await self.initialize()
         return self
     
@@ -43,7 +44,7 @@ class DatabaseConnectionManager:
         exc_value: Optional[Exception],
         traceback: Optional[Any],
     ) -> None:
-        """Exit context manager"""
+        """__aexit__ ?????"""
         if exc_type is not None:
             logger.error(
                 f"❌ Exception occurred in DatabaseConnectionManager context: "

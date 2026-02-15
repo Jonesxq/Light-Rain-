@@ -1,4 +1,4 @@
-"""Configuration module"""
+﻿"""core/config/modules/__init__.py."""
 from .app import AppSettings
 from .logger import LoggingSettings
 from .database import DatabaseSettings

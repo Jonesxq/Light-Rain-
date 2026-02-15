@@ -1,3 +1,4 @@
+﻿"""tools/get_weather.py."""
 from langchain.tools import tool
 import re
 import requests
@@ -7,15 +8,12 @@ from app.core.config.settings import settings
 _CHINESE_CHAR_RE = re.compile(r"[\u4e00-\u9fff]")
 
 def _looks_chinese(text: str) -> bool:
-    """判断是否包含中文字符。"""
+    """_looks_chinese ???"""
     return bool(_CHINESE_CHAR_RE.search(text or ""))
 
 def _resolve_location(query: str) -> str:
-    """
-    通过 WeatherAPI 的 search 接口做一次轻量级消歧。
-    如果是中文城市名，优先选择国家为中国的结果。
-    """
     # 未配置密钥时直接返回原查询
+    """_resolve_location ???"""
     if not settings.llm.WEATHER_API_KEY:
         return query
 
@@ -59,12 +57,8 @@ def _resolve_location(query: str) -> str:
 
 @tool
 def get_weather(location: str) -> str:
-    """
-    当需要查询某个城市或地区的当前天气情况时，使用此工具。
-    输入应为城市名（如：北京、Shanghai、New York）。
-    返回该地区的实时天气描述、温度和体感温度。
-    """
     # 对地点做一次消歧，避免命中错误的城市/国家
+    """get_weather ???"""
     resolved_location = _resolve_location(location)
 
     # 当前天气接口（开启空气质量）

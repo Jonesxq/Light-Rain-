@@ -1,11 +1,11 @@
-"""CORS configurationmodule"""
-
+﻿
+"""core/config/modules/cors.py."""
 from pydantic import Field
 from app.core.config.base import EnvBaseSettings
 
 class CORSSettings(EnvBaseSettings):
-    """CORS (Cross-Origin Resource Sharing) configuration"""
     
+    """CORSSettings ??"""
     CORS_ALLOWED_ORIGINS: str = Field(
         default=["http://localhost:5173","http://127.0.0.1:5173"],
         description="Allowed CORS origins (comma-separated)",

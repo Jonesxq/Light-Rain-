@@ -1,5 +1,5 @@
-"""User LLM settings routes."""
-
+﻿
+"""routers/v1/llm_settings.py."""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +15,7 @@ router = APIRouter(prefix="/llm-settings", tags=["LLM Settings"])
 
 
 def _normalize_base_url(raw: str | None) -> str | None:
+    """_normalize_base_url ???"""
     if raw is None:
         return None
     value = raw.strip()
@@ -29,6 +30,7 @@ def _normalize_base_url(raw: str | None) -> str | None:
 
 
 def _mask_key(last4: str | None) -> str | None:
+    """_mask_key ???"""
     if not last4:
         return None
     return f"****{last4}"
@@ -39,6 +41,7 @@ async def get_my_llm_settings(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    """get_my_llm_settings ?????"""
     settings_row = await llm_settings_crud.get_by_user_id(db, current_user.id)
     if not settings_row:
         return LLMSettingsResponse(
@@ -66,6 +69,7 @@ async def update_my_llm_settings(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    """update_my_llm_settings ?????"""
     update_data = payload.model_dump(exclude_unset=True)
 
     if "api_base_url" in update_data:
@@ -107,4 +111,5 @@ async def delete_my_llm_settings(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    """delete_my_llm_settings ?????"""
     await llm_settings_crud.delete_for_user(db, current_user.id)

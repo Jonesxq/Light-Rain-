@@ -1,5 +1,5 @@
-"""Redis connection manager - supports async and sync clients"""
-
+﻿
+"""core/redis.py."""
 from redis.asyncio import Redis as AsyncRedis
 from redis.asyncio import from_url as async_from_url
 from redis import Redis as SyncRedis
@@ -8,16 +8,17 @@ from app.core.config.settings import settings
 from app.core.logger import logger_manager
 
 class RedisManager:
-    """Redis connection manager - supports async and sync clients"""
     
+    """RedisManager ??"""
     def __init__(self):
+        """__init__ ???"""
         self.logger = logger_manager.get_logger(__name__)
         self.async_client: AsyncRedis | None = None
         self.sync_client: SyncRedis | None = None
         self.config = settings.redis
     
     async def initialize_async(self) -> None:
-        """Initialize async Redis client - for FastAPI"""
+        """initialize_async ?????"""
         if self.async_client:
             self.logger.debug("Redis async client already initialized.")
             return
@@ -37,7 +38,7 @@ class RedisManager:
             raise
     
     def initialize_sync(self) -> None:
-        """Initialize sync Redis client - for Celery"""
+        """initialize_sync ???"""
         if self.sync_client:
             self.logger.debug("Redis sync client already initialized.")
             return
@@ -61,29 +62,35 @@ class RedisManager:
     # -------------------------------
     
     async def get_async_client(self) -> AsyncRedis:
+        """get_async_client ?????"""
         if not self.async_client:
             await self.initialize_async()
         return self.async_client
     
     async def get_async(self, key: str) -> str | None:
+        """get_async ?????"""
         client = await self.get_async_client()
         return await client.get(key)
     
     async def set_async(self, key: str, value: str, ex: int = None) -> bool:
+        """set_async ?????"""
         client = await self.get_async_client()
         ex = ex or self.config.REDIS_DEFAULT_TTL
         return await client.set(key, value, ex=ex)
     
     async def delete_async(self, *keys: str) -> int:
+        """delete_async ?????"""
         client = await self.get_async_client()
         return await client.delete(*keys)
     
     async def delete_pattern_async(self, pattern: str) -> int:
+        """delete_pattern_async ?????"""
         client = await self.get_async_client()
         keys = await client.keys(pattern)
         return await client.delete(*keys) if keys else 0
     
     async def async_test_connection(self) -> bool:
+        """async_test_connection ?????"""
         try:
             client = await self.get_async_client()
             await client.ping()
@@ -98,26 +105,32 @@ class RedisManager:
     # -------------------------------
     
     def get_sync_client(self) -> SyncRedis:
+        """get_sync_client ???"""
         if not self.sync_client:
             self.initialize_sync()
         return self.sync_client
     
     def get_sync(self, key: str) -> str | None:
+        """get_sync ???"""
         return self.get_sync_client().get(key)
     
     def set_sync(self, key: str, value: str, ex: int = None) -> bool:
+        """set_sync ???"""
         ex = ex or self.config.REDIS_DEFAULT_TTL
         return self.get_sync_client().set(key, value, ex=ex)
     
     def delete_sync(self, *keys: str) -> int:
+        """delete_sync ???"""
         return self.get_sync_client().delete(*keys)
     
     def delete_pattern_sync(self, pattern: str) -> int:
+        """delete_pattern_sync ???"""
         client = self.get_sync_client()
         keys = client.keys(pattern)
         return client.delete(*keys) if keys else 0
     
     def sync_test_connection(self) -> bool:
+        """sync_test_connection ???"""
         try:
             client = self.get_sync_client()
             client.ping()
@@ -132,7 +145,7 @@ class RedisManager:
     # -------------------------------
     
     async def close(self) -> None:
-        """Close async and sync clients"""
+        """close ?????"""
         if self.async_client:
             try:
                 await self.async_client.close()
@@ -150,10 +163,12 @@ class RedisManager:
                 self.logger.exception("❌ Failed to close Redis sync client.")
     
     async def __aenter__(self) -> "RedisManager":
+        """__aenter__ ?????"""
         await self.initialize_async()
         return self
     
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:
+        """__aexit__ ?????"""
         await self.close()
 
 

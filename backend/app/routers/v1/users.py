@@ -1,5 +1,5 @@
-"""用户管理路由：个人信息与管理员操作"""
-
+﻿
+"""routers/v1/users.py."""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
@@ -17,14 +17,7 @@ router = APIRouter(prefix="/users", tags=["Users"])
 async def get_current_user_info(
     current_user: User = Depends(get_current_user)
 ):
-    """获取当前用户信息
-    
-    Args:
-        current_user: currentloginuser
-        
-    Returns:
-        userinformation
-    """
+    """get_current_user_info ?????"""
     return current_user
 
 
@@ -34,20 +27,8 @@ async def update_current_user(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """更新当前用户信息
-    
-    Args:
-        user_update: user update data
-        current_user: currentloginuser
-        db: Database session
-        
-    Returns:
-        updateafteruserinformation
-        
-    Raises:
-        HTTPException: updatefailure
-    """
     # 如修改用户名，需要校验唯一性
+    """update_current_user ?????"""
     if user_update.username and user_update.username != current_user.username:
         existing_user = await user_crud.get_by_username(db, user_update.username)
         if existing_user:
@@ -81,15 +62,7 @@ async def delete_current_user(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """删除当前用户账号
-    
-    Args:
-        current_user: currentloginuser
-        db: Database session
-        
-    Raises:
-        HTTPException: Deletefailure
-    """
+    """delete_current_user ?????"""
     success = await user_crud.delete(db, current_user.id)
     
     if not success:
@@ -108,17 +81,7 @@ async def list_users(
     current_user: User = Depends(get_current_superuser),
     db: AsyncSession = Depends(get_db)
 ):
-    """获取用户列表（管理员）
-    
-    Args:
-        skip: skip count
-        limit: return max count
-        current_user: current logged in admin user
-        db: Database session
-        
-    Returns:
-        userlist
-    """
+    """list_users ?????"""
     users = await user_crud.get_all(db, skip=skip, limit=limit)
     return users
 
@@ -129,19 +92,7 @@ async def get_user(
     current_user: User = Depends(get_current_superuser),
     db: AsyncSession = Depends(get_db)
 ):
-    """获取指定用户信息（管理员）
-    
-    Args:
-        user_id: user ID
-        current_user: current logged in admin user
-        db: Database session
-        
-    Returns:
-        userinformation
-        
-    Raises:
-        HTTPException: user does not exist
-    """
+    """get_user ?????"""
     user = await user_crud.get_by_id(db, user_id)
     
     if not user:
@@ -160,20 +111,7 @@ async def update_user(
     current_user: User = Depends(get_current_superuser),
     db: AsyncSession = Depends(get_db)
 ):
-    """更新指定用户信息（管理员）
-    
-    Args:
-        user_id: user ID
-        user_update: user update data
-        current_user: current logged in admin user
-        db: Database session
-        
-    Returns:
-        updateafteruserinformation
-        
-    Raises:
-        HTTPException: user does not exist or update failed
-    """
+    """update_user ?????"""
     updated_user = await user_crud.update(db, user_id, user_update)
     
     if not updated_user:
@@ -191,17 +129,8 @@ async def delete_user(
     current_user: User = Depends(get_current_superuser),
     db: AsyncSession = Depends(get_db)
 ):
-    """删除指定用户（管理员）
-    
-    Args:
-        user_id: user ID
-        current_user: current logged in admin user
-        db: Database session
-        
-    Raises:
-        HTTPException: user does not exist or delete failed
-    """
     # 防止管理员误删自己
+    """delete_user ?????"""
     if user_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

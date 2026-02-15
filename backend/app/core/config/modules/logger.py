@@ -1,12 +1,12 @@
-"""loggingconfigurationmodule"""
-
+﻿
+"""core/config/modules/logger.py."""
 from typing import Optional
 from pydantic import Field
 from app.core.config.base import EnvBaseSettings
 
 class LoggingSettings(EnvBaseSettings):
-    """Loguru loggingconfigurationSet"""
     
+    """LoggingSettings ??"""
     LOG_LEVEL: str = Field(
         default="INFO",
         description="Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL",

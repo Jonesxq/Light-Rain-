@@ -28,10 +28,6 @@
           <input type="password" v-model="registerForm.password" required />
           <small class="hint">密码不少于 6 个字符</small>
         </label>
-        <label>
-          API Base
-          <input v-model="apiBase" @change="persistApiBase" placeholder="http://127.0.0.1:8000/api/v1" />
-        </label>
         <button type="submit">注册</button>
       </form>
 
@@ -62,11 +58,10 @@
 
 <script setup>
 import { ref } from 'vue';
-import { apiFetch, getApiBase, setApiBase } from '../api/client.js';
+import { apiFetch } from '../api/client.js';
 import CenterToast from '../components/CenterToast.vue';
 import { useCenterToast } from '../composables/useCenterToast.js';
 
-const apiBase = ref(getApiBase());
 const notice = ref('');
 const error = ref('');
 const { message: successMessage, show: showSuccess } = useCenterToast();
@@ -91,11 +86,6 @@ const setNotice = (message) => {
 const setError = (message) => {
   error.value = message;
   notice.value = '';
-};
-
-const persistApiBase = () => {
-  setApiBase(apiBase.value);
-  setNotice('API Base 已更新');
 };
 
 const handleRegister = async () => {

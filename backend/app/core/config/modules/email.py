@@ -1,12 +1,12 @@
-"""Email configuration module"""
-
+﻿
+"""core/config/modules/email.py."""
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings
 
 class EmailSettings(BaseSettings):
-    """Email configuration settings"""
     
     # SMTP Server Configuration
+    """EmailSettings ??"""
     EMAIL_HOST: str = Field(
         default="smtp.gmail.com",
         description="SMTP server host"
@@ -67,6 +67,7 @@ class EmailSettings(BaseSettings):
     )
     
     class Config:
+        """Config ??"""
         env_file = ".env"
         case_sensitive = True
         extra = "ignore"

@@ -1,4 +1,4 @@
-"""知识库 CRUD：知识库/文档/切片的数据库操作"""
+﻿"""crud/knowledge.py."""
 from typing import List, Optional
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,8 +10,9 @@ class KnowledgeCRUD:
 
     # ========== 知识库 (KnowledgeBase) 操作 ==========
 
+    """KnowledgeCRUD ??"""
     async def create_kb(self, db: AsyncSession, user_id: int, name: str, description: Optional[str] = None) -> KnowledgeBase:
-        """创建一个新的知识库"""
+        """create_kb ?????"""
         kb = KnowledgeBase(user_id=user_id, name=name, description=description)
         db.add(kb)
         await db.commit()
@@ -19,17 +20,17 @@ class KnowledgeCRUD:
         return kb
 
     async def get_user_kbs(self, db: AsyncSession, user_id: int) -> List[KnowledgeBase]:
-        """获取用户的所有知识库（按创建时间倒序）"""
+        """get_user_kbs ?????"""
         statement = select(KnowledgeBase).where(KnowledgeBase.user_id == user_id).order_by(desc(KnowledgeBase.created_at))
         result = await db.execute(statement)
         return list(result.scalars().all())
 
     async def get_kb(self, db: AsyncSession, kb_id: int) -> Optional[KnowledgeBase]:
-        """通过 ID 获取知识库详情"""
+        """get_kb ?????"""
         return await db.get(KnowledgeBase, kb_id)
 
     async def delete_kb(self, db: AsyncSession, kb_id: int) -> bool:
-        """删除知识库（依赖数据库外键级联删除文档与分块）"""
+        """delete_kb ?????"""
         kb = await self.get_kb(db, kb_id)
         if not kb:
             return False
@@ -55,7 +56,7 @@ class KnowledgeCRUD:
         file_type: str,
         file_size: int
     ) -> Document:
-        """在数据库记录上传的文档（初始状态为处理中）"""
+        """create_document ?????"""
         doc = Document(
             kb_id=kb_id,
             file_name=file_name,
@@ -70,13 +71,13 @@ class KnowledgeCRUD:
         return doc
 
     async def get_kb_documents(self, db: AsyncSession, kb_id: int) -> List[Document]:
-        """获取某个知识库下的所有文档（按创建时间倒序）"""
+        """get_kb_documents ?????"""
         statement = select(Document).where(Document.kb_id == kb_id).order_by(desc(Document.created_at))
         result = await db.execute(statement)
         return list(result.scalars().all())
 
     async def get_document(self, db: AsyncSession, doc_id: int) -> Optional[Document]:
-        """获取文档详情"""
+        """get_document ?????"""
         return await db.get(Document, doc_id)
 
     async def update_document_status(
@@ -87,7 +88,7 @@ class KnowledgeCRUD:
         chunk_count: Optional[int] = None,
         error_msg: Optional[str] = None
     ):
-        """更新文档解析状态与切片统计"""
+        """update_document_status ?????"""
         doc = await self.get_document(db, doc_id)
         if doc:
             doc.status = status
@@ -111,7 +112,7 @@ class KnowledgeCRUD:
         token_count: int = 0,
         structured_meta: Optional[dict] = None
     ) -> DocumentChunk:
-        """记录文档切片信息"""
+        """create_chunk ?????"""
         chunk = DocumentChunk(
             doc_id=doc_id,
             parent_id=parent_id,
@@ -126,13 +127,13 @@ class KnowledgeCRUD:
         return chunk
 
     async def get_document_chunks(self, db: AsyncSession, doc_id: int) -> List[DocumentChunk]:
-        """获取某个文档的所有切片（按 chunk_index 正序）"""
+        """get_document_chunks ?????"""
         statement = select(DocumentChunk).where(DocumentChunk.doc_id == doc_id).order_by(DocumentChunk.chunk_index.asc())
         result = await db.execute(statement)
         return list(result.scalars().all())
 
     async def delete_document_chunks(self, db: AsyncSession, doc_id: int) -> int:
-        """删除某个文档的所有切片记录"""
+        """delete_document_chunks ?????"""
         statement = select(DocumentChunk).where(DocumentChunk.doc_id == doc_id)
         result = await db.execute(statement)
         chunks = list(result.scalars().all())
@@ -144,7 +145,7 @@ class KnowledgeCRUD:
         return deleted
 
     async def delete_document(self, db: AsyncSession, doc_id: int) -> bool:
-        """删除文档记录（会级联删除分块）"""
+        """delete_document ?????"""
         doc = await self.get_document(db, doc_id)
         if not doc:
             return False
@@ -153,7 +154,7 @@ class KnowledgeCRUD:
         return True
 
     async def get_kb_chunks(self, db: AsyncSession, kb_id: int) -> List[DocumentChunk]:
-        """获取知识库下所有已完成文档的切片（用于 BM25 本地索引）"""
+        """get_kb_chunks ?????"""
         statement = (
             select(DocumentChunk)
             .join(Document, Document.id == DocumentChunk.doc_id)
@@ -164,7 +165,7 @@ class KnowledgeCRUD:
         return list(result.scalars().all())
 
     async def get_completed_documents(self, db: AsyncSession, kb_id: int) -> List[Document]:
-        """获取知识库下已完成处理的文档列表"""
+        """get_completed_documents ?????"""
         statement = (
             select(Document)
             .where(Document.kb_id == kb_id, Document.status == DocStatus.COMPLETED)

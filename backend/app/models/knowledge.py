@@ -1,3 +1,4 @@
+﻿"""models/knowledge.py."""
 from datetime import datetime
 from typing import Optional, List, TYPE_CHECKING
 from sqlmodel import Field, SQLModel, Relationship, Column, Text
@@ -9,6 +10,7 @@ if TYPE_CHECKING:
 
 
 class DocStatus(str, Enum):
+    """DocStatus ??"""
     UPLOADING = "uploading"
     PROCESSING = "processing"  # 正在解析/嵌入
     COMPLETED = "completed"  # 处理完成
@@ -16,7 +18,7 @@ class DocStatus(str, Enum):
 
 
 class KnowledgeBase(SQLModel, table=True):
-    """知识库表：一个用户可以创建多个知识库"""
+    """KnowledgeBase ??"""
     __tablename__ = "knowledge_bases"
 
     # 主键
@@ -38,7 +40,7 @@ class KnowledgeBase(SQLModel, table=True):
 
 
 class Document(SQLModel, table=True):
-    """文档表：记录上传的每一个文件"""
+    """Document ??"""
     __tablename__ = "kb_documents"
 
     # 主键
@@ -69,7 +71,7 @@ class Document(SQLModel, table=True):
 
 
 class DocumentChunk(SQLModel, table=True):
-    """文档分块表：记录摘要切片及其在 Milvus 中的对应关系"""
+    """DocumentChunk ??"""
     __tablename__ = "kb_doc_chunks"
 
     id: Optional[int] = Field(default=None, primary_key=True)

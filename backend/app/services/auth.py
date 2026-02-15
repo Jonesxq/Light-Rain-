@@ -1,4 +1,4 @@
-"""Authentication service - Complete JWT Auth"""
+﻿"""Authentication service - Complete JWT Auth"""
 
 from datetime import datetime, timedelta
 from typing import Optional

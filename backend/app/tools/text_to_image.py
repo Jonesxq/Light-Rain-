@@ -1,3 +1,4 @@
+﻿"""tools/text_to_image.py."""
 from http import HTTPStatus
 import mimetypes
 import os
@@ -12,6 +13,7 @@ from app.core.config.settings import settings
 
 
 def _extract_image_urls(output) -> list[str]:
+    """_extract_image_urls ???"""
     results = getattr(output, "results", None) or []
     urls: list[str] = []
     for item in results:
@@ -26,14 +28,17 @@ def _extract_image_urls(output) -> list[str]:
 
 
 def _get_static_root() -> str:
+    """_get_static_root ???"""
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "static"))
 
 
 def _get_image_storage_dir() -> str:
+    """_get_image_storage_dir ???"""
     return os.path.join(_get_static_root(), "uploads", "t2i")
 
 
 def _guess_extension(url: str, content_type: str | None) -> str:
+    """_guess_extension ???"""
     if content_type:
         ext = mimetypes.guess_extension(content_type.split(";")[0].strip())
         if ext:
@@ -49,6 +54,7 @@ def _guess_extension(url: str, content_type: str | None) -> str:
 
 
 def _download_to_static(url: str) -> str:
+    """_download_to_static ???"""
     storage_dir = _get_image_storage_dir()
     os.makedirs(storage_dir, exist_ok=True)
 
@@ -68,11 +74,7 @@ def _download_to_static(url: str) -> str:
 
 @tool
 def text_to_image(prompt: str) -> str:
-    """
-    当用户需要根据文字生成图片时使用。
-    输入：图片描述文字。
-    输出：生成的图片 URL。
-    """
+    """text_to_image ???"""
     if not settings.llm.QWEN_API_KEY:
         return "文生图失败：未配置 QWEN_API_KEY"
 

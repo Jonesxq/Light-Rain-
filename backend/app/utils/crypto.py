@@ -1,11 +1,12 @@
-"""Utility for encrypting/decrypting sensitive text (user LLM API keys)."""
-
+﻿
+"""utils/crypto.py."""
 from cryptography.fernet import Fernet, InvalidToken
 
 from app.core.config.settings import settings
 
 
 def _get_fernet() -> Fernet:
+    """_get_fernet ???"""
     key = getattr(settings.llm, "USER_LLM_KEY_ENCRYPTION_KEY", "") or ""
     if not key:
         raise ValueError("USER_LLM_KEY_ENCRYPTION_KEY is not set")
@@ -16,6 +17,7 @@ def _get_fernet() -> Fernet:
 
 
 def encrypt_text(plain_text: str) -> str:
+    """encrypt_text ???"""
     if plain_text is None:
         raise ValueError("plain_text is required")
     fernet = _get_fernet()
@@ -24,6 +26,7 @@ def encrypt_text(plain_text: str) -> str:
 
 
 def decrypt_text(cipher_text: str) -> str:
+    """decrypt_text ???"""
     if not cipher_text:
         raise ValueError("cipher_text is required")
     fernet = _get_fernet()

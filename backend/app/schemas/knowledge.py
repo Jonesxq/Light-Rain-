@@ -1,18 +1,19 @@
+﻿"""schemas/knowledge.py."""
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
 class KnowledgeBaseCreate(BaseModel):
-    """创建知识库的请求体"""
     # 知识库名称
+    """KnowledgeBaseCreate ??"""
     name: str = Field(..., example="我的专业文档库")
     # 知识库描述（可选）
     description: Optional[str] = Field(None, example="存储合同、技术文档等")
 
 
 class KnowledgeBaseResponse(BaseModel):
-    """返回给前端的知识库信息"""
     # 知识库 ID
+    """KnowledgeBaseResponse ??"""
     id: int
     # 知识库名称
     name: str
@@ -22,11 +23,12 @@ class KnowledgeBaseResponse(BaseModel):
     created_at: datetime
 
     class Config:
+        """Config ??"""
         from_attributes = True
 
 class DocumentResponse(BaseModel):
-    """返回给前端的文档信息"""
     # 文档 ID
+    """DocumentResponse ??"""
     id: int
     # 文件名
     file_name: str
@@ -42,11 +44,12 @@ class DocumentResponse(BaseModel):
     created_at: datetime
 
     class Config:
+        """Config ??"""
         from_attributes = True
 
 
 class KnowledgeChunkPreviewResponse(BaseModel):
-    """原文 chunk 预览响应"""
+    """KnowledgeChunkPreviewResponse ??"""
     doc_id: int
     chunk_index: int
     file_name: str
@@ -60,8 +63,8 @@ class KnowledgeChunkPreviewResponse(BaseModel):
 
 
 class KnowledgeEvalRequest(BaseModel):
-    """知识库评估请求体（无评测集时自动生成）"""
     # 评估样本数量
+    """KnowledgeEvalRequest ??"""
     sample_size: int = Field(5, ge=1, le=50)
     # RAG 检索 top_k
     top_k: int = Field(2, ge=1, le=20)
@@ -76,8 +79,8 @@ class KnowledgeEvalRequest(BaseModel):
 
 
 class KnowledgeEvalSample(BaseModel):
-    """单条评估结果"""
     # 评估问题
+    """KnowledgeEvalSample ??"""
     question: str
     # 参考答案
     reference_answer: str
@@ -106,8 +109,8 @@ class KnowledgeEvalSample(BaseModel):
 
 
 class KnowledgeEvalResponse(BaseModel):
-    """知识库评估响应体"""
     # 评估样本数量
+    """KnowledgeEvalResponse ??"""
     sample_count: int
     # 平均正确性分数
     avg_correctness: float

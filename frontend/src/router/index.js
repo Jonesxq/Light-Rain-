@@ -4,6 +4,9 @@ import RegisterView from '../views/Register.vue';
 import ChatView from '../views/Chat.vue';
 import KnowledgeView from '../views/Knowledge.vue';
 import SettingsView from '../views/Settings.vue';
+import UsageView from '../views/Usage.vue';
+import AiNewsView from '../views/AiNews.vue';
+import MyView from '../views/My.vue';
 import { getToken } from '../api/client.js';
 
 const routes = [
@@ -13,6 +16,9 @@ const routes = [
   { path: '/chat', component: ChatView, meta: { requiresAuth: true } },
   { path: '/knowledge', component: KnowledgeView, meta: { requiresAuth: true } },
   { path: '/settings', component: SettingsView, meta: { requiresAuth: true } },
+  { path: '/usage', component: UsageView, meta: { requiresAuth: true } },
+  { path: '/ai-news', component: AiNewsView, meta: { requiresAuth: true } },
+  { path: '/my', component: MyView, meta: { requiresAuth: true } },
 ];
 
 const router = createRouter({
@@ -28,3 +34,4 @@ router.beforeEach((to) => {
 });
 
 export default router;
+

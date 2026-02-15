@@ -1,5 +1,5 @@
-"""User LLM settings model (per-user OpenAI-compatible config)."""
-
+﻿
+"""models/llm_settings.py."""
 from datetime import datetime
 from typing import Optional
 
@@ -8,6 +8,7 @@ from sqlmodel import Field, SQLModel
 
 
 class UserLLMSettings(SQLModel, table=True):
+    """UserLLMSettings ??"""
     __tablename__ = "user_llm_settings"
 
     id: Optional[int] = Field(default=None, primary_key=True)

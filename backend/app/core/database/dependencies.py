@@ -1,5 +1,5 @@
-"""FastAPI dependenciesinjection"""
-
+﻿
+"""core/database/dependencies.py."""
 from fastapi import Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func
@@ -28,7 +28,9 @@ get_refresh_token_cookie = APIKeyCookie(
 
 
 class Dependencies:
+    """Dependencies ??"""
     def __init__(self, db: AsyncSession):
+        """__init__ ???"""
         self.db = db
         self.auth_crud = get_auth_crud(db)
         self.mysql_manager = mysql_manager
@@ -40,7 +42,7 @@ class Dependencies:
         access_token: str = Depends(get_access_token_cookie),
         db: AsyncSession = Depends(mysql_manager.get_db),
     ):
-        """Getcurrentuser(needauthentication)"""
+        """get_current_user ?????"""
         self.logger.info(
             f"get_current_user called with access_token: "
             f"{'***' if access_token else 'None'}"
@@ -119,7 +121,7 @@ class Dependencies:
         self,
         response: Response,
     ) -> bool:
-        """cleanuser tokens(logouthouruse)"""
+        """cleanup_tokens ?????"""
         response.delete_cookie(
             "access_token",
             domain=settings.domain.COOKIE_DOMAIN,

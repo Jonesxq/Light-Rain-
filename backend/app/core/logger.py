@@ -1,5 +1,5 @@
-"""Logger managementgeneratormodule"""
-
+﻿
+"""core/logger.py."""
 import sys
 import logging
 from pathlib import Path
@@ -9,17 +9,15 @@ from loguru import logger
 from app.core.config.settings import settings
 
 class LoggerManager:
-    """Logging management generator
     
-    Use Loguru as logging library, provides unified logging management interface
-    """
-    
+    """LoggerManager ??"""
     def __init__(self):
+        """__init__ ???"""
         self._initialized = False
         self._loggers = {}
     
     def setup(self) -> None:
-        """Initializeloggingconfiguration"""
+        """setup ???"""
         if self._initialized:
             return
         
@@ -60,11 +58,13 @@ class LoggerManager:
         logger.info("Logger initialized successfully")
     
     def _intercept_standard_logging(self) -> None:
-        """Intercept standard library logging, redirect to Loguru"""
         
+        """_intercept_standard_logging ???"""
         class InterceptHandler(logging.Handler):
+            """InterceptHandler ??"""
             def emit(self, record: logging.LogRecord) -> None:
                 # Get corresponding Loguru level
+                """emit ???"""
                 try:
                     level = logger.level(record.levelname).name
                 except ValueError:
@@ -88,14 +88,7 @@ class LoggerManager:
             logging.getLogger(logger_name).handlers = [InterceptHandler()]
     
     def get_logger(self, name: Optional[str] = None):
-        """Get logger instance
-        
-        Args:
-            name: Logger name, usually use __name__
-        
-        Returns:
-            logger instance
-        """
+        """get_logger ???"""
         if not self._initialized:
             self.setup()
         

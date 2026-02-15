@@ -1,5 +1,5 @@
-"""Database backup task - backup to local storage"""
-
+﻿
+"""tasks/backup_database_task.py."""
 import gzip
 import os
 import subprocess
@@ -16,14 +16,7 @@ logger = logger_manager.get_logger(__name__)
 
 
 def _parse_database_url(database_url: str) -> dict:
-    """Parse database connection URL
-    
-    Args:
-        database_url: Format like mysql://user:password@host:port/database
-        
-    Returns:
-        dict: Contains host, port, user, password, database, db_type
-    """
+    """_parse_database_url ???"""
     try:
         parsed = urlparse(database_url)
         
@@ -69,15 +62,7 @@ def _parse_database_url(database_url: str) -> dict:
 
 
 def _dump_database(db_config: dict, output_file: Path) -> bool:
-    """Export database
-    
-    Args:
-        db_config: Database configuration dictionary
-        output_file: Output file path
-        
-    Returns:
-        bool: Whether successful
-    """
+    """_dump_database ???"""
     try:
         db_type = db_config['db_type']
         
@@ -97,7 +82,7 @@ def _dump_database(db_config: dict, output_file: Path) -> bool:
 
 
 def _dump_mysql(db_config: dict, output_file: Path) -> bool:
-    """Export MySQL database using mysqldump"""
+    """_dump_mysql ???"""
     try:
         # Build mysqldump command
         cmd = [
@@ -151,7 +136,7 @@ def _dump_mysql(db_config: dict, output_file: Path) -> bool:
 
 
 def _dump_postgresql(db_config: dict, output_file: Path) -> bool:
-    """Export PostgreSQL database using pg_dump"""
+    """_dump_postgresql ???"""
     try:
         # Build pg_dump command
         cmd = [
@@ -204,7 +189,7 @@ def _dump_postgresql(db_config: dict, output_file: Path) -> bool:
 
 
 def _dump_sqlite(db_config: dict, output_file: Path) -> bool:
-    """Export SQLite database"""
+    """_dump_sqlite ???"""
     try:
         database_path = Path(db_config['database_path'])
         
@@ -249,15 +234,7 @@ def _dump_sqlite(db_config: dict, output_file: Path) -> bool:
 
 
 def _compress_file(input_file: Path, output_file: Path) -> bool:
-    """Compress file
-    
-    Args:
-        input_file: Input file path
-        output_file: Output compressed file path
-        
-    Returns:
-        bool: Whether successful
-    """
+    """_compress_file ???"""
     try:
         logger.info(f"Starting file compression: {input_file.name}")
         
@@ -280,13 +257,7 @@ def _compress_file(input_file: Path, output_file: Path) -> bool:
 
 
 def _cleanup_old_backups(backup_dir: Path, database_name: str, retention_days: int) -> None:
-    """Clean up old local backup files
-    
-    Args:
-        backup_dir: Backup directory
-        database_name: Database name
-        retention_days: Retention days
-    """
+    """_cleanup_old_backups ???"""
     if retention_days <= 0:
         logger.info("Retention days <= 0, skipping cleanup")
         return
@@ -348,16 +319,7 @@ def backup_database_task(
     retention_days: int = 30,
     backup_dir: Optional[str] = None
 ) -> dict:
-    """Backup database to local storage
-    
-    Args:
-        database_name: Database name, defaults to parsed from DATABASE_URL
-        retention_days: Retention days, backup files older than this will be automatically deleted (set to 0 or negative to disable cleanup)
-        backup_dir: Backup directory, defaults to ./backups/database
-        
-    Returns:
-        dict: Backup result information
-    """
+    """backup_database_task ???"""
     sql_file = None
     gz_file = None
     

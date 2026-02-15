@@ -1,5 +1,5 @@
-"""coredependenciesinjectionfunction"""
-
+﻿
+"""core/deps.py."""
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,18 +17,7 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """GetcurrentAuthenticate user
-    
-    Args:
-        credentials: HTTP Bearer authenticationcredentials
-        db: Database session
-    
-    Returns:
-        User: currentuserobject
-    
-    Raises:
-        HTTPException: 401 - Not authenticated or authentication failed
-    """
+    """get_current_user ?????"""
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -75,17 +64,7 @@ async def get_current_user(
 async def get_current_superuser(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    """Get current superuser
-    
-    Args:
-        current_user: currentuser
-    
-    Returns:
-        User: Current superuser object
-    
-    Raises:
-        HTTPException: 403 - Insufficient permissions
-    """
+    """get_current_superuser ?????"""
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

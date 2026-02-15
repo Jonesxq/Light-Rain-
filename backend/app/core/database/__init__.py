@@ -1,9 +1,9 @@
-"""Database module"""
+﻿"""core/database/__init__.py."""
 from .connection import db_manager
 from .mysql import mysql_manager, Base
 
 async def get_db():
-    """Get database session (async)"""
+    """core/database/__init__.py."""
     async for session in mysql_manager.get_db():
         yield session
 

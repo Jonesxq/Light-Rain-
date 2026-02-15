@@ -1,5 +1,5 @@
-"""Celery configuration and application instance"""
-
+﻿
+"""core/celery.py."""
 from celery import Celery
 from celery.schedules import crontab
 from app.core.config.settings import settings
@@ -9,13 +9,14 @@ from app.core.database.mysql import mysql_manager
 from app.core.logger import logger_manager
 
 def with_db_init(func):
-    """Decorator: Automatically initialize database connection for Celery tasks"""
     @wraps(func)
     def wrapper(*args, **kwargs):
+        """wrapper ???"""
         logger = logger_manager.get_logger(__name__)
         
         # Initialize database connection (Celery worker needs separate initialization)
         async def init_db():
+            """init_db ?????"""
             try:
                 await mysql_manager.initialize()
                 logger.debug("Database initialized successfully for Celery task")
@@ -44,7 +45,9 @@ def with_db_init(func):
 
 
 class CeleryManager:
+    """CeleryManager ??"""
     def __init__(self):
+        """__init__ ???"""
         self.celery_app = Celery(
             "app",
             broker=settings.celery.CELERY_BROKER_URL,
@@ -52,6 +55,7 @@ class CeleryManager:
         )
     
     def setup(self):
+        """setup ???"""
         self.celery_app.conf.update(
             broker_connection_retry_on_startup=True,
             accept_content=settings.celery.CELERY_ACCEPT_CONTENT,
@@ -62,15 +66,18 @@ class CeleryManager:
         )
     
     def autodiscovery(self):
+        """autodiscovery ???"""
         self.celery_app.autodiscover_tasks(
             packages=["app.tasks"],
             force=True,
         )
     
     def start(self):
+        """start ???"""
         self.celery_app.start()
     
     def close(self):
+        """close ???"""
         self.celery_app.close()
 
 

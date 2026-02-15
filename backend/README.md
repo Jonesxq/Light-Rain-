@@ -64,6 +64,11 @@ backend/
 - Redis
 - Milvus
 - DashScope/Qwen API Key
+- Tesseract OCR（图片临时资料解析所需）
+
+**OCR（图片临时资料）**
+- 安装 Tesseract OCR，并确保 `tesseract` 在 PATH 中可用
+- 需要语言包：`chi_sim` + `eng`
 
 **安装**
 ```bash

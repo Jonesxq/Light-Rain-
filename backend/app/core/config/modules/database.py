@@ -1,12 +1,12 @@
-"""databaseconfigurationmodule"""
-
+﻿
+"""core/config/modules/database.py."""
 from pydantic import Field, PositiveInt
 from app.core.config.base import EnvBaseSettings
 
 class DatabaseSettings(EnvBaseSettings):
-    """databaseconfiguration"""
     
     # database connection URL
+    """DatabaseSettings ??"""
     DATABASE_URL: str = Field(
         default="mysql://user:password@localhost:3306/official_proj_2.0_dev",
         description="Database connection URL",

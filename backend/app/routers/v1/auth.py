@@ -1,5 +1,5 @@
-"""认证相关路由：注册/登录/刷新令牌/邮箱验证/找回密码/设备管理"""
-
+﻿
+"""routers/v1/auth.py."""
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,20 +32,7 @@ async def register(
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db)
 ):
-    """注册新用户
-    
-    After registration, an email verification email will be sent. Users need to verify their email before they can login.
-    
-    Args:
-        user_data: userregisterdata
-        db: Database session
-        
-    Returns:
-        Createuserinformation
-        
-    Raises:
-        HTTPException: Username or emailalreadyexists
-    """
+    """register ?????"""
     try:
         user = await auth_service.register_user(db, user_data, send_verification=True)
         return user
@@ -62,23 +49,8 @@ async def login(
     request: Request,
     db: AsyncSession = Depends(get_db)
 ):
-    """用户登录
-    
-    After successful login, return access token and refresh token.
-    User must have verified their email to login.
-    
-    Args:
-        user_login: logincredentials
-        request: requestobject
-        db: Database session
-        
-    Returns:
-        accesstokenandrefreshtoken
-        
-    Raises:
-        HTTPException: authentication failed or email not verified
-    """
     # Get device information
+    """login ?????"""
     user_agent = request.headers.get("User-Agent", "Unknown")
     ip_address = request.client.host if request.client else None
     
@@ -110,17 +82,7 @@ async def logout(
     refresh_token_request: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    """用户登出（撤销 refresh token）
-    
-    Revoke specified refresh token.
-    
-    Args:
-        refresh_token_request: refreshtokenrequest
-        db: Database session
-        
-    Returns:
-        successmessage
-    """
+    """logout ?????"""
     success = await auth_service.logout_user(db, refresh_token_request.refresh_token)
     
     if not success:
@@ -137,17 +99,7 @@ async def logout_all(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """全设备登出
-    
-    Revoke all refresh tokens for current user.
-    
-    Args:
-        current_user: currentuser
-        db: Database session
-        
-    Returns:
-        Revoke tokenquantity
-    """
+    """logout_all ?????"""
     count = await auth_service.logout_all_devices(db, current_user.id)
     return {"message": f"Successfully logged out from {count} devices"}
 
@@ -159,20 +111,7 @@ async def refresh_token(
     refresh_token_request: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    """刷新 access token
-    
-    userefreshtokenGetnewaccesstoken。
-    
-    Args:
-        refresh_token_request: refreshtokenrequest
-        db: Database session
-        
-    Returns:
-        newaccesstoken
-        
-    Raises:
-        HTTPException: refresh token invalid or already expired
-    """
+    """refresh_token ?????"""
     access_token = await auth_service.refresh_access_token(db, refresh_token_request.refresh_token)
     
     if not access_token:
@@ -192,21 +131,8 @@ async def verify_email(
     verification: EmailVerificationRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    """邮箱验证码校验
-    
-    Use verification code to verify user email.
-    
-    Args:
-        verification: EmailValidaterequest
-        db: Database session
-        
-    Returns:
-        successmessage
-        
-    Raises:
-        HTTPException: verification code invalid or already expired
-    """
     # finduser
+    """verify_email ?????"""
     user = await user_crud.get_by_email(db, verification.email)
     if not user:
         raise HTTPException(
@@ -231,19 +157,8 @@ async def resend_verification(
     request: ResendVerificationRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    """重新发送验证码邮件
-    
-    Args:
-        request: Resend verification request
-        db: Database session
-        
-    Returns:
-        successmessage
-        
-    Raises:
-        HTTPException: user does not exist or email already verified
-    """
     # finduser
+    """resend_verification ?????"""
     user = await user_crud.get_by_email(db, request.email)
     if not user:
         # For security, return success even if user does not exist
@@ -269,17 +184,7 @@ async def forgot_password(
     request: PasswordResetRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    """请求找回密码
-    
-    Send password reset email to user's email.
-    
-    Args:
-        request: Passwordresetrequest
-        db: Database session
-        
-    Returns:
-        successmessage
-    """
+    """forgot_password ?????"""
     await auth_service.request_password_reset(db, request.email)
     
     # For security, always return success message
@@ -291,20 +196,7 @@ async def reset_password(
     reset_data: PasswordResetConfirm,
     db: AsyncSession = Depends(get_db)
 ):
-    """使用验证码重置密码
-    
-    Use verification code to reset password.
-    
-    Args:
-        reset_data: Passwordresetconfirmdata
-        db: Database session
-        
-    Returns:
-        successmessage
-        
-    Raises:
-        HTTPException: verification code invalid or already expired
-    """
+    """reset_password ?????"""
     success = await auth_service.reset_password(
         db,
         reset_data.email,
@@ -327,22 +219,8 @@ async def change_password(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """修改密码（需旧密码校验）
-    
-    User changes their own password (requires old password).
-    
-    Args:
-        password_data: Passwordmodifydata
-        current_user: currentuser
-        db: Database session
-        
-    Returns:
-        successmessage
-        
-    Raises:
-        HTTPException: oldPassworderror
-    """
     # ValidateoldPassword
+    """change_password ?????"""
     user = await user_crud.authenticate(db, current_user.username, password_data.old_password)
     if not user:
         raise HTTPException(
@@ -366,17 +244,7 @@ async def list_devices(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """查询登录设备列表
-    
-    List all active login devices for current user.
-    
-    Args:
-        current_user: currentuser
-        db: Database session
-        
-    Returns:
-        Device list
-    """
+    """list_devices ?????"""
     tokens = await refresh_token_crud.get_user_tokens(db, current_user.id, include_revoked=False)
     return tokens
 

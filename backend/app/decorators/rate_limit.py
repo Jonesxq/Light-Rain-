@@ -1,4 +1,4 @@
-"""Rate limiting decorator for API endpoints"""
+﻿"""decorators/rate_limit.py."""
 import time
 from functools import wraps
 from typing import Dict, Callable
@@ -7,14 +7,11 @@ from collections import defaultdict
 
 
 class RateLimiter:
-    """Simple in-memory rate limiter
     
-    Note: This is a basic implementation suitable for single-instance applications.
-    For production with multiple instances, consider using Redis-based rate limiting.
-    """
-    
+    """RateLimiter ??"""
     def __init__(self):
         # Store: {identifier: [(timestamp, count), ...]}
+        """__init__ ???"""
         self.requests: Dict[str, list] = defaultdict(list)
     
     def is_allowed(
@@ -23,16 +20,7 @@ class RateLimiter:
         max_requests: int,
         window_seconds: int
     ) -> bool:
-        """Check if request is allowed based on rate limit
-        
-        Args:
-            identifier: Unique identifier (e.g., IP address, user ID)
-            max_requests: Maximum number of requests allowed
-            window_seconds: Time window in seconds
-            
-        Returns:
-            True if request is allowed, False otherwise
-        """
+        """is_allowed ???"""
         current_time = time.time()
         cutoff_time = current_time - window_seconds
         
@@ -56,16 +44,7 @@ class RateLimiter:
         max_requests: int,
         window_seconds: int
     ) -> int:
-        """Get remaining requests in current window
-        
-        Args:
-            identifier: Unique identifier
-            max_requests: Maximum number of requests allowed
-            window_seconds: Time window in seconds
-            
-        Returns:
-            Number of remaining requests
-        """
+        """get_remaining ???"""
         current_time = time.time()
         cutoff_time = current_time - window_seconds
         
@@ -87,33 +66,12 @@ def rate_limit(
     window_seconds: int = 60,
     identifier_func: Callable[[Request], str] = None
 ):
-    """Rate limiting decorator for FastAPI endpoints
-    
-    Args:
-        max_requests: Maximum number of requests allowed in the time window
-        window_seconds: Time window in seconds
-        identifier_func: Function to extract identifier from request (default: IP address)
-        
-    Example:
-        @router.get("/api/data")
-        @rate_limit(max_requests=10, window_seconds=60)
-        async def get_data(request: Request):
-            return {"data": "value"}
-        
-        # Custom identifier (e.g., user ID)
-        @router.get("/api/user-data")
-        @rate_limit(
-            max_requests=50,
-            window_seconds=3600,
-            identifier_func=lambda req: req.state.user.id
-        )
-        async def get_user_data(request: Request):
-            return {"data": "value"}
-    """
+    """rate_limit ???"""
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             # Extract request from args/kwargs
+            """wrapper ?????"""
             request = None
             for arg in args:
                 if isinstance(arg, Request):
@@ -153,15 +111,15 @@ def rate_limit(
 
 # Predefined rate limit decorators for common use cases
 def rate_limit_strict(func):
-    """Strict rate limit: 10 requests per minute"""
+    """rate_limit_strict ???"""
     return rate_limit(max_requests=10, window_seconds=60)(func)
 
 
 def rate_limit_moderate(func):
-    """Moderate rate limit: 100 requests per minute"""
+    """rate_limit_moderate ???"""
     return rate_limit(max_requests=100, window_seconds=60)(func)
 
 
 def rate_limit_relaxed(func):
-    """Relaxed rate limit: 1000 requests per hour"""
+    """rate_limit_relaxed ???"""
     return rate_limit(max_requests=1000, window_seconds=3600)(func)

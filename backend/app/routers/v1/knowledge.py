@@ -1,3 +1,4 @@
+﻿"""routers/v1/knowledge.py."""
 import os
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
@@ -37,8 +38,8 @@ async def create_knowledge_base(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """创建知识库并返回 kb_id"""
     # 适配你现有的 CRUD 方法签名: (db, user_id, name, description)
+    """create_knowledge_base ?????"""
     return await kb_crud.create_kb(
         db,
         user_id=current_user.id,
@@ -52,7 +53,7 @@ async def list_kbs(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """获取当前用户的知识库列表"""
+    """list_kbs ?????"""
     return await kb_crud.get_user_kbs(db, user_id=current_user.id)
 
 
@@ -62,7 +63,7 @@ async def delete_kb(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """删除知识库（会级联删除文档与切片记录）"""
+    """delete_kb ?????"""
     kb = await kb_crud.get_kb(db, kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
@@ -76,7 +77,7 @@ async def list_kb_documents(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """获取指定知识库下的所有文档"""
+    """list_kb_documents ?????"""
     kb = await kb_crud.get_kb(db, kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
@@ -115,7 +116,7 @@ async def get_chunk_preview(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """预览指定文档的原文 chunk"""
+    """get_chunk_preview ?????"""
     doc = await kb_crud.get_document(db, doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -155,7 +156,7 @@ async def reindex_document(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """重建文档索引（重试/刷新入库）"""
+    """reindex_document ?????"""
     doc = await kb_crud.get_document(db, doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -178,7 +179,7 @@ async def delete_kb_document(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """删除指定知识库下的文档（含向量与本地文件）"""
+    """delete_kb_document ?????"""
     kb = await kb_crud.get_kb(db, kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
@@ -197,13 +198,14 @@ async def evaluate_kb(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """对知识库进行自动评估（生成样本 -> 检索 -> 回答 -> 评分）"""
+    """evaluate_kb ?????"""
     kb = await kb_crud.get_kb(db, kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
 
     result = await rag_evaluation_service.evaluate_kb(
         kb_id=kb_id,
+        user_id=current_user.id,
         sample_size=payload.sample_size,
         top_k=payload.top_k,
         generate_model=payload.generate_model,
@@ -224,6 +226,7 @@ async def upload_document(
         db: AsyncSession = Depends(get_db)
 ):
     # 1) 校验知识库权限
+    """upload_document ?????"""
     kb = await kb_crud.get_kb(db, kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
@@ -269,3 +272,6 @@ async def upload_document(
     background_tasks.add_task(kb_service.ingest_document, doc.id)
 
     return doc
+
+
+

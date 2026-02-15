@@ -2563,6 +2563,7 @@ dependencies = [
     { name = "aiosmtplib" },
     { name = "alembic" },
     { name = "argon2-cffi" },
+    { name = "beautifulsoup4" },
     { name = "celery" },
     { name = "dashscope" },
     { name = "datasets" },
@@ -2570,6 +2571,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "flower" },
     { name = "greenlet" },
+    { name = "httpx" },
     { name = "jieba" },
     { name = "jinja2" },
     { name = "langchain" },
@@ -2578,10 +2580,12 @@ dependencies = [
     { name = "langchain-openai" },
     { name = "loguru" },
     { name = "openai" },
+    { name = "pillow" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pymupdf" },
     { name = "pymysql" },
+    { name = "pytesseract" },
     { name = "python-docx" },
     { name = "python-jose", extra = ["cryptography"] },
     { name = "python-multipart" },
@@ -2610,6 +2614,7 @@ requires-dist = [
     { name = "aiosqlite", marker = "extra == 'dev'", specifier = ">=0.19.0" },
     { name = "alembic", specifier = ">=1.13.0" },
     { name = "argon2-cffi", specifier = ">=23.1.0" },
+    { name = "beautifulsoup4", specifier = ">=4.12.0" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.12.0" },
     { name = "celery", specifier = ">=5.3.0" },
     { name = "dashscope", specifier = ">=1.25.8" },
@@ -2618,6 +2623,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "flower", specifier = ">=2.0.0" },
     { name = "greenlet", specifier = ">=3.0.0" },
+    { name = "httpx", specifier = ">=0.25.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.25.0" },
     { name = "jieba", specifier = ">=0.42.1" },
     { name = "jinja2", specifier = ">=3.1.0" },
@@ -2628,10 +2634,12 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.7.0" },
     { name = "openai", specifier = ">=2.15.0" },
+    { name = "pillow", specifier = ">=10.2.0" },
     { name = "pydantic", specifier = ">=2.5.0" },
     { name = "pydantic-settings", specifier = ">=2.1.0" },
     { name = "pymupdf", specifier = ">=1.26.7" },
     { name = "pymysql", specifier = ">=1.1.0" },
+    { name = "pytesseract", specifier = ">=0.3.10" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
     { name = "python-docx", specifier = ">=1.2.0" },
@@ -3557,6 +3565,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/90/da/50a15233ca512dcac68fd6edeabbf1cad5260e7f032f5a24934a7d5662c5/pypdf-6.6.1.tar.gz", hash = "sha256:7ea09ab3748644dacef1a30c475d1edc031656f69c03332c291ebf5b9291a909", size = 5281346, upload-time = "2026-01-25T14:13:36.275Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b9/cc/d9fd9f87bec8ebbfde76aaa9e30703e37810118e913538ef6526e94ebe51/pypdf-6.6.1-py3-none-any.whl", hash = "sha256:453354ddb4398319197f4006fbd1b93c4fbc995f15b15c0af88cba99494ce65a", size = 328987, upload-time = "2026-01-25T14:13:34.901Z" },
+]
+
+[[package]]
+name = "pytesseract"
+version = "0.3.13"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "pillow" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9f/a6/7d679b83c285974a7cb94d739b461fa7e7a9b17a3abfd7bf6cbc5c2394b0/pytesseract-0.3.13.tar.gz", hash = "sha256:4bf5f880c99406f52a3cfc2633e42d9dc67615e69d8a509d74867d3baddb5db9", size = 17689, upload-time = "2024-08-16T02:33:56.762Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7a/33/8312d7ce74670c9d39a532b2c246a853861120486be9443eebf048043637/pytesseract-0.3.13-py3-none-any.whl", hash = "sha256:7a99c6c2ac598360693d83a416e36e0b33a67638bb9d77fdcac094a3589d4b34", size = 14705, upload-time = "2024-08-16T02:36:10.09Z" },
 ]
 
 [[package]]

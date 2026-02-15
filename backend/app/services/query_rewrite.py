@@ -1,6 +1,7 @@
-"""查询改写服务：将用户问题改写为更利于检索与理解的形式"""
+﻿"""services/query_rewrite.py."""
 import re
 from typing import Optional
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -8,6 +9,8 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from app.core.config.settings import settings
 from app.core.logger import logger_manager
 from app.constant.prompts import QUERY_REWRITE_SYSTEM_PROMPT
+from app.services.usage import usage_service, UsageTimer
+from app.utils.llm_factory import build_chat_llm
 
 logger = logger_manager.get_logger(__name__)
 
@@ -27,24 +30,23 @@ _ABBREVIATION_MAP = {
 
 
 class QueryRewriteService:
-    """查询改写服务：面向 RAG 的检索优化"""
 
+    """QueryRewriteService ??"""
     def __init__(self) -> None:
         # 仅在调用时实例化模型，便于环境切换与故障降级
+        """__init__ ???"""
         pass
 
     def _get_llm(self) -> ChatOpenAI:
-        """获取用于改写的 LLM（固定使用 qwen-max）"""
-        return ChatOpenAI(
+        """_get_llm ???"""
+        return build_chat_llm(
             model=settings.llm.QUERY_REWRITE_MODEL,
-            openai_api_key=settings.llm.QWEN_API_KEY,
-            openai_api_base=settings.llm.QWEN_BASE_URL,
             temperature=0.0,
             streaming=False,
         )
 
     def _clean_rewrite(self, text: str) -> str:
-        """清洗模型输出，确保只保留单行问题文本"""
+        """_clean_rewrite ???"""
         if not text:
             return ""
         # 去掉可能的前缀
@@ -54,7 +56,7 @@ class QueryRewriteService:
         return cleaned
 
     def _expand_abbreviations(self, text: str) -> str:
-        """将常见缩写扩展为“缩写（中文全称）”"""
+        """_expand_abbreviations ???"""
         if not text:
             return text
 
@@ -77,7 +79,7 @@ class QueryRewriteService:
         return expanded
 
     def _is_non_rewrite_signal(self, text: str) -> bool:
-        """判断模型是否返回了“无需改写”的口头提示"""
+        """_is_non_rewrite_signal ???"""
         if not text:
             return False
         lowered = text.strip().lower()
@@ -88,8 +90,8 @@ class QueryRewriteService:
         ]
         return any(p in lowered for p in patterns)
 
-    async def rewrite_query(self, query: str) -> str:
-        """将用户问题改写为更利于检索的查询语句"""
+    async def rewrite_query(self, query: str, user_id: int | None = None, kb_id: int | None = None, db: AsyncSession | None = None) -> str:
+        """rewrite_query ?????"""
         if not query or not query.strip():
             return query
 
@@ -99,7 +101,30 @@ class QueryRewriteService:
                 SystemMessage(content=QUERY_REWRITE_SYSTEM_PROMPT),
                 HumanMessage(content=query.strip()),
             ]
+            timer = UsageTimer()
             response = await llm.ainvoke(messages)
+            latency_ms = timer.stop_ms()
+            usage = usage_service.extract_usage(response)
+            if user_id is not None:
+                cost_usd = usage_service.compute_cost(
+                    llm.model_name,
+                    usage.get("prompt_tokens"),
+                    usage.get("completion_tokens"),
+                )
+                await usage_service.record_event(
+                    db=db,
+                    user_id=user_id,
+                    event_type="query_rewrite",
+                    model_name=llm.model_name,
+                    prompt_tokens=usage.get("prompt_tokens"),
+                    completion_tokens=usage.get("completion_tokens"),
+                    total_tokens=usage.get("total_tokens"),
+                    token_missing=bool(usage.get("token_missing")),
+                    latency_ms=latency_ms,
+                    cost_usd=cost_usd,
+                    success=True,
+                    metadata={"kb_id": kb_id} if kb_id is not None else None,
+                )
             rewritten = self._clean_rewrite(getattr(response, "content", "") or "")
             # 如果模型输出“无需改写”之类的提示，则回退原问题
             if self._is_non_rewrite_signal(rewritten):
@@ -107,6 +132,25 @@ class QueryRewriteService:
             # 统一做缩写扩展，保证专业术语可理解
             return self._expand_abbreviations(rewritten or query)
         except Exception as e:
+            if user_id is not None:
+                try:
+                    await usage_service.record_event(
+                        db=db,
+                        user_id=user_id,
+                        event_type="query_rewrite",
+                        model_name=None,
+                        prompt_tokens=None,
+                        completion_tokens=None,
+                        total_tokens=None,
+                        token_missing=True,
+                        latency_ms=None,
+                        cost_usd=0.0,
+                        success=False,
+                        error_message=str(e),
+                        metadata={"kb_id": kb_id} if kb_id is not None else None,
+                    )
+                except Exception:
+                    pass
             # 改写失败时直接回退原问题，保证主流程可用
             logger.warning(f"Query rewrite failed, fallback to original: {e}")
             return self._expand_abbreviations(query)
@@ -114,3 +158,6 @@ class QueryRewriteService:
 
 # 单例实例
 query_rewrite_service = QueryRewriteService()
+
+
+

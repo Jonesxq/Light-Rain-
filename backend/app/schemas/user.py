@@ -1,5 +1,5 @@
-"""用户相关的 Pydantic 模型定义（完整 JWT 认证）"""
-
+﻿
+"""schemas/user.py."""
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator
@@ -7,16 +7,16 @@ from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator
 # ========== base Schema ==========
 
 class UserBase(BaseModel):
-    """用户基础信息"""
     # 用户名（长度 3-50）
+    """UserBase ??"""
     username: str = Field(..., min_length=3, max_length=50)
     # 邮箱
     email: EmailStr
 
 
 class UserCreate(UserBase):
-    """用户注册参数"""
     # 明文密码（用于注册）
+    """UserCreate ??"""
     password: str = Field(..., min_length=6, max_length=100)
     
     model_config = ConfigDict(
@@ -31,8 +31,8 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
-    """用户更新参数"""
     # 新用户名（可选）
+    """UserUpdate ??"""
     username: Optional[str] = Field(None, min_length=3, max_length=50)
     # 新邮箱（可选）
     email: Optional[EmailStr] = None
@@ -43,8 +43,8 @@ class UserUpdate(BaseModel):
 
 
 class UserResponse(UserBase):
-    """用户信息响应结构"""
     # 用户 ID
+    """UserResponse ??"""
     id: int
     # 是否启用
     is_active: bool
@@ -65,8 +65,8 @@ class UserResponse(UserBase):
 # ========== authenticationrelated Schema ==========
 
 class UserLogin(BaseModel):
-    """用户登录参数"""
     # 用户名（与邮箱二选一）
+    """UserLogin ??"""
     username: Optional[str] = Field(None, description="Generate user schemas (app/schemas/user.py)")
     # 邮箱（与用户名二选一）
     email: Optional[EmailStr] = Field(None, description="Generate user schemas (app/schemas/user.py)")
@@ -75,7 +75,7 @@ class UserLogin(BaseModel):
     
     @model_validator(mode='after')
     def check_username_or_email(self):
-        """校验用户名或邮箱至少提供一个"""
+        """check_username_or_email ???"""
         if not self.username and not self.email:
             raise ValueError('Must provide username or email')
         return self
@@ -91,8 +91,8 @@ class UserLogin(BaseModel):
 
 
 class Token(BaseModel):
-    """登录成功后返回的令牌结构"""
     # 访问令牌
+    """Token ??"""
     access_token: str
     # 刷新令牌（可选）
     refresh_token: Optional[str] = None
@@ -111,24 +111,24 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    """解析后的令牌数据"""
     # 用户名（可选）
+    """TokenData ??"""
     username: Optional[str] = None
     # 用户 ID（可选）
     user_id: Optional[int] = None
 
 
 class RefreshTokenRequest(BaseModel):
-    """刷新令牌请求体"""
     # 刷新令牌字符串
+    """RefreshTokenRequest ??"""
     refresh_token: str = Field(..., description="Generate user schemas (app/schemas/user.py)")
 
 
 # ========== EmailValidaterelated Schema ==========
 
 class EmailVerificationRequest(BaseModel):
-    """邮箱验证请求体"""
     # 邮箱
+    """EmailVerificationRequest ??"""
     email: EmailStr
     # 验证码
     code: str = Field(..., min_length=4, max_length=10)
@@ -144,16 +144,16 @@ class EmailVerificationRequest(BaseModel):
 
 
 class ResendVerificationRequest(BaseModel):
-    """重新发送验证码请求体"""
     # 邮箱
+    """ResendVerificationRequest ??"""
     email: EmailStr
 
 
 # ========== Passwordresetrelated Schema ==========
 
 class PasswordResetRequest(BaseModel):
-    """密码重置请求体"""
     # 邮箱
+    """PasswordResetRequest ??"""
     email: EmailStr
     
     model_config = ConfigDict(
@@ -166,8 +166,8 @@ class PasswordResetRequest(BaseModel):
 
 
 class PasswordResetConfirm(BaseModel):
-    """密码重置确认请求体"""
     # 邮箱
+    """PasswordResetConfirm ??"""
     email: EmailStr
     # 验证码
     code: str = Field(..., min_length=4, max_length=10)
@@ -186,8 +186,8 @@ class PasswordResetConfirm(BaseModel):
 
 
 class PasswordChange(BaseModel):
-    """登录后修改密码请求体"""
     # 旧密码
+    """PasswordChange ??"""
     old_password: str = Field(..., min_length=6)
     # 新密码
     new_password: str = Field(..., min_length=6, max_length=100)

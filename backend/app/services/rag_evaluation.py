@@ -1,4 +1,4 @@
-﻿"""RAG 评估服务：基于 RAGas 生成评估集并评估"""
+﻿"""services/rag_evaluation.py."""
 import asyncio
 import math
 import random
@@ -26,43 +26,42 @@ from app.core.config.settings import settings
 from app.core.logger import logger_manager
 from app.services.knowledge import ChunkCandidate, kb_service
 from app.constant.prompts import RAG_EVAL_ANSWER_PROMPT_TEMPLATE
+from app.services.usage import usage_service, UsageTimer
+from app.utils.llm_factory import build_chat_llm, build_embeddings
 
 logger = logger_manager.get_logger(__name__)
 
 
 class RagEvaluationService:
-    """RAG 评估入口：自动生成样本 -> RAG 回答 -> RAGas 打分"""
 
+    """RagEvaluationService ??"""
     def __init__(self):
         # 服务本身无需额外初始化
+        """__init__ ???"""
         pass
 
     def _build_llm(self, model_name: Optional[str], temperature: float = 0.2) -> ChatOpenAI:
-        """构建 LangChain LLM（统一入口）"""
-        return ChatOpenAI(
+        """_build_llm ???"""
+        return build_chat_llm(
             model=model_name or settings.llm.DEFAULT_MODEL,
-            openai_api_key=settings.llm.QWEN_API_KEY,
-            openai_api_base=settings.llm.QWEN_BASE_URL,
             temperature=temperature,
+            streaming=False,
         )
 
     def _build_embeddings(self) -> DashScopeEmbeddings:
-        """构建 Embedding 模型（用于 RAGas）"""
-        return DashScopeEmbeddings(
-            model=settings.llm.EMBEDDING_MODEL,
-            dashscope_api_key=settings.llm.QWEN_API_KEY
-        )
+        """_build_embeddings ???"""
+        return build_embeddings()
 
     def _build_ragas_llm(self, model_name: Optional[str], temperature: float = 0.2) -> LangchainLLMWrapper:
-        """将 LangChain LLM 包装成 RAGas 可用的 LLM"""
+        """_build_ragas_llm ???"""
         return LangchainLLMWrapper(self._build_llm(model_name, temperature=temperature))
 
     def _build_ragas_embeddings(self) -> LangchainEmbeddingsWrapper:
-        """将 LangChain Embeddings 包装成 RAGas 可用的 Embedding"""
+        """_build_ragas_embeddings ???"""
         return LangchainEmbeddingsWrapper(self._build_embeddings())
 
     async def _load_candidate_chunks(self, kb_id: int, sample_size: int) -> List[ChunkCandidate]:
-        """加载评估候选切片（来自原文 sidecar）"""
+        """_load_candidate_chunks ?????"""
         if sample_size <= 0:
             return []
 
@@ -76,7 +75,7 @@ class RagEvaluationService:
         return random.sample(filtered, sample_size)
 
     def _build_langchain_docs(self, chunks: List[ChunkCandidate]) -> List[LangChainDocument]:
-        """将切片转成 LangChain Document（供 RAGas 生成测试集）"""
+        """_build_langchain_docs ???"""
         docs: List[LangChainDocument] = []
         for chunk in chunks:
             meta = chunk.structured_meta or {}
@@ -110,9 +109,11 @@ class RagEvaluationService:
         self,
         docs: List[LangChainDocument],
         sample_size: int,
-        generate_model: Optional[str]
+        generate_model: Optional[str],
+        user_id: Optional[int] = None,
+        kb_id: Optional[int] = None,
     ):
-        """使用 RAGas 生成测试集（无评测集场景）"""
+        """_generate_testset ?????"""
         if not docs:
             return None
 
@@ -122,17 +123,54 @@ class RagEvaluationService:
 
         # 使用预分块入口，避免 HeadlineSplitter 依赖 headlines 字段
         # RAGas 生成是同步流程，放入线程池避免阻塞事件循环
-        return await asyncio.to_thread(
-            generator.generate_with_chunks,
-            docs,
-            testset_size=sample_size,
-            # 降低并发和重试次数，减少 DashScope 连接不稳定导致的失败
-            run_config=RunConfig(max_workers=1, max_retries=2, timeout=60),
-            raise_exceptions=False
-        )
+        timer = UsageTimer()
+        try:
+            result = await asyncio.to_thread(
+                generator.generate_with_chunks,
+                docs,
+                testset_size=sample_size,
+                # 降低并发和重试次数，减少 DashScope 连接不稳定导致的失败
+                run_config=RunConfig(max_workers=1, max_retries=2, timeout=60),
+                raise_exceptions=False
+            )
+        except Exception as exc:
+            if user_id is not None:
+                await usage_service.record_event(
+                    db=None,
+                    user_id=user_id,
+                    event_type="rag_eval_generate",
+                    model_name=generate_model or settings.llm.DEFAULT_MODEL,
+                    prompt_tokens=None,
+                    completion_tokens=None,
+                    total_tokens=None,
+                    token_missing=True,
+                    latency_ms=timer.stop_ms(),
+                    cost_usd=0.0,
+                    success=False,
+                    error_message=str(exc),
+                    metadata={"kb_id": kb_id, "sample_size": sample_size} if kb_id is not None else {"sample_size": sample_size},
+                )
+            raise
+
+        if user_id is not None:
+            await usage_service.record_event(
+                db=None,
+                user_id=user_id,
+                event_type="rag_eval_generate",
+                model_name=generate_model or settings.llm.DEFAULT_MODEL,
+                prompt_tokens=None,
+                completion_tokens=None,
+                total_tokens=None,
+                token_missing=True,
+                latency_ms=timer.stop_ms(),
+                cost_usd=0.0,
+                success=True,
+                metadata={"kb_id": kb_id, "sample_size": sample_size} if kb_id is not None else {"sample_size": sample_size},
+            )
+        return result
 
     def _extract_qa_pairs(self, testset) -> List[Tuple[str, str]]:
-        """从 RAGas 测试集中提取问题与参考答案"""
+        """_extract_qa_pairs ???"""
         if not testset:
             return []
 
@@ -158,13 +196,15 @@ class RagEvaluationService:
         kb_id: int,
         question: str,
         top_k: int,
-        answer_model: Optional[str]
+        answer_model: Optional[str],
+        user_id: Optional[int] = None,
     ) -> Tuple[str, List[str], List[dict]]:
-        """用当前 RAG 流程生成回答，并返回上下文列表与来源"""
+        """_answer_with_rag ?????"""
         context, sources = await kb_service.search_knowledge(
             kb_id=kb_id,
             query=question,
-            top_k=top_k
+            top_k=top_k,
+            user_id=user_id
         )
 
         # 拆分上下文为列表（符合 RAGas contexts 结构）
@@ -179,13 +219,37 @@ class RagEvaluationService:
         ]
 
         llm = self._build_llm(answer_model, temperature=0.2)
+        timer = UsageTimer()
         response = await llm.ainvoke(messages)
+        latency_ms = timer.stop_ms()
         answer = (getattr(response, "content", "") or "").strip()
+
+        if user_id is not None:
+            usage = usage_service.extract_usage(response)
+            cost_usd = usage_service.compute_cost(
+                llm.model_name,
+                usage.get("prompt_tokens"),
+                usage.get("completion_tokens"),
+            )
+            await usage_service.record_event(
+                db=None,
+                user_id=user_id,
+                event_type="rag_eval_answer",
+                model_name=llm.model_name,
+                prompt_tokens=usage.get("prompt_tokens"),
+                completion_tokens=usage.get("completion_tokens"),
+                total_tokens=usage.get("total_tokens"),
+                token_missing=bool(usage.get("token_missing")),
+                latency_ms=latency_ms,
+                cost_usd=cost_usd,
+                success=True,
+                metadata={"kb_id": kb_id},
+            )
 
         return answer, contexts, sources
 
     def _safe_float(self, value: object) -> Optional[float]:
-        """安全转换为浮点数（过滤 NaN）"""
+        """_safe_float ???"""
         try:
             number = float(value)
         except Exception:
@@ -195,7 +259,7 @@ class RagEvaluationService:
         return number
 
     def _aggregate_scores(self, score_rows: List[dict]) -> dict:
-        """汇总 RAGas 的整体分数"""
+        """_aggregate_scores ???"""
         if not score_rows:
             return {}
 
@@ -216,7 +280,7 @@ class RagEvaluationService:
         return aggregated
 
     def _normalize_score_rows(self, scores) -> List[dict]:
-        """兼容不同版本返回的评分结构，统一为 List[dict]"""
+        """_normalize_score_rows ???"""
         if scores is None:
             return []
         # 已经是 list[dict]
@@ -237,6 +301,7 @@ class RagEvaluationService:
     async def evaluate_kb(
         self,
         kb_id: int,
+        user_id: Optional[int] = None,
         sample_size: int = 5,
         top_k: int = 4,
         generate_model: Optional[str] = None,
@@ -244,7 +309,7 @@ class RagEvaluationService:
         judge_model: Optional[str] = None,
         max_chunk_chars: int = 1200
     ) -> dict:
-        """对知识库进行自动评估（RAGas 评分）"""
+        """evaluate_kb ?????"""
         try:
             # 1) 加载候选切片并构造文档
             chunks = await self._load_candidate_chunks(kb_id, sample_size)
@@ -270,7 +335,7 @@ class RagEvaluationService:
                 raise ValueError("评估文档构建失败，请检查切片内容是否为空。")
 
             # 3) RAGas 生成测试集
-            testset = await self._generate_testset(docs, sample_size, generate_model)
+            testset = await self._generate_testset(docs, sample_size, generate_model, user_id=user_id, kb_id=kb_id)
             qa_pairs = self._extract_qa_pairs(testset)
             if not qa_pairs:
                 raise ValueError("RAGas 未生成有效评测样本，请检查模型连接或文档质量。")
@@ -283,7 +348,8 @@ class RagEvaluationService:
                     kb_id=kb_id,
                     question=question,
                     top_k=top_k,
-                    answer_model=answer_model
+                    answer_model=answer_model,
+                    user_id=user_id
                 )
 
                 eval_rows.append({
@@ -366,3 +432,15 @@ class RagEvaluationService:
 
 
 rag_evaluation_service = RagEvaluationService()
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,5 +1,5 @@
-"""Email service for sending emails with template support"""
-
+﻿
+"""utils/email.py."""
 import asyncio
 import smtplib
 import ssl
@@ -21,23 +21,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DEFAULT_TEMPLATE_DIR = BASE_DIR / "static" / "email_template"
 
 class EmailBackend(ABC):
-    """Abstract base class for email backends."""
     
     @abstractmethod
     async def send_email(self, message: MIMEMultipart) -> None:
-        """Send email message asynchronously."""
+        """send_email ?????"""
         pass
     
     @abstractmethod
     def test_connection(self) -> bool:
-        """Test the email backend connection."""
+        """test_connection ???"""
         pass
 
 
 class EmailTemplateLoader:
-    """Email template loader using Jinja2 with caching."""
     
+    """EmailTemplateLoader ??"""
     def __init__(self, template_dir: Union[str, Path] | None = None):
+        """__init__ ???"""
         if template_dir is None:
             self.template_dir = DEFAULT_TEMPLATE_DIR
         else:
@@ -56,7 +56,7 @@ class EmailTemplateLoader:
         )
     
     def render_template(self, template_name: str, **kwargs) -> str:
-        """Render template using Jinja2 with caching."""
+        """render_template ???"""
         try:
             if template_name not in self._template_cache:
                 template = self.env.get_template(f"{template_name}.html")
@@ -73,27 +73,28 @@ class EmailTemplateLoader:
             raise ValueError(f"Failed to render template '{template_name}': {str(e)}")
     
     def template_exists(self, template_name: str) -> bool:
-        """Check if template exists."""
+        """template_exists ???"""
         return (self.template_dir / f"{template_name}.html").exists()
     
     def list_templates(self) -> List[str]:
-        """List all available templates."""
+        """list_templates ???"""
         return [f.stem for f in self.template_dir.glob("*.html")]
     
     def clear_cache(self) -> None:
-        """Clear template cache."""
+        """clear_cache ???"""
         self._template_cache.clear()
 
 
 class SMTPEmailBackend(EmailBackend):
-    """SMTP email backend implementation."""
     
+    """SMTPEmailBackend ??"""
     def __init__(self, email_settings):
+        """__init__ ???"""
         self.email_settings = email_settings
         self.logger = logger_manager.get_logger(__name__)
     
     def _create_ssl_context(self) -> ssl.SSLContext:
-        """Create SSL context based on configuration."""
+        """_create_ssl_context ???"""
         ssl_context = ssl.create_default_context()
         
         cert_reqs = getattr(
@@ -111,7 +112,7 @@ class SMTPEmailBackend(EmailBackend):
         return ssl_context
     
     def _create_smtp_server(self, ssl_context: ssl.SSLContext) -> smtplib.SMTP:
-        """Create and configure SMTP server."""
+        """_create_smtp_server ???"""
         use_ssl = getattr(self.email_settings, "EMAIL_USE_SSL", False)
         use_tls = getattr(self.email_settings, "EMAIL_USE_TLS", True)
         timeout = getattr(self.email_settings, "EMAIL_TIMEOUT", 30)
@@ -135,7 +136,7 @@ class SMTPEmailBackend(EmailBackend):
         return server
     
     async def send_email(self, message: MIMEMultipart) -> None:
-        """Send email using SMTP asynchronously."""
+        """send_email ?????"""
         server = None
         try:
             ssl_context = self._create_ssl_context()
@@ -190,7 +191,7 @@ class SMTPEmailBackend(EmailBackend):
                     self.logger.warning(f"Error closing SMTP connection: {e}")
     
     def test_connection(self) -> bool:
-        """Test SMTP connection."""
+        """test_connection ???"""
         try:
             ssl_context = self._create_ssl_context()
             server = self._create_smtp_server(ssl_context)
@@ -206,9 +207,10 @@ class SMTPEmailBackend(EmailBackend):
 
 
 class EmailMessage:
-    """Email message builder class."""
     
+    """EmailMessage ??"""
     def __init__(self, subject: str, recipient: str, sender: str):
+        """__init__ ???"""
         self.subject = subject
         self.recipient = recipient
         self.sender = sender
@@ -217,12 +219,12 @@ class EmailMessage:
         self.attachments: List[Dict[str, Any]] = []
     
     def set_html_content(self, content: str) -> "EmailMessage":
-        """Set HTML content for the email."""
+        """set_html_content ???"""
         self.html_content = content
         return self
     
     def set_text_content(self, content: str) -> "EmailMessage":
-        """Set text content for the email."""
+        """set_text_content ???"""
         self.text_content = content
         return self
     
@@ -232,7 +234,7 @@ class EmailMessage:
         content: bytes,
         content_type: str = "application/octet-stream",
     ) -> "EmailMessage":
-        """Add attachment to the email."""
+        """add_attachment ???"""
         self.attachments.append({
             "filename": filename,
             "content": content,
@@ -241,7 +243,7 @@ class EmailMessage:
         return self
     
     def build(self) -> MIMEMultipart:
-        """Build MIMEMultipart message."""
+        """build ???"""
         msg = MIMEMultipart("alternative")
         msg["From"] = self.sender
         msg["To"] = self.recipient
@@ -277,14 +279,15 @@ class EmailMessage:
 
 
 class EmailService:
-    """Main email service class with comprehensive features."""
     
+    """EmailService ??"""
     def __init__(
         self,
         backend: EmailBackend,
         config_settings,
         template_loader: Optional[EmailTemplateLoader] = None,
     ):
+        """__init__ ???"""
         self.backend = backend
         self.settings = config_settings
         self.template_loader = template_loader or EmailTemplateLoader()
@@ -296,7 +299,7 @@ class EmailService:
         code: str = "",
         **extra_vars
     ) -> Dict[str, str]:
-        """Prepare variables for template rendering."""
+        """_prepare_template_variables ???"""
         base_vars = {
             "recipient": recipient,
             "code": code,
@@ -320,7 +323,7 @@ class EmailService:
         template_name: str,
         template_vars: Dict[str, str],
     ) -> EmailMessage:
-        """Create email message with rendered template."""
+        """_create_email_message ???"""
         try:
             # Check if template exists
             if not self.template_loader.template_exists(template_name):
@@ -358,7 +361,7 @@ class EmailService:
         attachments: Optional[List[Dict[str, Any]]] = None,
         **template_vars,
     ) -> None:
-        """Send email with retry mechanism and timeout."""
+        """send_email ?????"""
         if timeout is None:
             timeout = getattr(self.settings.email, "EMAIL_TIMEOUT", 30)
         
@@ -448,7 +451,7 @@ class EmailService:
         batch_size: int = 10,
         **template_vars,
     ) -> Dict[str, Any]:
-        """Send bulk emails with batching support."""
+        """send_bulk_email ?????"""
         results = {
             "success": [],
             "failed": [],
@@ -484,15 +487,15 @@ class EmailService:
         return results
     
     def test_connection(self) -> bool:
-        """Test email backend connection."""
+        """test_connection ???"""
         return self.backend.test_connection()
     
     def get_available_templates(self) -> List[str]:
-        """Get list of available email templates."""
+        """get_available_templates ???"""
         return self.template_loader.list_templates()
     
     def clear_template_cache(self) -> None:
-        """Clear template cache."""
+        """clear_template_cache ???"""
         self.template_loader.clear_cache()
 
 
@@ -501,7 +504,7 @@ _email_service_instance = None
 
 
 def get_email_service() -> EmailService:
-    """Get the global email service instance."""
+    """get_email_service ???"""
     global _email_service_instance
     
     if _email_service_instance is None:
@@ -518,10 +521,10 @@ def get_email_service() -> EmailService:
 
 # For backward compatibility - create a property that accesses the service lazily
 class EmailServiceProxy:
-    """Proxy class for lazy loading of email service."""
     
+    """EmailServiceProxy ??"""
     def __getattr__(self, name):
-        """Delegate all attribute access to the actual email service."""
+        """__getattr__ ???"""
         service = get_email_service()
         return getattr(service, name)
 

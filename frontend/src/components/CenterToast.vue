@@ -34,8 +34,11 @@ defineProps({
   border-radius: 16px;
   background: rgba(15, 23, 42, 0.86);
   color: #fff;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.2px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35);
   backdrop-filter: blur(8px);
   animation: toast-pop 0.25s ease-out;

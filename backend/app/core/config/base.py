@@ -1,5 +1,5 @@
-"""configurationbase class - allconfigurationclassbase class"""
-
+﻿
+"""core/config/base.py."""
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -24,12 +24,10 @@ else:
 
 
 class EnvBaseSettings(BaseSettings):
-    """Base settings class that loads environment variables.
     
-    All settings should inherit from this class.
-    """
-    
+    """EnvBaseSettings ??"""
     class Config:
+        """Config ??"""
         env_file = ENV_FILE
         env_file_encoding = "utf-8"
         case_sensitive = True

@@ -1,5 +1,5 @@
-"""用户模型定义"""
-
+﻿
+"""models/user.py."""
 from datetime import datetime
 from typing import Optional
 from sqlmodel import Field, SQLModel,Relationship
@@ -8,14 +8,8 @@ if TYPE_CHECKING:
     from app.models.chat import ChatSession # 避免循环导入
 
 class User(SQLModel, table=True):
-    """用户模型 - 完整 JWT 认证
-
-    包含完整的认证能力：
-    - 邮箱验证
-    - 密码重置
-    - 多设备登录（通过 RefreshToken 表实现）
-    """
     
+    """User ??"""
     __tablename__ = "users"
     
     # 基础字段
@@ -48,6 +42,7 @@ class User(SQLModel, table=True):
     chat_sessions: List["ChatSession"] = Relationship(back_populates="user")
     
     class Config:
+        """Config ??"""
         json_schema_extra = {
             "example": {
                 "username": "johndoe",

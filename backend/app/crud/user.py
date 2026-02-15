@@ -1,5 +1,5 @@
-"""用户 CRUD：账户创建、查询、更新、删除与认证"""
-
+﻿
+"""crud/user.py."""
 from datetime import datetime, timedelta
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,38 +10,37 @@ from app.core.security import get_password_hash, verify_password
 import secrets
 
 class UserCRUD:
-    """用户 CRUD（异步）"""
     
     @staticmethod
     async def get_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
-        """按 ID 获取用户"""
+        """get_by_id ?????"""
         result = await db.get(User, user_id)
         return result
     
     @staticmethod
     async def get_by_username(db: AsyncSession, username: str) -> Optional[User]:
-        """按用户名获取用户"""
+        """get_by_username ?????"""
         statement = select(User).where(User.username == username)
         result = await db.execute(statement)
         return result.scalar_one_or_none()
     
     @staticmethod
     async def get_by_email(db: AsyncSession, email: str) -> Optional[User]:
-        """按邮箱获取用户"""
+        """get_by_email ?????"""
         statement = select(User).where(User.email == email)
         result = await db.execute(statement)
         return result.scalar_one_or_none()
     
     @staticmethod
     async def get_all(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[User]:
-        """分页获取用户列表"""
+        """get_all ?????"""
         statement = select(User).offset(skip).limit(limit)
         result = await db.execute(statement)
         return list(result.scalars().all())
     
     @staticmethod
     async def create(db: AsyncSession, user_create: UserCreate) -> User:
-        """创建用户（默认未验证邮箱）"""
+        """create ?????"""
         hashed_password = get_password_hash(user_create.password)
         
         db_user = User(
@@ -58,7 +57,7 @@ class UserCRUD:
     
     @staticmethod
     async def update(db: AsyncSession, user_id: int, user_update: UserUpdate) -> Optional[User]:
-        """更新用户信息（支持修改密码）"""
+        """update ?????"""
         db_user = await UserCRUD.get_by_id(db, user_id)
         if not db_user:
             return None
@@ -80,7 +79,7 @@ class UserCRUD:
     
     @staticmethod
     async def delete(db: AsyncSession, user_id: int) -> bool:
-        """删除用户（受外键约束影响）"""
+        """delete ?????"""
         db_user = await UserCRUD.get_by_id(db, user_id)
         if not db_user:
             return False
@@ -91,8 +90,8 @@ class UserCRUD:
     
     @staticmethod
     async def authenticate(db: AsyncSession, username: str, password: str) -> Optional[User]:
-        """校验用户凭证（支持用户名/邮箱）"""
         # 1) 先用用户名尝试
+        """authenticate ?????"""
         user = await UserCRUD.get_by_username(db, username)
         
         # 2) 用户名不存在则用邮箱尝试
@@ -114,7 +113,7 @@ class UserCRUD:
     
     @staticmethod
     async def verify_email(db: AsyncSession, user_id: int) -> Optional[User]:
-        """标记邮箱已验证"""
+        """verify_email ?????"""
         db_user = await UserCRUD.get_by_id(db, user_id)
         if not db_user:
             return None
@@ -127,7 +126,7 @@ class UserCRUD:
     
     @staticmethod
     async def change_password(db: AsyncSession, user_id: int, new_password: str) -> Optional[User]:
-        """修改用户密码"""
+        """change_password ?????"""
         db_user = await UserCRUD.get_by_id(db, user_id)
         if not db_user:
             return None

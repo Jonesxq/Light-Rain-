@@ -1,4 +1,4 @@
-"""文档分块服务：不依赖 LangChain Loader，统一解析并分块"""
+﻿"""services/document_chunking.py."""
 from __future__ import annotations
 
 import re
@@ -30,14 +30,14 @@ _SENTENCE_SPLIT_RE = re.compile(r"(?<=[。！？.!?])\s+")
 
 @dataclass
 class TextBlock:
-    """原子文本块（附带页码/段落/幻灯片等元数据）"""
+    """TextBlock ??"""
     text: str
     meta: Dict[str, Any]
 
 
 class DocumentChunkingService:
-    """解析并分块（md/pdf/txt/docx/pptx/ppt）"""
 
+    """DocumentChunkingService ??"""
     def __init__(
         self,
         default_chunk_size: int = 600,
@@ -45,6 +45,7 @@ class DocumentChunkingService:
         per_type: Optional[Dict[str, tuple[Optional[int], Optional[int]]]] = None,
     ):
         # 全局默认分块参数（按字符长度）
+        """__init__ ???"""
         self.default_chunk_size = max(100, default_chunk_size)
         self.default_chunk_overlap = max(0, min(default_chunk_overlap, self.default_chunk_size // 2))
         # 按文件类型覆盖配置（None 表示继承默认值）
@@ -56,7 +57,7 @@ class DocumentChunkingService:
         file_type: str,
         base_meta: Optional[Dict[str, Any]] = None
     ) -> List[Document]:
-        """加载文件并输出 LangChain Document 列表（兼容现有向量库逻辑）"""
+        """load_and_split ???"""
         file_type = file_type.lower()
         blocks = self._load_blocks(file_path, file_type)
         chunk_size, chunk_overlap = self._get_chunk_params(file_type)
@@ -98,7 +99,7 @@ class DocumentChunkingService:
         return documents
 
     def _get_chunk_params(self, file_type: str) -> tuple[int, int]:
-        """根据文件类型获取分块参数（并做安全边界处理）"""
+        """_get_chunk_params ???"""
         size_override, overlap_override = self.per_type.get(file_type, (None, None))
         chunk_size = size_override if size_override else self.default_chunk_size
         chunk_overlap = overlap_override if overlap_override is not None else self.default_chunk_overlap
@@ -107,7 +108,7 @@ class DocumentChunkingService:
         return chunk_size, chunk_overlap
 
     def _load_blocks(self, file_path: str, file_type: str) -> List[TextBlock]:
-        """按文件类型调用不同解析逻辑"""
+        """_load_blocks ???"""
         if file_type == ".pdf":
             return self._load_pdf(file_path)
         if file_type == ".docx":
@@ -122,17 +123,17 @@ class DocumentChunkingService:
         return self._load_txt(file_path)
 
     def _load_txt(self, file_path: str) -> List[TextBlock]:
-        """纯文本直接读取"""
+        """_load_txt ???"""
         text = self._read_text_file(file_path)
         return [TextBlock(text=text, meta={})]
 
     def _load_md(self, file_path: str) -> List[TextBlock]:
-        """Markdown 读取后按标题层级拆分"""
+        """_load_md ???"""
         text = self._read_text_file(file_path)
         return self._split_md_to_blocks(text)
 
     def _load_pdf(self, file_path: str) -> List[TextBlock]:
-        """PDF 按页解析（保留页码）"""
+        """_load_pdf ???"""
         blocks: List[TextBlock] = []
         with fitz.open(file_path) as doc:
             for page_idx in range(doc.page_count):
@@ -143,7 +144,7 @@ class DocumentChunkingService:
         return blocks
 
     def _load_docx(self, file_path: str) -> List[TextBlock]:
-        """Word 按段落解析（保留段落序号）"""
+        """_load_docx ???"""
         blocks: List[TextBlock] = []
         doc = DocxDocument(file_path)
         paragraph_idx = 0
@@ -173,7 +174,7 @@ class DocumentChunkingService:
         return blocks
 
     def _load_ppt(self, file_path: str, file_type: str) -> List[TextBlock]:
-        """PPT/PPTX 解析（依赖 unstructured），保留页码"""
+        """_load_ppt ???"""
         if file_type == ".pptx" and partition_pptx:
             elements = partition_pptx(filename=file_path)
         elif file_type == ".ppt" and partition_ppt:
@@ -208,13 +209,14 @@ class DocumentChunkingService:
         return blocks
 
     def _split_md_to_blocks(self, text: str) -> List[TextBlock]:
-        """按 Markdown 标题层级拆分，并记录标题路径"""
+        """_split_md_to_blocks ???"""
         blocks: List[TextBlock] = []
         heading_stack: List[tuple[int, str]] = []
         current_lines: List[str] = []
         in_code_block = False
 
         def flush() -> None:
+            """flush ???"""
             content = "\n".join(current_lines).strip()
             if not content:
                 return
@@ -245,7 +247,7 @@ class DocumentChunkingService:
         return blocks
 
     def _chunk_blocks(self, blocks: List[TextBlock], chunk_size: int, chunk_overlap: int) -> List[TextBlock]:
-        """统一分块策略：段落优先 + 句子切分 + overlap"""
+        """_chunk_blocks ???"""
         chunks: List[TextBlock] = []
         buffer = ""
         buffer_meta: List[Dict[str, Any]] = []
@@ -254,7 +256,7 @@ class DocumentChunkingService:
         overlap_meta: Optional[Dict[str, Any]] = None
 
         def emit(text: str, metas: List[Dict[str, Any]]) -> None:
-            """输出一个 chunk，并设置下一段 overlap 种子"""
+            """emit ???"""
             nonlocal buffer, buffer_meta, buffer_has_new, overlap_seed, overlap_meta
             text = text.strip()
             if not text:
@@ -303,14 +305,14 @@ class DocumentChunkingService:
         return chunks
 
     def _split_paragraphs(self, text: str) -> List[str]:
-        """按空行拆分段落"""
+        """_split_paragraphs ???"""
         text = text.strip()
         if not text:
             return []
         return [p.strip() for p in re.split(r"\n{2,}", text) if p.strip()]
 
     def _split_long_text(self, text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
-        """超长文本按句子切分，再做 overlap"""
+        """_split_long_text ???"""
         sentences = [s.strip() for s in _SENTENCE_SPLIT_RE.split(text) if s.strip()]
         if not sentences:
             return [text]
@@ -339,7 +341,7 @@ class DocumentChunkingService:
         return parts
 
     def _hard_split(self, text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
-        """兜底硬切（句子过长时）"""
+        """_hard_split ???"""
         parts: List[str] = []
         step = max(1, chunk_size - chunk_overlap)
         for start in range(0, len(text), step):
@@ -347,7 +349,7 @@ class DocumentChunkingService:
         return parts
 
     def _normalize_text(self, text: str, soft_wrap: bool = False) -> str:
-        """规范化空白/换行，减少解析噪声"""
+        """_normalize_text ???"""
         text = text.replace("\r\n", "\n").replace("\r", "\n")
         if soft_wrap:
             text = re.sub(r"(?<!\n)\n(?!\n)", " ", text)
@@ -358,7 +360,7 @@ class DocumentChunkingService:
         return text.strip()
 
     def _merge_meta(self, metas: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """合并元数据（页码/幻灯片/标题路径）"""
+        """_merge_meta ???"""
         merged: Dict[str, Any] = {}
         pages = {m.get("page") for m in metas if m and m.get("page")}
         if pages:
@@ -384,7 +386,7 @@ class DocumentChunkingService:
         return merged
 
     def _read_text_file(self, file_path: str) -> str:
-        """读取文本文件（支持常见编码自动兜底）"""
+        """_read_text_file ???"""
         encodings = ["utf-8-sig", "utf-8", "gb18030", "gbk"]
         for enc in encodings:
             try:
@@ -398,7 +400,7 @@ class DocumentChunkingService:
         return raw.decode("utf-8", errors="ignore")
 
     def _extract_pdf_page_text(self, page: fitz.Page) -> str:
-        """提取 PDF 页面文本（主路径 + 兜底路径）"""
+        """_extract_pdf_page_text ???"""
         try:
             text = page.get_text("text") or ""
         except Exception:
@@ -417,7 +419,7 @@ class DocumentChunkingService:
         return self._normalize_text(text, soft_wrap=True)
 
     def _iter_docx_blocks(self, doc: DocxDocument) -> Iterable[Paragraph | Table]:
-        """按文档顺序遍历段落与表格，保持原始结构顺序"""
+        """_iter_docx_blocks ???"""
         for child in doc.element.body.iterchildren():
             if isinstance(child, CT_P):
                 yield Paragraph(child, doc)
@@ -425,7 +427,7 @@ class DocumentChunkingService:
                 yield Table(child, doc)
 
     def _extract_docx_table_text(self, table: Table) -> str:
-        """提取表格文本（按行拼接）"""
+        """_extract_docx_table_text ???"""
         rows: List[str] = []
         for row in table.rows:
             cells = []

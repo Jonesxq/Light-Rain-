@@ -1,5 +1,5 @@
-"""MySQL database connection managementgenerator"""
-
+﻿
+"""core/database/mysql.py."""
 from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy import create_engine, text
@@ -12,9 +12,10 @@ from sqlmodel import SQLModel
 Base = declarative_base()
 
 class MySQLManager:
-    """MySQL connectionmanagementgenerator - use SQLAlchemy/SQLModel ORM"""
     
+    """MySQLManager ??"""
     def __init__(self):
+        """__init__ ???"""
         self.logger = logger_manager.get_logger(__name__)
         self.async_engine: create_async_engine | None = None
         self.async_session_maker: async_sessionmaker | None = None
@@ -22,7 +23,7 @@ class MySQLManager:
         self.sync_session_maker: sessionmaker | None = None
     
     def get_sqlalchemy_url(self) -> str:
-        """Build SQLAlchemy asyncconnection URL"""
+        """get_sqlalchemy_url ???"""
         url = settings.database.DATABASE_URL
         # ensure using aiomysql driver
         if url.startswith("mysql://"):
@@ -32,7 +33,7 @@ class MySQLManager:
         return url
     
     def get_sync_sqlalchemy_url(self) -> str:
-        """Build SQLAlchemy syncconnection URL"""
+        """get_sync_sqlalchemy_url ???"""
         url = settings.database.DATABASE_URL
         # ensure using pymysql driver
         if url.startswith("mysql://"):
@@ -42,7 +43,7 @@ class MySQLManager:
         return url
     
     async def initialize(self) -> None:
-        """Initialize async connection and session (idempotent)"""
+        """initialize ?????"""
         if self.async_engine:
             self.logger.debug("MySQLManager is already initialized.")
             return
@@ -96,7 +97,7 @@ class MySQLManager:
             raise
     
     async def get_db(self) -> AsyncGenerator[AsyncSession, None]:
-        """FastAPI dependenciesinjectionuse：returnasyncsessiongenerategenerator"""
+        """get_db ?????"""
         if not self.async_session_maker:
             raise RuntimeError("Database not initialized. Call initialize() first.")
         
@@ -104,13 +105,13 @@ class MySQLManager:
             yield session
     
     def get_sync_db(self) -> Session:
-        """For background tasks: return sync session"""
+        """get_sync_db ???"""
         if not self.sync_session_maker:
             raise RuntimeError("Database not initialized. Call initialize() first.")
         return self.sync_session_maker()
     
     async def test_connection(self) -> bool:
-        """testdatabase connection"""
+        """test_connection ?????"""
         if not self.async_session_maker:
             raise RuntimeError("Database not initialized.")
         
@@ -126,7 +127,7 @@ class MySQLManager:
             raise
     
     async def close(self) -> None:
-        """Close connection pool and release resources"""
+        """close ?????"""
         if self.async_engine:
             try:
                 await self.async_engine.dispose()
@@ -148,18 +149,21 @@ class MySQLManager:
                 raise
     
     async def __aenter__(self) -> "MySQLManager":
+        """__aenter__ ?????"""
         await self.initialize()
         return self
     
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:
+        """__aexit__ ?????"""
         await self.close()
 
     async def _create_tables(self) -> None:
+        """_create_tables ?????"""
         from app.models.user import User
         from app.models.token import RefreshToken, VerificationCode
-        from app.models.chat import ChatSession, ChatMessage  # 你新定义的智聊模型
+        from app.models.chat import ChatSession, ChatMessage, ChatAttachment, ChatPromptSnapshot  # 你新定义的智聊模型
         from app.models.llm_settings import UserLLMSettings
-        """运行同步建表命令"""
+        from app.models.usage import UsageEvent, UserUsageSettings
         # 在这里显式导入所有模型，确保它们被注册到 SQLModel.metadata 中
         # 如果不导入，SQLModel 就不知道有哪些表需要创建
         self.logger.info("🚀 Creating database tables...")
@@ -170,4 +174,5 @@ class MySQLManager:
 
 # singletoninstance
 mysql_manager = MySQLManager()
+
 

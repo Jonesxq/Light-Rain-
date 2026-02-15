@@ -1,43 +1,59 @@
-"""聊天相关的 Pydantic 模型定义"""
+﻿"""schemas/chat.py."""
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.models.chat import ChatRole
 
 
 # ========== Message Schemas ==========
 
 class ChatMessageBase(BaseModel):
-    """消息基础结构"""
     # 消息角色（system / user / assistant）
+    """ChatMessageBase ??"""
     role: ChatRole
     # 消息正文内容
     content: str
 
 
 class ChatMessageCreate(ChatMessageBase):
-    """创建消息时的参数"""
+    """ChatMessageCreate ??"""
     pass
 
 
 class ChatMessageResponse(ChatMessageBase):
-    """返回给前端的消息格式"""
     # 消息 ID
+    """ChatMessageResponse ??"""
     id: int
     # 创建时间
     created_at: datetime
+    # 是否收藏
+    is_favorite: bool = False
+    # 编辑时间
+    edited_at: Optional[datetime] = None
     # 使用的模型名称（可选）
     model_name: Optional[str] = None
     # 知识库引用来源（可选）
     sources: Optional[List["KnowledgeSource"]] = None
+    # 免责声明（可选）
+    disclaimers: List["ChatDisclaimer"] = []
+    # 风险标签（可选）
+    risk_tags: Optional[List[str]] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class KnowledgeSource(BaseModel):
-    """知识库引用来源信息"""
     # 文档 ID
+    """KnowledgeSource ??"""
     doc_id: Optional[int] = None
+    # Web 标题
+    title: Optional[str] = None
+    # Web URL
+    url: Optional[str] = None
+    # Web 摘要
+    snippet: Optional[str] = None
+    # 来源类型（web / kb）
+    source_type: Optional[str] = None
     # 文件名
     file_name: Optional[str] = None
     # 文件类型
@@ -56,31 +72,48 @@ class KnowledgeSource(BaseModel):
     chunk_index: Optional[int] = None
 
 
+class ChatDisclaimer(BaseModel):
+    """ChatDisclaimer ??"""
+    code: str
+    title: str
+    body: str
+    severity: str = "warning"
+
+
 class KnowledgeChatResponse(ChatMessageResponse):
-    """知识库问答返回格式（包含引用来源）"""
+    """KnowledgeChatResponse ??"""
     sources: Optional[List[KnowledgeSource]] = None
 
 
 # ========== Session Schemas ==========
 
 class ChatSessionCreate(BaseModel):
-    """创建会话的参数"""
     # 会话标题（可选）
+    """ChatSessionCreate ??"""
     title: Optional[str] = "New Chat"
 
 
 class ChatSessionUpdate(BaseModel):
-    """更新会话的参数"""
     # 新的会话标题
-    title: str
+    """ChatSessionUpdate ??"""
+    title: Optional[str] = None
+    is_pinned: Optional[bool] = None
+    is_archived: Optional[bool] = None
+    tags: Optional[List[str]] = None
 
 
 class ChatSessionResponse(BaseModel):
-    """返回给前端的会话信息"""
     # 会话 ID
+    """ChatSessionResponse ??"""
     id: int
     # 会话标题
     title: str
+    # 是否置顶
+    is_pinned: bool = False
+    # 是否归档
+    is_archived: bool = False
+    # 标签
+    tags: List[str] = Field(default_factory=list)
     # 创建时间
     created_at: datetime
     # 更新时间
@@ -88,21 +121,52 @@ class ChatSessionResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @field_validator("tags", mode="before")
+    @classmethod
+    def _coerce_tags(cls, v):
+        if v is None:
+            return []
+        return list(v)
 
 # ========== API Request Schemas ==========
 
 class ChatRequest(BaseModel):
-    """用户发送聊天的请求体"""
     # 用户输入的消息
+    """ChatRequest ??"""
     message: str
-    # 使用的模型名称（默认值可按需调整）
+    # 深度思考（边想边搜）
+    deep_search: bool = False
+    # 深度思考（推理）
+    deep_think: bool = False
+
+
+class ChatSuggestionRequest(BaseModel):
+    """ChatSuggestionRequest ??"""
+    limit: int = Field(default=3)
     model: Optional[str] = None
+
+
+class ChatSuggestionResponse(BaseModel):
+    """ChatSuggestionResponse ??"""
+    session_id: int
+    suggestions: List[str]
+
+
+class ChatRegenerateRequest(BaseModel):
+    """ChatRegenerateRequest ??"""
+    deep_search: bool = False
+    deep_think: bool = False
+
+
+class FavoriteUpdateRequest(BaseModel):
+    """FavoriteUpdateRequest ??"""
+    is_favorite: bool
 
 
 
 class KnowledgeChatRequest(BaseModel):
-    """知识库问答请求体"""
     # 用户提出的问题
+    """KnowledgeChatRequest ??"""
     message: str
     # 使用哪个知识库
     kb_id: int
@@ -110,3 +174,28 @@ class KnowledgeChatRequest(BaseModel):
     session_id: Optional[int] = None
     # 使用的模型名称
     model: Optional[str] = None
+
+
+class ChatAttachmentResponse(BaseModel):
+    """ChatAttachmentResponse ??"""
+    id: int
+    file_name: str
+    file_type: str
+    file_size: int
+    preview: str = ""
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ChatPromptSnapshotResponse(BaseModel):
+    """ChatPromptSnapshotResponse ??"""
+    id: int
+    message_id: int
+    user_id: int
+    session_id: int
+    mode: str
+    payload: dict
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

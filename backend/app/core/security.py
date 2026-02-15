@@ -1,5 +1,5 @@
-"""Security management module - Password validation, hashing and JWT management"""
-
+﻿
+"""core/security.py."""
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Union
@@ -13,8 +13,8 @@ logger = logger_manager.get_logger(__name__)
 
 
 class PasswordValidator:
-    """Handles password validation and strength checking"""
     
+    """PasswordValidator ??"""
     PASSWORD_PATTERNS = {
         "uppercase": r"[A-Z]",
         "lowercase": r"[a-z]",
@@ -23,14 +23,12 @@ class PasswordValidator:
     }
     
     def __init__(self, min_length: int = 8):
+        """__init__ ???"""
         self.min_length = min_length
         self.logger = logger
     
     def validate(self, password: str) -> bool:
-        """Validates password strength against multiple criteria.
-        
-        Raises ValueError if any condition is not met.
-        """
+        """validate ???"""
         self._check_length(password)
         self._check_uppercase(password)
         self._check_lowercase(password)
@@ -40,6 +38,7 @@ class PasswordValidator:
         return True
     
     def _check_length(self, password: str):
+        """_check_length ???"""
         if len(password) < self.min_length:
             self.logger.warning("Password validation failed: too short.")
             raise ValueError(
@@ -47,30 +46,35 @@ class PasswordValidator:
             )
     
     def _check_uppercase(self, password: str):
+        """_check_uppercase ???"""
         if not re.search(self.PASSWORD_PATTERNS["uppercase"], password):
             self.logger.warning("Password validation failed: no uppercase letter.")
             raise ValueError("Password must contain at least one uppercase letter.")
     
     def _check_lowercase(self, password: str):
+        """_check_lowercase ???"""
         if not re.search(self.PASSWORD_PATTERNS["lowercase"], password):
             self.logger.warning("Password validation failed: no lowercase letter.")
             raise ValueError("Password must contain at least one lowercase letter.")
     
     def _check_digit(self, password: str):
+        """_check_digit ???"""
         if not re.search(self.PASSWORD_PATTERNS["digit"], password):
             self.logger.warning("Password validation failed: no digit.")
             raise ValueError("Password must contain at least one digit.")
     
     def _check_special_char(self, password: str):
+        """_check_special_char ???"""
         if not re.search(self.PASSWORD_PATTERNS["special"], password):
             self.logger.warning("Password validation failed: no special character.")
             raise ValueError("Password must contain at least one special character.")
 
 
 class PasswordHasher:
-    """Handles password hashing and verification using Argon2 only"""
     
+    """PasswordHasher ??"""
     def __init__(self):
+        """__init__ ???"""
         self.logger = logger_manager.get_logger(__name__)
         # useArgon2 - highperformanceconfiguration
         self.ph = argon2.PasswordHasher(
@@ -83,7 +87,7 @@ class PasswordHasher:
         self.logger.info("Using Argon2 for password hashing")
     
     def hash(self, password: str) -> str:
-        """Hash the password using Argon2"""
+        """hash ???"""
         try:
             hashed = self.ph.hash(password)
             self.logger.debug("Password hashed successfully with Argon2")
@@ -93,7 +97,7 @@ class PasswordHasher:
             raise
     
     def verify(self, plain_password: str, hashed_password: str) -> bool:
-        """Verify a plain password against a hashed password"""
+        """verify ???"""
         try:
             self.ph.verify(hashed_password, plain_password)
             return True
@@ -106,8 +110,8 @@ class PasswordHasher:
 
 
 class JWTManager:
-    """Handles JWT token creation, decoding and validation"""
     
+    """JWTManager ??"""
     def __init__(
         self,
         secret_key: str,
@@ -117,6 +121,7 @@ class JWTManager:
         access_token_expiry: int,
         refresh_token_expiry: int,
     ):
+        """__init__ ???"""
         self.secret_key = secret_key
         self.algorithm = algorithm
         self.issuer = issuer
@@ -126,21 +131,21 @@ class JWTManager:
         self.logger = logger
     
     def timestamp_to_datetime(self, timestamp: int) -> datetime:
-        """Convert a Unix timestamp to a UTC datetime object"""
+        """timestamp_to_datetime ???"""
         return datetime.fromtimestamp(timestamp, tz=timezone.utc)
     
     def create_access_token(self, data: Dict) -> tuple[str, datetime]:
-        """Create an access JWT token"""
+        """create_access_token ???"""
         return self._create_token(data, self.access_token_expiry, "access")
     
     def create_refresh_token(self, data: Dict) -> tuple[str, datetime]:
-        """Create a refresh JWT token"""
+        """create_refresh_token ???"""
         return self._create_token(data, self.refresh_token_expiry, "refresh")
     
     def _create_token(
         self, data: Dict, expires_in_seconds: int, token_type: str
     ) -> tuple[str, datetime]:
-        """Internal method for token creation"""
+        """_create_token ???"""
         exp_time = datetime.now(timezone.utc) + timedelta(seconds=expires_in_seconds)
         # Convert to UTC timestamp
         payload = {
@@ -160,10 +165,7 @@ class JWTManager:
     def decode_token(
         self, token: str, expected_jti: Optional[str] = None
     ) -> Union[Dict, None]:
-        """Decode and validate a JWT token.
-        
-        Optionally verify the JTI claim if provided.
-        """
+        """decode_token ???"""
         try:
             decoded_token = jwt.decode(
                 token,
@@ -190,9 +192,10 @@ class JWTManager:
 
 
 class SecurityManager:
-    """Main authentication service that orchestrates all auth operations"""
     
+    """SecurityManager ??"""
     def __init__(self, settings):
+        """__init__ ???"""
         self.validator = PasswordValidator()
         self.hasher = PasswordHasher()
         self.jwt_manager = JWTManager(
@@ -205,29 +208,29 @@ class SecurityManager:
         )
     
     def validate_password(self, password: str) -> bool:
-        """Validate password strength"""
+        """validate_password ???"""
         return self.validator.validate(password)
     
     def hash_password(self, password: str) -> str:
-        """Hash a password using Argon2"""
+        """hash_password ???"""
         return self.hasher.hash(password)
     
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        """Verify a password against its hash"""
+        """verify_password ???"""
         return self.hasher.verify(plain_password, hashed_password)
     
     def create_access_token(self, data: Dict) -> tuple[str, datetime]:
-        """Create an access token"""
+        """create_access_token ???"""
         return self.jwt_manager.create_access_token(data)
     
     def create_refresh_token(self, data: Dict) -> tuple[str, datetime]:
-        """Create a refresh token"""
+        """create_refresh_token ???"""
         return self.jwt_manager.create_refresh_token(data)
     
     def decode_token(
         self, token: str, expected_jti: Optional[str] = None
     ) -> Union[Dict, None]:
-        """Decode and validate a token"""
+        """decode_token ???"""
         return self.jwt_manager.decode_token(token, expected_jti)
 
 
@@ -236,11 +239,11 @@ security_manager = SecurityManager(settings)
 
 # Convenience functions (backward compatible)
 def get_password_hash(password: str) -> str:
-    """Hash password - convenience function"""
+    """get_password_hash ???"""
     return security_manager.hash_password(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password - convenience function"""
+    """verify_password ???"""
     return security_manager.verify_password(plain_password, hashed_password)
 

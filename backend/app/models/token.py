@@ -1,19 +1,13 @@
-"""令牌与验证码的数据库模型定义"""
-
+﻿
+"""models/token.py."""
 from datetime import datetime
 from typing import Optional
 from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, SQLModel, Relationship
 
 class RefreshToken(SQLModel, table=True):
-    """刷新令牌模型
-
-    用于管理用户刷新令牌，支持：
-    - 多设备登录（每设备一个令牌）
-    - 令牌撤销
-    - 令牌过期管理
-    """
     
+    """RefreshToken ??"""
     __tablename__ = "refresh_tokens"
     
     # 主键 ID
@@ -52,6 +46,7 @@ class RefreshToken(SQLModel, table=True):
     last_used_at: Optional[datetime] = Field(default=None)
     
     class Config:
+        """Config ??"""
         json_schema_extra = {
             "example": {
                 "user_id": 1,
@@ -63,26 +58,20 @@ class RefreshToken(SQLModel, table=True):
         }
     
     def is_valid(self) -> bool:
-        """判断刷新令牌是否有效"""
+        """is_valid ???"""
         if self.is_revoked:
             return False
         return datetime.utcnow() < self.expires_at
     
     def revoke(self) -> None:
-        """撤销刷新令牌"""
+        """revoke ???"""
         self.is_revoked = True
         self.revoked_at = datetime.utcnow()
 
 
 class VerificationCode(SQLModel, table=True):
-    """验证码模型
-
-    用于管理邮箱验证码与密码重置验证码，支持：
-    - 验证码过期管理
-    - 验证码使用限制
-    - 验证码类型区分
-    """
     
+    """VerificationCode ??"""
     __tablename__ = "verification_codes"
     
     # 主键 ID
@@ -115,6 +104,7 @@ class VerificationCode(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
     class Config:
+        """Config ??"""
         json_schema_extra = {
             "example": {
                 "user_id": 1,
@@ -126,7 +116,7 @@ class VerificationCode(SQLModel, table=True):
         }
     
     def is_valid(self) -> bool:
-        """判断验证码是否有效"""
+        """is_valid ???"""
         if self.is_used:
             return False
         if self.attempts >= self.max_attempts:
@@ -134,11 +124,11 @@ class VerificationCode(SQLModel, table=True):
         return datetime.utcnow() < self.expires_at
     
     def increment_attempts(self) -> None:
-        """递增尝试次数"""
+        """increment_attempts ???"""
         self.attempts += 1
     
     def mark_as_used(self) -> None:
-        """标记为已使用"""
+        """mark_as_used ???"""
         self.is_used = True
         self.used_at = datetime.utcnow()
 

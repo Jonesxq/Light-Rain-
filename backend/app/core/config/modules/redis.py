@@ -1,12 +1,12 @@
-"""Redis configuration module"""
-
+﻿
+"""core/config/modules/redis.py."""
 from app.core.config.base import EnvBaseSettings
 from pydantic import Field
 
 
 class RedisSettings(EnvBaseSettings):
-    """Redis configuration"""
     
+    """RedisSettings ??"""
     REDIS_CONNECTION_URL: str = Field(
         default="redis://localhost:6379",
         description="Redis connection URL. Supports password: redis://:password@host:port or redis://username:password@host:port",

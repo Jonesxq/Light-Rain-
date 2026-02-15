@@ -5,13 +5,12 @@
         <h1>模型设置</h1>
         <p>配置你的 OpenAI 兼容模型 Key / Base URL / 模型名。</p>
       </div>
-      <div class="actions" style="flex-direction: column; align-items: flex-end;">
-        <label>
-          API Base
-          <input v-model="apiBase" @change="persistApiBase" placeholder="http://127.0.0.1:8000/api/v1" />
-        </label>
-        <div class="actions">
+      <div class="header-actions">
+        <div class="actions action-bar">
           <button class="ghost" @click="goChat">返回聊天</button>
+          <button class="ghost" @click="goMy">我的</button>
+          <button class="ghost" @click="goAiNews">AI资讯</button>
+          <button class="ghost" @click="goUsage">使用量看板</button>
           <button class="ghost" @click="goKnowledge">知识库</button>
           <button class="ghost" @click="logout">退出登录</button>
         </div>
@@ -72,12 +71,11 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { apiFetch, clearTokens, getApiBase, setApiBase } from '../api/client.js';
+import { apiFetch, clearTokens } from '../api/client.js';
 import CenterToast from '../components/CenterToast.vue';
 import { useCenterToast } from '../composables/useCenterToast.js';
 
 const router = useRouter();
-const apiBase = ref(getApiBase());
 const notice = ref('');
 const error = ref('');
 const { message: successMessage, show: showSuccess } = useCenterToast();
@@ -102,17 +100,24 @@ const setError = (message) => {
   notice.value = '';
 };
 
-const persistApiBase = () => {
-  setApiBase(apiBase.value);
-  setNotice('API Base 已更新');
-};
-
 const goChat = () => {
   router.push('/chat');
 };
 
+const goMy = () => {
+  router.push('/my');
+};
+
 const goKnowledge = () => {
   router.push('/knowledge');
+};
+
+const goUsage = () => {
+  router.push('/usage');
+};
+
+const goAiNews = () => {
+  router.push('/ai-news');
 };
 
 const logout = () => {
@@ -207,22 +212,18 @@ loadSettings();
   display: flex;
   flex-direction: column;
   gap: 18px;
-  background: linear-gradient(135deg, #cdd7ff 0%, #eef2ff 45%, #f7eaff 100%);
-  border-radius: 28px;
+  background: var(--page-panel);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
   overflow: auto;
-  font-family: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-  color: #1f2a44;
+  font-family: var(--font-sans);
+  color: var(--text-strong);
 }
 
 .settings-page::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 12% 18%, rgba(111, 140, 255, 0.28), transparent 45%),
-    radial-gradient(circle at 90% 8%, rgba(245, 189, 255, 0.35), transparent 40%),
-    radial-gradient(circle at 80% 80%, rgba(169, 210, 255, 0.3), transparent 40%);
-  pointer-events: none;
+  content: none;
+  display: none;
 }
 
 .settings-page > * {
@@ -230,109 +231,13 @@ loadSettings();
   z-index: 1;
 }
 
-.settings-page .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.settings-page .header h1 {
-  margin: 0;
-  font-size: 26px;
-}
-
-.settings-page .header p {
-  margin: 6px 0 0;
-  color: #6a728d;
-}
-
-.settings-page .actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.settings-page label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 12px;
-  color: #5c647f;
-}
-
-.settings-page input {
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(111, 136, 255, 0.25);
-  background: #fff;
-  font-size: 13px;
-}
-
 .settings-page small {
-  color: #7b839e;
-}
-
-.settings-page button {
-  border: none;
-  padding: 10px 16px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #6f88ff, #8d6bff);
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 12px 22px rgba(108, 125, 255, 0.25);
-}
-
-.settings-page button.ghost {
-  background: rgba(255, 255, 255, 0.9);
-  color: #45507a;
-  border: 1px solid rgba(111, 136, 255, 0.2);
-  box-shadow: none;
+  color: var(--text-soft);
 }
 
 .settings-page button.danger {
-  color: #b04a63;
-  border-color: rgba(255, 219, 230, 0.7);
-}
-
-.settings-page button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.settings-page .notice,
-.settings-page .error {
-  margin-top: 8px;
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-size: 13px;
-}
-
-.settings-page .notice {
-  background: rgba(207, 234, 255, 0.6);
-  color: #2c5a86;
-}
-
-.settings-page .error {
-  background: rgba(255, 221, 228, 0.7);
-  color: #a83c50;
-}
-
-.settings-page .card {
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 22px;
-  padding: 18px;
-  box-shadow: 0 22px 50px rgba(58, 72, 125, 0.16);
-  border: 1px solid rgba(225, 231, 255, 0.9);
-  backdrop-filter: blur(10px);
-}
-
-.settings-page .card-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+  color: var(--error-text);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .settings-page .form-grid {
@@ -364,3 +269,5 @@ loadSettings();
   }
 }
 </style>
+
+

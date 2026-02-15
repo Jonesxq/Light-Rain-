@@ -1,5 +1,5 @@
-"""FastAPI application main entry point"""
-
+﻿
+"""main.py."""
 import os
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
@@ -18,7 +18,9 @@ from app.routers.v1 import (
     user_router,
     chat_router,
     knowledge_router,
-    llm_settings_router
+    llm_settings_router,
+    usage_router,
+    news_router
 )
 
 # Create LoggerManager instance
@@ -30,7 +32,7 @@ logger = logger_manager.get_logger(__name__)
 
 # Create lifespan
 async def lifespan(_app: FastAPI):
-    """Application lifespan management"""
+    """lifespan ?????"""
     logger.info("🚩 Starting the application...")
     logger.info(f"🚧 You are working in {os.getenv('ENV', 'development')} environment")
     
@@ -84,7 +86,7 @@ app = FastAPI(
 # Global exception handlers
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_request: Request, exc: HTTPException):
-    """HTTP exception handler"""
+    """http_exception_handler ?????"""
     logger.error(f"HTTPException: {exc}")
     error_detail = exc.detail
     
@@ -101,8 +103,8 @@ async def http_exception_handler(_request: Request, exc: HTTPException):
 
 @app.exception_handler(Exception)
 async def general_exception_handler(_request: Request, exc: Exception):
-    """General exception handler"""
     # 打印完整异常堆栈，便于定位问题
+    """general_exception_handler ?????"""
     logger.exception(f"Exception: {exc}")
     # 开发环境返回更详细的错误信息
     if os.getenv("ENV", "development") == "development":
@@ -159,18 +161,20 @@ app.include_router(user_router, prefix="/api/v1")
 app.include_router(chat_router, prefix="/api/v1")
 app.include_router(knowledge_router, prefix="/api/v1")
 app.include_router(llm_settings_router, prefix="/api/v1")
+app.include_router(usage_router, prefix="/api/v1")
+app.include_router(news_router, prefix="/api/v1")
 
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])
 async def health_check():
-    """Health check endpoint"""
+    """health_check ?????"""
     return {"status": "healthy"}
 
 
 # OpenAPI documentation
 def custom_openapi():
-    """Custom OpenAPI documentation"""
+    """custom_openapi ???"""
     if app.openapi_schema:
         return app.openapi_schema
     
@@ -198,3 +202,4 @@ if __name__ == "__main__":
             port=8000,
             reload=True,
         )
+

@@ -8,99 +8,104 @@
           <div class="brand-subtitle">对话与知识库</div>
         </div>
       </div>
-      <div class="sidebar-header">
-        <button class="new-chat" @click="createSession">新对话</button>
-        <button class="kb-link" @click="goKnowledge">我的知识库</button>
-        <span class="shortcut">Ctrl K 快捷开启对话</span>
-      </div>
       <div class="sidebar-section">
-        <h3>对话历史</h3>
-        <ul class="session-list">
-          <li v-for="session in sessions" :key="session.id" :class="{ active: session.id === activeSessionId }">
-            <button @click="selectSession(session.id)">
-              <span>{{ getSessionTitle(session) }}</span>
-            </button>
-            <button class="delete-session" @click.stop="deleteSession(session.id)">删除</button>
-          </li>
-        </ul>
-      </div>
-
-      <div class="sidebar-section kb-progress-section">
-        <h3>知识库进度</h3>
-        <div v-if="!knowledgeMode || !selectedKnowledgeBase" class="kb-progress-empty">
-          <p>选择知识库后可查看入库进度。</p>
-          <button class="ghost" @click="openKnowledgeSelector">选择知识库</button>
+        <div class="session-header">
+          <h3>你的聊天</h3>
         </div>
-        <div v-else class="kb-progress-body">
-          <div class="kb-progress-current">当前：{{ selectedKnowledgeBase.name }}</div>
-          <div v-if="docLoading" class="kb-progress-loading">正在加载...</div>
-          <div v-else-if="docError" class="kb-progress-error">{{ docError }}</div>
-          <div v-else-if="!kbDocumentsPreview.length" class="kb-progress-empty">暂无文档。</div>
-          <div v-else class="kb-progress-list">
-            <div v-for="doc in kbDocumentsPreview" :key="doc.id" class="kb-progress-item">
-              <div class="kb-progress-title">{{ doc.file_name }}</div>
-              <div class="kb-progress-meta">
-                <span class="status-pill" :class="`status-${doc.status}`">{{ formatDocStatus(doc.status) }}</span>
-                <span v-if="doc.chunk_count">切片：{{ doc.processed_chunks || 0 }}/{{ doc.chunk_count }}</span>
-                <span v-else>切片：{{ doc.processed_chunks || 0 }}</span>
-              </div>
-              <div v-if="doc.status === 'processing' || doc.status === 'uploading'" class="doc-progress">
-                <div class="progress-bar" :class="{ indeterminate: !doc.chunk_count }">
-                  <div class="progress-fill" :style="{ width: `${getDocProgress(doc)}%` }"></div>
-                </div>
-                <span class="progress-text">{{ getProgressText(doc) }}</span>
-              </div>
-              <div v-if="doc.status === 'failed' && doc.error_msg" class="doc-error">
-                失败原因：{{ doc.error_msg }}
-              </div>
-              <div class="kb-progress-actions">
-                <button
-                  v-if="doc.status === 'failed' || doc.status === 'completed'"
-                  class="ghost ghost-small"
-                  @click="reindexDocument(doc)"
-                >
-                  {{ doc.status === 'failed' ? '重试' : '重建索引' }}
-                </button>
-              </div>
-            </div>
+        <div class="sidebar-menu compact">
+          <button class="menu-item" @click="createSession">
+            <span class="menu-icon" data-icon="+"></span>
+            <span>新聊天</span>
+          </button>
+          <button class="menu-item" @click="focusSessionSearch">
+            <span class="menu-icon" data-icon="S"></span>
+            <span>搜索聊天</span>
+          </button>
+        </div>
+        <div class="session-panel">
+          <div class="session-filter">
+            <input
+              v-model="sessionQuery"
+              placeholder="搜索会话标题"
+              @input="scheduleSessionSearch"
+              ref="sessionSearchRef"
+            />
           </div>
+          <div v-if="!sessions.length" class="session-empty">
+            暂无聊天历史
+          </div>
+          <ul v-else class="session-list">
+            <li v-for="session in sessions" :key="session.id" :class="{ active: session.id === activeSessionId }">
+              <button class="session-entry" @click="selectSession(session.id)">
+                <span class="session-title">{{ getSessionTitle(session) }}</span>
+                <span v-if="session.is_pinned" class="session-flag">置顶</span>
+                <span v-if="session.is_archived" class="session-flag archived">归档</span>
+                <span v-if="session.tags && session.tags.length" class="session-tags">
+                  <span
+                    v-for="tag in session.tags.slice(0, 2)"
+                    :key="tag"
+                    class="session-tag"
+                  >
+                    {{ tag }}
+                  </span>
+                </span>
+              </button>
+              <button class="session-menu-trigger" @click.stop="toggleSessionMenu(session.id)">⋯</button>
+              <button class="delete-session" @click.stop="deleteSession(session.id)">删除</button>
+              <div v-if="sessionMenuId === session.id" class="session-menu">
+                <button @click.stop="renameSession(session)">重命名</button>
+                <button @click.stop="togglePinSession(session)">{{ session.is_pinned ? '取消置顶' : '置顶' }}</button>
+                <button @click.stop="toggleArchiveSession(session)">{{ session.is_archived ? '取消归档' : '归档' }}</button>
+                <button @click.stop="editSessionTags(session)">编辑标签</button>
+                <button @click.stop="exportSession(session, 'md')">导出 Markdown</button>
+                <button @click.stop="exportSession(session, 'json')">导出 JSON</button>
+              </div>
+            </li>
+          </ul>
         </div>
       </div>
-      <button class="ghost refresh" @click="fetchSessions">刷新</button>
+      <div class="sidebar-extra-spacer"></div>
+
     </aside>
 
     <main class="chat-main">
-      <header class="chat-topbar">
-        <div>
-          <h1>聊天中心</h1>
-          <p>和模型对话，管理会话。</p>
-        </div>
-        <div class="actions topbar-actions">
-          <label>
-            API Base
-            <input v-model="apiBase" @change="persistApiBase" placeholder="http://127.0.0.1:8000/api/v1" />
-          </label>
-          <div class="actions">
-            <button class="ghost" @click="goSettings">模型设置</button>
-            <button class="ghost" @click="openKnowledgeSelector">知识库问答</button>
-            <button v-if="knowledgeMode" class="ghost exit-kb" @click="exitKnowledgeMode">
-              退出知识库问答
-            </button>
-            <button class="ghost" @click="logout">退出登录</button>
-          </div>
-        </div>
-      </header>
+    <div class="chat-main-actions">
+      <button class="ghost" @click="goKnowledge">我的知识库</button>
+      <button class="ghost" @click="goSettings">模型设置</button>
+      <button class="ghost" @click="goMy">我的</button>
+      <button class="ghost" @click="goUsage">使用量看板</button>
+      <button class="ghost" @click="goAiNews">AI资讯</button>
+      <button class="ghost" @click="openKnowledgeSelector">知识库问答</button>
+      <button v-if="knowledgeMode" class="ghost exit-kb" @click="exitKnowledgeMode">
+        退出知识库问答
+      </button>
+      <button class="ghost" @click="logout">退出登录</button>
+    </div>
 
     <div v-if="notice" class="notice">{{ notice }}</div>
     <div v-if="error" class="error">{{ error }}</div>
 
-      <div class="chat-panel">
+      <div
+        class="chat-panel"
+        :class="{ dragging: isDragging }"
+        @dragover.prevent="handleDragOver"
+        @dragleave.prevent="handleDragLeave"
+        @drop.prevent="handleDrop"
+      >
+        <div v-if="isDragging" class="drop-mask">
+          松开鼠标上传临时资料
+        </div>
         <div class="chat-log" ref="chatLogRef">
           <div v-if="!chatMessages.length" class="empty-state">
             <h2>我是小雨，我能帮助您查询天气和联网搜索，也能基于您的知识库给你解答，请问有什么能帮助您？</h2>
             <p>选择左侧历史对话或直接输入问题开始聊天。</p>
           </div>
-          <div v-for="(message, index) in chatMessages" :key="message.id || index" :class="['chat-message', message.role]">
+          <div
+            v-for="(message, index) in chatMessages"
+            :key="message.id || index"
+            :id="message.id ? `msg-${message.id}` : null"
+            :class="['chat-message', message.role, { highlight: message.id === highlightMessageId }]"
+          >
             <div
               class="avatar"
               :class="message.role === 'user' ? 'user-avatar' : 'assistant-avatar'"
@@ -108,18 +113,89 @@
             <div class="chat-bubble">
               <div class="bubble-meta">
                 <strong>{{ message.role === 'user' ? '我' : '助手' }}</strong>
-                <small>{{ formatTime(message.created_at) }}</small>
+                <small>
+                  {{ formatTime(message.created_at) }}
+                  <span v-if="message.edited_at"> · 已编辑</span>
+                </small>
               </div>
               <div v-if="message.role === 'assistant' && message.isLoading" class="assistant-loading">
                 <span class="spinner" aria-hidden="true"></span>
-                <span class="loading-text">正在思考...</span>
+                <span class="loading-text">{{ message.statusText || '正在思考...' }}</span>
               </div>
-              <div class="message-content" v-html="formatMessage(message.content)"></div>
+              <div class="message-content" v-html="formatMessage(message.content, message.role)"></div>
+              <div v-if="!message.isLoading" class="message-actions">
+                <button
+                  v-if="message.role === 'user'"
+                  type="button"
+                  class="ghost ghost-small"
+                  :disabled="isStreaming"
+                  @click="startEdit(message)"
+                >
+                  编辑
+                </button>
+                <button
+                  v-if="message.role === 'assistant'"
+                  type="button"
+                  class="ghost ghost-small"
+                  :disabled="isStreaming"
+                  @click="regenerateMessage(message)"
+                >
+                  重新生成
+                </button>
+                <button
+                  v-if="message.role === 'assistant'"
+                  type="button"
+                  class="ghost ghost-small"
+                  :disabled="isStreaming || memeGeneratingId === message.id"
+                  @click="generateMeme(message)"
+                >
+                  {{ memeGeneratingId === message.id ? '生成中...' : '表情包' }}
+                </button>
+                <button type="button" class="ghost ghost-small" @click="copyMessage(message)">
+                  复制
+                </button>
+                <button type="button" class="ghost ghost-small" @click="quoteMessage(message)">
+                  引用
+                </button>
+                <button
+                  v-if="message.role === 'assistant'"
+                  type="button"
+                  class="ghost ghost-small"
+                  @click="toggleFavorite(message)"
+                >
+                  {{ message.is_favorite ? '取消收藏' : '收藏' }}
+                </button>
+                <button
+                  v-if="isSuperuser && message.role === 'assistant'"
+                  type="button"
+                  class="ghost ghost-small"
+                  @click="openDebug(message)"
+                >
+                  调试
+                </button>
+              </div>
               <div v-if="message.sources && message.sources.length" class="source-list">
                 <div class="source-title">引用来源</div>
                 <ul>
-                  <li v-for="(source, sIndex) in message.sources" :key="sIndex">
+                  <li
+                    v-for="(source, sIndex) in message.sources"
+                    :key="sIndex"
+                    :id="message.id ? `source-${message.id}-${sIndex + 1}` : null"
+                  >
                     <button
+                      v-if="source.url"
+                      class="source-link"
+                      type="button"
+                      @click="openWebSource(source)"
+                    >
+                      <span class="source-name">{{ source.title || source.file_name || '网页来源' }}</span>
+                      <span v-if="formatSourceLoc(source)" class="source-meta">
+                        {{ formatSourceLoc(source) }}
+                      </span>
+                      <span v-if="source.snippet" class="source-snippet">{{ truncateText(source.snippet, 120) }}</span>
+                    </button>
+                    <button
+                      v-else
                       class="source-link"
                       type="button"
                       :disabled="!canPreviewSource(source)"
@@ -133,17 +209,94 @@
                   </li>
                 </ul>
               </div>
+              <div
+                v-if="message.role === 'assistant' && message.disclaimers && message.disclaimers.length"
+                class="disclaimer-list"
+              >
+                <div
+                  v-for="(item, dIndex) in message.disclaimers"
+                  :key="`${message.id || index}-disclaimer-${dIndex}`"
+                  class="disclaimer-card"
+                  :class="`disclaimer-${item.severity || 'warning'}`"
+                >
+                  <div class="disclaimer-title">{{ item.title }}</div>
+                  <div class="disclaimer-body">{{ item.body }}</div>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+        <div v-if="attachments.length" class="attachment-strip">
+          <div v-for="att in attachments" :key="att.id" class="attachment-pill">
+            <span>{{ att.file_name }}</span>
+            <button type="button" @click="removeAttachment(att)">x</button>
+          </div>
+          <button type="button" class="ghost ghost-small" @click="clearAttachments">清空</button>
+        </div>
+        <div v-if="suggestionLoading || suggestions.length" class="suggestion-bar">
+          <span class="suggestion-title">你可能要问</span>
+          <div class="suggestion-list">
+            <button
+              v-for="(item, idx) in suggestions"
+              :key="`${item}-${idx}`"
+              type="button"
+              class="suggestion-chip"
+              @click="applySuggestion(item)"
+            >
+              {{ item }}
+            </button>
+            <span v-if="suggestionLoading" class="suggestion-loading">正在生成提示...</span>
+          </div>
+        </div>
+        <div v-if="editingMessage" class="edit-banner">
+          <span>正在编辑：{{ truncateText(editingMessage.content, 40) }}</span>
+          <button type="button" class="ghost ghost-small" @click="cancelEdit">取消</button>
         </div>
         <form class="chat-input" @submit.prevent="sendMessage">
           <div class="input-wrap">
             <span v-if="knowledgeMode && selectedKnowledgeBase" class="mode-badge">
               知识库：{{ selectedKnowledgeBase.name }}
             </span>
-            <input v-model="chatInput" :placeholder="inputPlaceholder" />
+            <textarea
+              v-model="chatInput"
+              :placeholder="inputPlaceholder"
+              rows="2"
+              @keydown="handleInputKeydown"
+              ref="chatInputRef"
+            ></textarea>
           </div>
-          <button type="submit" :disabled="isStreaming">发送</button>
+          <div class="input-actions">
+            <button type="button" class="ghost ghost-small" @click="triggerAttachmentInput">添加附件</button>
+            <button
+              type="button"
+              class="deep-chip"
+              :class="{ active: deepThinkEnabled }"
+              :disabled="knowledgeMode"
+              title="更强推理与结构化回答"
+              @click="deepThinkEnabled = !deepThinkEnabled"
+            >
+              深度思考
+            </button>
+            <button
+              type="button"
+              class="deep-chip"
+              :class="{ active: deepSearchEnabled }"
+              :disabled="knowledgeMode"
+              title="自动检索网页并附引用"
+              @click="deepSearchEnabled = !deepSearchEnabled"
+            >
+              联网搜索
+            </button>
+            <button type="submit" :disabled="isStreaming">发送</button>
+          </div>
+          <input
+            ref="attachmentInputRef"
+            class="file-input"
+            type="file"
+            multiple
+            accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg"
+            @change="handleAttachmentSelect"
+          />
         </form>
       </div>
     </main>
@@ -182,28 +335,61 @@
       </div>
     </Modal>
 
+    <Modal v-if="debugOpen" @close="closeDebug">
+      <div class="debug-panel">
+        <div class="debug-header">
+          <h3>提示词调试</h3>
+          <div v-if="debugSnapshot" class="debug-meta">
+            <span>#{{ debugSnapshot.message_id }}</span>
+            <span>模式：{{ debugSnapshot.mode }}</span>
+            <span>{{ formatTime(debugSnapshot.created_at) }}</span>
+          </div>
+        </div>
+        <div v-if="debugLoading" class="debug-loading">正在加载...</div>
+        <div v-else-if="debugError" class="debug-error">{{ debugError }}</div>
+        <div v-else-if="debugSnapshot" class="debug-body">
+          <div class="debug-actions">
+            <button type="button" class="ghost ghost-small" @click="copyDebugJson">复制 JSON</button>
+            <button type="button" class="ghost ghost-small" @click="copyDebugSections">复制分段</button>
+          </div>
+          <div v-if="!debugSections.length" class="debug-empty">暂无调试信息。</div>
+          <div v-for="section in debugSections" :key="section.key" class="debug-section">
+            <div class="debug-section-header">
+              <h4>{{ section.label }}</h4>
+              <button type="button" class="ghost ghost-small" @click="copyDebugSection(section)">复制</button>
+            </div>
+            <pre class="debug-block"><code>{{ section.value }}</code></pre>
+          </div>
+        </div>
+        <div v-else class="debug-empty">暂无调试信息。</div>
+      </div>
+    </Modal>
+
     <CenterToast :message="successMessage" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, nextTick, reactive, onBeforeUnmount } from 'vue';
+import { ref, computed, nextTick, reactive, onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { apiFetch, apiStream, clearTokens, getApiBase, setApiBase } from '../api/client.js';
+import { apiFetch, apiStream, clearTokens } from '../api/client.js';
 import Modal from '../components/Modal.vue';
 import CenterToast from '../components/CenterToast.vue';
 import { useCenterToast } from '../composables/useCenterToast.js';
 
 const router = useRouter();
-const apiBase = ref(getApiBase());
 const notice = ref('');
 const error = ref('');
 const { message: successMessage, show: showSuccess } = useCenterToast();
 
 const sessions = ref([]);
+const sessionQuery = ref('');
+const showArchived = ref(true);
+const sessionMenuId = ref(null);
 const activeSessionId = ref(null);
 const sessionTitle = ref('新对话');
 const chatMessages = ref([]);
+const editingMessageId = ref(null);
 const previewOpen = ref(false);
 const previewLoading = ref(false);
 const previewError = ref('');
@@ -214,16 +400,36 @@ const sessionTitleMap = ref({});
 const chatInput = ref('');
 const isStreaming = ref(false);
 let streamController = null;
+let pendingUserMessageId = null;
+const highlightMessageId = ref(null);
 const knowledgeBases = ref([]);
 const knowledgeMode = ref(false);
 const selectedKnowledgeBase = ref(null);
 const showKnowledgeSelector = ref(false);
 const chatLogRef = ref(null);
+const chatInputRef = ref(null);
+const sessionSearchRef = ref(null);
+const attachments = ref([]);
+const attachmentInputRef = ref(null);
+const isDragging = ref(false);
 const kbDocuments = ref([]);
 const docLoading = ref(false);
 const docError = ref('');
 let docPollTimer = null;
-
+let sessionSearchTimer = null;
+const suggestions = ref([]);
+const suggestionLoading = ref(false);
+const suggestionError = ref('');
+let suggestionTimer = null;
+const memeGeneratingId = ref(null);
+const deepThinkEnabled = ref(false);
+const deepSearchEnabled = ref(false);
+const isSuperuser = ref(false);
+const debugOpen = ref(false);
+const debugLoading = ref(false);
+const debugError = ref('');
+const debugSnapshot = ref(null);
+const debugMessageId = ref(null);
 const inputPlaceholder = computed(() => {
   if (knowledgeMode.value && selectedKnowledgeBase.value) {
     return `向知识库「${selectedKnowledgeBase.value.name}」提问`;
@@ -237,6 +443,39 @@ const kbDocumentsPreview = computed(() => {
   return items.slice(0, 3);
 });
 
+const editingMessage = computed(() =>
+  chatMessages.value.find((message) => message.id === editingMessageId.value) || null,
+);
+
+const favoriteMessages = computed(() =>
+  chatMessages.value.filter((message) => message.role === 'assistant' && message.is_favorite),
+);
+
+const debugSections = computed(() => {
+  const payload = debugSnapshot.value?.payload || {};
+  const sections = [];
+  const pushSection = (key, label, value) => {
+    if (value === undefined || value === null) return;
+    if (typeof value === 'string' && !value.trim()) return;
+    if (Array.isArray(value) && !value.length) return;
+    sections.push({ key, label, value: formatDebugValue(value) });
+  };
+  pushSection('system_prompt', 'System Prompt', payload.system_prompt);
+  pushSection('user_input', 'User Input', payload.user_input);
+  pushSection('chat_history', 'History', payload.chat_history);
+  pushSection('tools', 'Tools', payload.tools);
+  pushSection('tool', 'Tool', payload.tool);
+  pushSection('deep_search', 'Deep Search', payload.deep_search);
+  pushSection('deep_think', 'Deep Think', payload.deep_think);
+  pushSection('rag', 'RAG', payload.rag);
+  pushSection('temp_context', 'Temp Context', payload.temp_context);
+  pushSection('model_name', 'Model', payload.model_name);
+  return sections;
+});
+
+const ATTACHMENT_EXTS = ['.pdf', '.docx', '.txt', '.md', '.png', '.jpg', '.jpeg'];
+const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+
 const setNotice = (message) => {
   showSuccess(message);
   notice.value = '';
@@ -248,9 +487,339 @@ const setError = (message) => {
   notice.value = '';
 };
 
-const persistApiBase = () => {
-  setApiBase(apiBase.value);
-  setNotice('API Base 已更新');
+
+const formatDebugValue = (value) => {
+  if (value === undefined || value === null) return '';
+  if (typeof value === 'string') return value;
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+};
+
+const fetchCurrentUser = async () => {
+  try {
+    const data = await apiFetch('/users/me');
+    isSuperuser.value = !!data?.is_superuser;
+  } catch {
+    isSuperuser.value = false;
+  }
+};
+
+
+const truncateText = (text, length = 30) => {
+  const value = String(text || '');
+  if (value.length <= length) return value;
+  return `${value.slice(0, length)}…`;
+};
+
+const scheduleSessionSearch = () => {
+  if (sessionSearchTimer) {
+    clearTimeout(sessionSearchTimer);
+  }
+  sessionSearchTimer = setTimeout(() => {
+    fetchSessions();
+  }, 300);
+};
+
+const focusSessionSearch = () => {
+  nextTick(() => {
+    if (sessionSearchRef.value) {
+      sessionSearchRef.value.focus();
+    }
+  });
+};
+
+const toggleArchivedView = () => {
+  showArchived.value = !showArchived.value;
+  fetchSessions();
+};
+
+const clearSuggestions = () => {
+  suggestions.value = [];
+  suggestionError.value = '';
+  suggestionLoading.value = false;
+};
+
+const fetchSuggestions = async () => {
+  if (!activeSessionId.value) {
+    clearSuggestions();
+    return;
+  }
+  const meaningful = chatMessages.value.filter(
+    (message) => message.role === 'user' || message.role === 'assistant',
+  );
+  if (meaningful.length < 2) {
+    clearSuggestions();
+    return;
+  }
+  suggestionLoading.value = true;
+  suggestionError.value = '';
+  try {
+    const data = await apiFetch(`/chat/sessions/${activeSessionId.value}/suggestions`, {
+      method: 'POST',
+      body: { limit: 3 },
+    });
+    suggestions.value = Array.isArray(data?.suggestions) ? data.suggestions : [];
+  } catch (err) {
+    suggestionError.value = err.message || '获取提示失败';
+    suggestions.value = [];
+  } finally {
+    suggestionLoading.value = false;
+  }
+};
+
+const scheduleSuggestionRefresh = () => {
+  if (suggestionTimer) {
+    clearTimeout(suggestionTimer);
+  }
+  suggestionTimer = setTimeout(() => {
+    fetchSuggestions();
+  }, 300);
+};
+
+const applySuggestion = (text) => {
+  if (!text) return;
+  chatInput.value = text;
+  nextTick(() => {
+    if (chatInputRef.value) {
+      chatInputRef.value.focus();
+    }
+  });
+};
+
+const handleCodeCopy = async (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const cite = target.closest('.md-cite');
+  if (cite) {
+    const citeIndex = cite.getAttribute('data-cite');
+    const messageEl = cite.closest('.chat-message');
+    if (!citeIndex || !messageEl || !messageEl.id) return;
+    const messageId = messageEl.id.replace('msg-', '');
+    const sourceEl = document.getElementById(`source-${messageId}-${citeIndex}`);
+    if (sourceEl) {
+      sourceEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return;
+  }
+  const button = target.closest('.code-copy');
+  if (!button) return;
+  const encoded = button.getAttribute('data-code') || '';
+  if (!encoded) return;
+  const code = decodeURIComponent(encoded);
+  try {
+    await navigator.clipboard.writeText(code);
+    setNotice('代码已复制');
+  } catch (err) {
+    setError('复制失败，请检查浏览器权限');
+  }
+};
+
+const formatFileSize = (size) => {
+  const bytes = Number(size || 0);
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+};
+
+const scrollToMessage = (messageId) => {
+  if (!messageId) return;
+  nextTick(() => {
+    const el = document.getElementById(`msg-${messageId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    highlightMessageId.value = messageId;
+    window.clearTimeout(scrollToMessage._timer);
+    scrollToMessage._timer = window.setTimeout(() => {
+      highlightMessageId.value = null;
+    }, 1200);
+  });
+};
+
+const toggleSessionMenu = (sessionId) => {
+  sessionMenuId.value = sessionMenuId.value === sessionId ? null : sessionId;
+};
+
+const closeSessionMenu = () => {
+  sessionMenuId.value = null;
+};
+
+const handleInputKeydown = (event) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
+};
+
+const cancelEdit = () => {
+  editingMessageId.value = null;
+  chatInput.value = '';
+};
+
+const startEdit = (message) => {
+  if (!message || message.role !== 'user') return;
+  if (isStreaming.value) return;
+  editingMessageId.value = message.id;
+  chatInput.value = message.content || '';
+};
+
+const copyMessage = async (message) => {
+  try {
+    await navigator.clipboard.writeText(message?.content || '');
+    setNotice('已复制到剪贴板');
+  } catch (err) {
+    setError('复制失败，请检查浏览器权限');
+  }
+};
+
+const quoteMessage = (message) => {
+  if (!message) return;
+  const content = String(message.content || '').trim();
+  if (!content) return;
+  const clipped = content.length > 200 ? `${content.slice(0, 200)}…` : content;
+  const quoted = clipped
+    .split(/\r?\n/)
+    .map((line) => `> ${line}`)
+    .join('\n');
+  chatInput.value = chatInput.value
+    ? `${chatInput.value.trim()}\n\n${quoted}\n\n`
+    : `${quoted}\n\n`;
+};
+
+const toggleFavorite = async (message) => {
+  if (!message || message.role !== 'assistant') return;
+  try {
+    const data = await apiFetch(`/chat/messages/${message.id}/favorite`, {
+      method: 'PATCH',
+      body: { is_favorite: !message.is_favorite },
+    });
+    message.is_favorite = data.is_favorite;
+    setNotice(message.is_favorite ? '已收藏' : '已取消收藏');
+  } catch (err) {
+    setError(`收藏操作失败：${err.message}`);
+  }
+};
+
+const generateMeme = async (message) => {
+  if (!message || message.role !== 'assistant') return;
+  if (isStreaming.value) {
+    setError('正在生成回复，请稍候');
+    return;
+  }
+  if (memeGeneratingId.value) {
+    setError('正在生成表情包，请稍候');
+    return;
+  }
+  memeGeneratingId.value = message.id;
+
+  const placeholder = reactive({
+    id: `meme-${Date.now()}`,
+    role: 'assistant',
+    content: '',
+    created_at: new Date().toISOString(),
+    isLoading: true,
+  });
+  chatMessages.value.push(placeholder);
+  scrollToBottom();
+
+  try {
+    const data = await apiFetch(`/chat/messages/${message.id}/meme`, { method: 'POST' });
+    applyFinalMessage(placeholder, data);
+  } catch (err) {
+    placeholder.content = `表情包生成失败：${err.message}`;
+    placeholder.isLoading = false;
+    setError(`表情包生成失败：${err.message}`);
+  } finally {
+    memeGeneratingId.value = null;
+    scrollToBottom();
+  }
+};
+
+const openDebug = async (message) => {
+  if (!message || !message.id) return;
+  if (!isSuperuser.value) {
+    setError('无权限查看调试信息');
+    return;
+  }
+  debugOpen.value = true;
+  debugLoading.value = true;
+  debugError.value = '';
+  debugSnapshot.value = null;
+  debugMessageId.value = message.id;
+  try {
+    const data = await apiFetch(`/chat/messages/${message.id}/debug`);
+    debugSnapshot.value = data;
+  } catch (err) {
+    debugError.value = err.message || '获取调试信息失败';
+  } finally {
+    debugLoading.value = false;
+  }
+};
+
+const closeDebug = () => {
+  debugOpen.value = false;
+  debugLoading.value = false;
+  debugError.value = '';
+  debugSnapshot.value = null;
+  debugMessageId.value = null;
+};
+
+const copyDebugText = async (text) => {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    setNotice('已复制');
+  } catch {
+    setError('复制失败，请检查浏览器权限');
+  }
+};
+
+const copyDebugJson = () => {
+  if (!debugSnapshot.value) return;
+  const text = JSON.stringify(debugSnapshot.value, null, 2);
+  copyDebugText(text);
+};
+
+const copyDebugSections = () => {
+  if (!debugSections.value.length) return;
+  const text = debugSections.value
+    .map((section) => `### ${section.label}\n${section.value}`)
+    .join('\n\n');
+  copyDebugText(text);
+};
+
+const copyDebugSection = (section) => {
+  if (!section) return;
+  copyDebugText(section.value);
+};
+
+const findMessageIndex = (messageId) =>
+  chatMessages.value.findIndex((message) => message.id === messageId);
+
+const truncateMessagesAfter = (messageId) => {
+  const idx = findMessageIndex(messageId);
+  if (idx === -1) return;
+  chatMessages.value = chatMessages.value.slice(0, idx + 1);
+};
+
+const confirmOverwrite = (messageId) => {
+  const idx = findMessageIndex(messageId);
+  if (idx === -1) return true;
+  if (idx < chatMessages.value.length - 1) {
+    return window.confirm('该操作会删除这条消息之后的所有内容，是否继续？');
+  }
+  return true;
+};
+
+const findPreviousUserMessage = (startIndex) => {
+  for (let i = startIndex - 1; i >= 0; i -= 1) {
+    const message = chatMessages.value[i];
+    if (message?.role === 'user') return message;
+  }
+  return null;
 };
 
 const goKnowledge = () => {
@@ -259,6 +828,18 @@ const goKnowledge = () => {
 
 const goSettings = () => {
   router.push('/settings');
+};
+
+const goUsage = () => {
+  router.push('/usage');
+};
+
+const goAiNews = () => {
+  router.push('/ai-news');
+};
+
+const goMy = () => {
+  router.push('/my');
 };
 
 const fetchKnowledgeBases = async () => {
@@ -361,10 +942,59 @@ const logout = () => {
   router.push('/login');
 };
 
+const handleSessionMenuOutside = (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  if (target.closest('.session-menu') || target.closest('.session-menu-trigger')) {
+    return;
+  }
+  closeSessionMenu();
+};
+
+const fetchMessages = async () => {
+  if (!activeSessionId.value) {
+    chatMessages.value = [];
+    clearSuggestions();
+    return;
+  }
+  try {
+    const data = await apiFetch(`/chat/sessions/${activeSessionId.value}/messages`);
+    chatMessages.value = (data || []).map((message) => ({
+      ...message,
+      isLoading: false,
+    }));
+    syncSessionTitle(activeSessionId.value, chatMessages.value);
+    scrollToBottom();
+    scheduleSuggestionRefresh();
+  } catch (err) {
+    setError(`获取消息失败：${err.message}`);
+  }
+};
+
 const fetchSessions = async () => {
   try {
-    const data = await apiFetch('/chat/sessions');
+    const params = new URLSearchParams();
+    const query = sessionQuery.value.trim();
+    if (query) params.set('q', query);
+    if (showArchived.value) params.set('include_archived', 'true');
+    const qs = params.toString();
+    const data = await apiFetch(`/chat/sessions${qs ? `?${qs}` : ''}`);
     sessions.value = data || [];
+    if (!sessions.value.length && !showArchived.value && !query) {
+      const fallback = await apiFetch('/chat/sessions?include_archived=true');
+      if (Array.isArray(fallback) && fallback.length) {
+        sessions.value = fallback;
+        showArchived.value = true;
+        setNotice('已显示归档会话');
+      }
+    }
+    if (activeSessionId.value && !sessions.value.some((session) => session.id === activeSessionId.value)) {
+      if (!showArchived.value) {
+        activeSessionId.value = null;
+        chatMessages.value = [];
+        clearSuggestions();
+      }
+    }
   } catch (err) {
     setError(`获取会话失败：${err.message}`);
   }
@@ -386,27 +1016,350 @@ const createSession = async () => {
   }
 };
 
+const updateSessionRequest = async (sessionId, payload) => {
+  const data = await apiFetch(`/chat/sessions/${sessionId}`, {
+    method: 'PATCH',
+    body: payload,
+  });
+  return data;
+};
+
+const renameSession = async (session) => {
+  if (!session) return;
+  const title = window.prompt('请输入新的会话标题', session.title || '');
+  if (title === null) return;
+  const trimmed = title.trim();
+  if (!trimmed) return;
+  try {
+    const data = await updateSessionRequest(session.id, { title: trimmed });
+    session.title = data.title;
+    sessionTitleMap.value[session.id] = data.title;
+    setNotice('会话已重命名');
+    closeSessionMenu();
+    await fetchSessions();
+  } catch (err) {
+    setError(`更新失败：${err.message}`);
+  }
+};
+
+const togglePinSession = async (session) => {
+  if (!session) return;
+  try {
+    const data = await updateSessionRequest(session.id, { is_pinned: !session.is_pinned });
+    session.is_pinned = data.is_pinned;
+    setNotice(data.is_pinned ? '已置顶会话' : '已取消置顶');
+    closeSessionMenu();
+    await fetchSessions();
+  } catch (err) {
+    setError(`更新失败：${err.message}`);
+  }
+};
+
+const toggleArchiveSession = async (session) => {
+  if (!session) return;
+  try {
+    const data = await updateSessionRequest(session.id, { is_archived: !session.is_archived });
+    session.is_archived = data.is_archived;
+    setNotice(data.is_archived ? '会话已归档' : '会话已取消归档');
+    closeSessionMenu();
+    await fetchSessions();
+  } catch (err) {
+    setError(`更新失败：${err.message}`);
+  }
+};
+
+const editSessionTags = async (session) => {
+  if (!session) return;
+  const current = Array.isArray(session.tags) ? session.tags.join(', ') : '';
+  const input = window.prompt('请输入标签，逗号分隔', current);
+  if (input === null) return;
+  const tags = input
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+  try {
+    const data = await updateSessionRequest(session.id, { tags });
+    session.tags = data.tags || [];
+    setNotice('标签已更新');
+    closeSessionMenu();
+    await fetchSessions();
+  } catch (err) {
+    setError(`更新失败：${err.message}`);
+  }
+};
+
 const selectSession = async (sessionId) => {
+  closeSessionMenu();
   activeSessionId.value = sessionId;
   await fetchMessages();
 };
 
-const fetchMessages = async () => {
-  if (!activeSessionId.value) return;
-  try {
-    const data = await apiFetch(`/chat/sessions/${activeSessionId.value}/messages`);
-    chatMessages.value = data || [];
-    syncSessionTitle(activeSessionId.value, chatMessages.value);
-    scrollToBottom();
-  } catch (err) {
-    setError(`获取历史消息失败：${err.message}`);
+
+
+const downloadFile = (filename, content, type) => {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
+const buildMarkdownExport = (session, messages) => {
+  const title = session?.title || '会话导出';
+  let md = `# ${title}\n\n`;
+  for (const message of messages || []) {
+    const roleLabel = message.role === 'user'
+      ? '用户'
+      : message.role === 'assistant'
+        ? '助手'
+        : message.role;
+    md += `## ${roleLabel}\n\n`;
+    md += `${message.content || ''}\n\n`;
   }
+  return md.trim() + '\n';
+};
+
+const exportSession = async (session, format) => {
+  if (!session) return;
+  try {
+    const messages = await apiFetch(`/chat/sessions/${session.id}/messages`);
+    const safeName = (session.title || 'chat').replace(/[\\/:*?"<>|]/g, '_');
+    if (format === 'md') {
+      const content = buildMarkdownExport(session, messages || []);
+      downloadFile(`${safeName}.md`, content, 'text/markdown;charset=utf-8');
+    } else {
+      const payload = {
+        session: {
+          id: session.id,
+          title: session.title,
+          is_pinned: session.is_pinned,
+          is_archived: session.is_archived,
+          tags: session.tags || [],
+          created_at: session.created_at,
+          updated_at: session.updated_at,
+        },
+        messages: (messages || []).map((message) => ({
+          role: message.role,
+          content: message.content,
+          created_at: message.created_at,
+        })),
+      };
+      downloadFile(`${safeName}.json`, JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
+    }
+    setNotice('导出已开始');
+    closeSessionMenu();
+  } catch (err) {
+    setError(`导出失败：${err.message}`);
+  }
+};
+
+const fetchAttachments = async () => {
+  try {
+    const data = await apiFetch('/chat/attachments');
+    attachments.value = data || [];
+  } catch (err) {
+    setError(`获取临时资料失败：${err.message}`);
+  }
+};
+
+const triggerAttachmentInput = () => {
+  if (attachmentInputRef.value) {
+    attachmentInputRef.value.click();
+  }
+};
+
+const getFileExt = (name) => {
+  const idx = name.lastIndexOf('.');
+  if (idx === -1) return '';
+  return name.slice(idx).toLowerCase();
+};
+
+const uploadAttachment = async (file) => {
+  const ext = getFileExt(file.name || '');
+  if (!ATTACHMENT_EXTS.includes(ext)) {
+    setError(`不支持的文件类型：${ext || '未知'}`);
+    return;
+  }
+  if (file.size > MAX_ATTACHMENT_SIZE) {
+    setError('文件大小不能超过 10MB');
+    return;
+  }
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const data = await apiFetch('/chat/attachments/upload', {
+      method: 'POST',
+      body: formData,
+      timeoutMs: 60000,
+    });
+    attachments.value = [data, ...attachments.value];
+    setNotice('临时资料已上传');
+  } catch (err) {
+    setError(`上传失败：${err.message}`);
+  }
+};
+
+const uploadFiles = async (files) => {
+  for (const file of files) {
+    await uploadAttachment(file);
+  }
+};
+
+const handleAttachmentSelect = (event) => {
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+  uploadFiles(files);
+  event.target.value = '';
+};
+
+const removeAttachment = async (attachment) => {
+  if (!attachment) return;
+  try {
+    await apiFetch(`/chat/attachments/${attachment.id}`, { method: 'DELETE' });
+    attachments.value = attachments.value.filter((item) => item.id !== attachment.id);
+    setNotice('已移除临时资料');
+  } catch (err) {
+    setError(`移除失败：${err.message}`);
+  }
+};
+
+const clearAttachments = async () => {
+  if (!attachments.value.length) return;
+  const confirmed = window.confirm('确定清理所有临时资料吗？');
+  if (!confirmed) return;
+  const items = [...attachments.value];
+  await Promise.allSettled(
+    items.map((item) => apiFetch(`/chat/attachments/${item.id}`, { method: 'DELETE' })),
+  );
+  await fetchAttachments();
+  setNotice('已清理临时资料');
+};
+
+const handleDragOver = (event) => {
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'copy';
+  }
+  isDragging.value = true;
+};
+
+const handleDragLeave = (event) => {
+  if (event.currentTarget && event.relatedTarget && event.currentTarget.contains(event.relatedTarget)) {
+    return;
+  }
+  isDragging.value = false;
+};
+
+const handleDrop = (event) => {
+  isDragging.value = false;
+  const files = Array.from(event.dataTransfer?.files || []);
+  if (!files.length) return;
+  uploadFiles(files);
 };
 
 const sendMessage = async () => {
   if (!chatInput.value.trim()) return;
   if (isStreaming.value) {
     setError('正在生成回复，请稍候');
+    return;
+  }
+
+  if (editingMessageId.value) {
+    const targetId = editingMessageId.value;
+    if (!confirmOverwrite(targetId)) return;
+    const idx = findMessageIndex(targetId);
+    if (idx === -1) {
+      cancelEdit();
+      return;
+    }
+    const targetMessage = chatMessages.value[idx];
+    const originalContent = targetMessage.content;
+    targetMessage.content = chatInput.value.trim();
+    targetMessage.edited_at = new Date().toISOString();
+    truncateMessagesAfter(targetId);
+
+    const assistantMessage = reactive({
+      id: `stream-${Date.now()}`,
+      role: 'assistant',
+      content: '',
+      created_at: new Date().toISOString(),
+      isLoading: true,
+      statusText: '',
+    });
+    chatMessages.value.push(assistantMessage);
+    scrollToBottom();
+
+    try {
+      isStreaming.value = true;
+      streamController = new AbortController();
+      const inputText = chatInput.value.trim();
+      chatInput.value = '';
+      editingMessageId.value = null;
+      let streamError = false;
+      const handlePayload = (payload) => {
+        if (!payload) return;
+        if (typeof payload === 'object') {
+          if (payload.event === 'stage') {
+            assistantMessage.statusText = payload.message || '正在思考...';
+            return;
+          }
+          if (payload.event === 'error') {
+            streamError = true;
+            const errMessage = payload.message || '生成失败';
+            assistantMessage.content = `发送失败：${errMessage}`;
+            assistantMessage.isLoading = false;
+            setError(`发送失败：${errMessage}`);
+            return;
+          }
+          if (payload.event === 'done' && payload.message) {
+            applyFinalMessage(assistantMessage, payload.message);
+            return;
+          }
+          if (typeof payload.content === 'string') {
+            assistantMessage.content += payload.content;
+            scrollToBottom();
+          }
+          return;
+        }
+        if (typeof payload === 'string') {
+          assistantMessage.content += payload;
+          scrollToBottom();
+        }
+      };
+
+      await apiStream(`/chat/messages/${targetId}/resend/stream`, {
+        method: 'POST',
+        body: {
+          message: inputText,
+          deep_search: deepSearchEnabled.value && !knowledgeMode.value,
+          deep_think: deepThinkEnabled.value && !knowledgeMode.value,
+        },
+        signal: streamController.signal,
+        onMessage: handlePayload,
+      });
+      if (assistantMessage.isLoading) {
+        assistantMessage.isLoading = false;
+      }
+      if (!streamError && !assistantMessage.content) {
+        assistantMessage.content = '未收到回复，请稍后重试。';
+        setError('未收到回复，请稍后重试。');
+      }
+    } catch (err) {
+      if (err.message !== '请求已取消') {
+        assistantMessage.content = `发送失败：${err.message}`;
+        setError(`发送失败：${err.message}`);
+      }
+      assistantMessage.isLoading = false;
+      targetMessage.content = originalContent;
+      await fetchMessages();
+    } finally {
+      isStreaming.value = false;
+      streamController = null;
+      scrollToBottom();
+    }
     return;
   }
 
@@ -424,13 +1377,14 @@ const sendMessage = async () => {
     }
   }
 
-  const inputText = chatInput.value;
+  const inputText = chatInput.value.trim();
   const userMessage = {
     id: Date.now(),
     role: 'user',
     content: inputText,
     created_at: new Date().toISOString(),
   };
+  pendingUserMessageId = userMessage.id;
   chatMessages.value.push(userMessage);
   syncSessionTitle(activeSessionId.value, chatMessages.value);
   scrollToBottom();
@@ -441,6 +1395,7 @@ const sendMessage = async () => {
     content: '',
     created_at: new Date().toISOString(),
     isLoading: true,
+    statusText: '',
   });
   chatMessages.value.push(assistantMessage);
   scrollToBottom();
@@ -453,6 +1408,125 @@ const sendMessage = async () => {
     const handlePayload = (payload) => {
       if (!payload) return;
       if (typeof payload === 'object') {
+        if (payload.event === 'stage') {
+          assistantMessage.statusText = payload.message || '正在思考...';
+          return;
+        }
+        if (payload.event === 'error') {
+          streamError = true;
+          const errMessage = payload.message || '生成失败';
+          assistantMessage.content = `发送失败：${errMessage}`;
+          assistantMessage.isLoading = false;
+          setError(`发送失败：${errMessage}`);
+          return;
+        }
+        if (payload.event === 'done' && payload.message) {
+          applyFinalMessage(assistantMessage, payload.message);
+          if (payload.user_message_id && pendingUserMessageId) {
+            const pending = chatMessages.value.find(
+              (message) => message.id === pendingUserMessageId,
+            );
+            if (pending) {
+              pending.id = payload.user_message_id;
+            }
+            pendingUserMessageId = null;
+          }
+          return;
+        }
+        if (typeof payload.content === 'string') {
+          assistantMessage.content += payload.content;
+          scrollToBottom();
+        }
+        return;
+      }
+      if (typeof payload === 'string') {
+        assistantMessage.content += payload;
+        scrollToBottom();
+      }
+      };
+
+    if (knowledgeMode.value && selectedKnowledgeBase.value) {
+      await apiStream('/chat/knowledge/stream', {
+        method: 'POST',
+        body: {
+          kb_id: selectedKnowledgeBase.value.id,
+          message: inputText,
+          session_id: activeSessionId.value,
+        },
+        signal: streamController.signal,
+        onMessage: handlePayload,
+      });
+    } else {
+      await apiStream(`/chat/sessions/${activeSessionId.value}/stream`, {
+        method: 'POST',
+        body: {
+          message: inputText,
+          deep_search: deepSearchEnabled.value && !knowledgeMode.value,
+          deep_think: deepThinkEnabled.value && !knowledgeMode.value,
+        },
+        signal: streamController.signal,
+        onMessage: handlePayload,
+      });
+    }
+    if (assistantMessage.isLoading) {
+      assistantMessage.isLoading = false;
+    }
+    if (!streamError && !assistantMessage.content) {
+      assistantMessage.content = '未收到回复，请稍后重试。';
+      setError('未收到回复，请稍后重试。');
+    }
+  } catch (err) {
+    if (err.message !== '请求已取消') {
+      assistantMessage.content = `发送失败：${err.message}`;
+      setError(`发送失败：${err.message}`);
+    }
+    assistantMessage.isLoading = false;
+    await fetchMessages();
+  } finally {
+    isStreaming.value = false;
+    streamController = null;
+    scrollToBottom();
+  }
+};
+
+const regenerateMessage = async (message) => {
+  if (!message || message.role !== 'assistant') return;
+  if (isStreaming.value) {
+    setError('正在生成回复，请稍候');
+    return;
+  }
+  const idx = findMessageIndex(message.id);
+  if (idx === -1) return;
+  const userMessage = findPreviousUserMessage(idx);
+  if (!userMessage) {
+    setError('未找到对应的用户消息');
+    return;
+  }
+  if (!confirmOverwrite(userMessage.id)) return;
+  truncateMessagesAfter(userMessage.id);
+
+  const assistantMessage = reactive({
+    id: `stream-${Date.now()}`,
+    role: 'assistant',
+    content: '',
+    created_at: new Date().toISOString(),
+    isLoading: true,
+    statusText: '',
+  });
+  chatMessages.value.push(assistantMessage);
+  scrollToBottom();
+
+  try {
+    isStreaming.value = true;
+    streamController = new AbortController();
+    let streamError = false;
+    const handlePayload = (payload) => {
+      if (!payload) return;
+      if (typeof payload === 'object') {
+        if (payload.event === 'stage') {
+          assistantMessage.statusText = payload.message || '正在思考...';
+          return;
+        }
         if (payload.event === 'error') {
           streamError = true;
           const errMessage = payload.message || '生成失败';
@@ -477,25 +1551,15 @@ const sendMessage = async () => {
       }
     };
 
-    if (knowledgeMode.value && selectedKnowledgeBase.value) {
-      await apiStream('/chat/knowledge/stream', {
-        method: 'POST',
-        body: {
-          kb_id: selectedKnowledgeBase.value.id,
-          message: inputText,
-          session_id: activeSessionId.value,
-        },
-        signal: streamController.signal,
-        onMessage: handlePayload,
-      });
-    } else {
-      await apiStream(`/chat/sessions/${activeSessionId.value}/stream`, {
-        method: 'POST',
-        body: { message: inputText },
-        signal: streamController.signal,
-        onMessage: handlePayload,
-      });
-    }
+    await apiStream(`/chat/messages/${message.id}/regenerate/stream`, {
+      method: 'POST',
+      body: {
+        deep_search: deepSearchEnabled.value && !knowledgeMode.value,
+        deep_think: deepThinkEnabled.value && !knowledgeMode.value,
+      },
+      signal: streamController.signal,
+      onMessage: handlePayload,
+    });
     if (assistantMessage.isLoading) {
       assistantMessage.isLoading = false;
     }
@@ -512,6 +1576,7 @@ const sendMessage = async () => {
   } finally {
     isStreaming.value = false;
     streamController = null;
+    pendingUserMessageId = null;
     scrollToBottom();
   }
 };
@@ -556,25 +1621,10 @@ const escapeHtml = (text) =>
 const formatInline = (text) =>
   text
     .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[(\d+)\]/g, '<sup class="md-cite" data-cite="$1">[$1]</sup>');
 
-const getApiRoot = () => {
-  const base = apiBase.value || '';
-  if (!base) return window.location.origin;
-  if (/^https?:\/\//i.test(base)) {
-    try {
-      const url = new URL(base);
-      url.pathname = url.pathname.replace(/\/api\/v1\/?$/, '');
-      return url.toString().replace(/\/$/, '');
-    } catch {
-      return base.replace(/\/api\/v1\/?$/, '');
-    }
-  }
-  if (base.startsWith('/')) {
-    return window.location.origin;
-  }
-  return base.replace(/\/api\/v1\/?$/, '');
-};
+const getApiRoot = () => window.location.origin;
 
 const resolveMediaUrl = (rawUrl) => {
   const url = (rawUrl || '').trim();
@@ -612,12 +1662,15 @@ const formatListLabel = (text) => {
 const isEmojiHeading = (text) =>
   /^[\u{1F000}-\u{1FAFF}]/u.test(text);
 
-const formatMessage = (raw) => {
+const formatMessage = (raw, role = 'assistant') => {
   if (!raw) return '';
-  const escaped = escapeHtml(String(raw));
-  const lines = mergeImageLines(escaped.split(/\r?\n/));
+  const rawLines = mergeImageLines(String(raw).split(/\r?\n/));
   let html = '';
   let inList = false;
+  let inQuote = false;
+  let inCode = false;
+  let codeLang = '';
+  let codeLines = [];
 
   const closeList = () => {
     if (inList) {
@@ -626,54 +1679,122 @@ const formatMessage = (raw) => {
     }
   };
 
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (/^[-*•·]\s+/.test(trimmed)) {
+  const closeQuote = () => {
+    if (inQuote) {
+      html += '</blockquote>';
+      inQuote = false;
+    }
+  };
+
+  const flushCode = () => {
+    if (!inCode) return;
+    const rawCode = codeLines.join('\n');
+    const escapedCode = escapeHtml(rawCode);
+    const safeLang = escapeHtml(codeLang || 'code');
+    const encoded = encodeURIComponent(rawCode);
+    const copyButton = role === 'assistant'
+      ? `<button type="button" class="code-copy" data-code="${encoded}">复制</button>`
+      : '';
+    html += `<div class="md-code">`;
+    html += `<div class="code-header"><span class="code-lang">${safeLang}</span>${copyButton}</div>`;
+    html += `<pre><code>${escapedCode}</code></pre>`;
+    html += `</div>`;
+    inCode = false;
+    codeLang = '';
+    codeLines = [];
+  };
+
+  for (const rawLine of rawLines) {
+    const rawTrimmed = rawLine.trim();
+    if (rawTrimmed.startsWith('```')) {
+      closeList();
+      closeQuote();
+      if (inCode) {
+        flushCode();
+      } else {
+        inCode = true;
+        codeLang = rawTrimmed.slice(3).trim();
+        codeLines = [];
+      }
+      continue;
+    }
+
+    if (inCode) {
+      codeLines.push(rawLine);
+      continue;
+    }
+
+    if (/^[-*•·]\s+/.test(rawTrimmed)) {
       if (!inList) {
         html += '<ul class="md-list">';
         inList = true;
       }
-      const item = trimmed.replace(/^[-*•·]\s+/, '');
-      html += `<li>${formatInline(formatListLabel(item))}</li>`;
+      const itemRaw = rawTrimmed.replace(/^[-*•·]\s+/, '');
+      const itemText = formatInline(formatListLabel(escapeHtml(itemRaw)));
+      html += `<li>${itemText}</li>`;
       continue;
     }
 
     closeList();
 
-    const imageMatch = trimmed.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    const imageMatch = rawTrimmed.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
     if (imageMatch) {
-      const altText = imageMatch[1] || 'image';
+      closeQuote();
+      const altText = escapeHtml(imageMatch[1] || 'image');
       const resolvedUrl = resolveMediaUrl(imageMatch[2]);
       html += `<div class="md-image"><img class="chat-image" src="${resolvedUrl}" alt="${altText}" loading="lazy" /></div>`;
       continue;
     }
 
-    if (isEmojiHeading(trimmed)) {
-      html += `<div class="md-emoji-heading">${formatInline(trimmed)}</div>`;
+    if (/^>\s*/.test(rawTrimmed)) {
+      if (!inQuote) {
+        html += '<blockquote class="md-quote">';
+        inQuote = true;
+      }
+      const quoteRaw = rawTrimmed.replace(/^>\s?/, '');
+      html += `<div>${formatInline(escapeHtml(quoteRaw))}</div>`;
       continue;
     }
 
-    const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    closeQuote();
+
+    if (isEmojiHeading(rawTrimmed)) {
+      html += `<div class="md-emoji-heading">${formatInline(escapeHtml(rawTrimmed))}</div>`;
+      continue;
+    }
+
+    const headingMatch = rawTrimmed.match(/^(#{1,6})\s+(.+)$/);
     if (headingMatch) {
       const level = headingMatch[1].length;
-      html += `<div class="md-heading h${level}">${formatInline(headingMatch[2])}</div>`;
+      html += `<div class="md-heading h${level}">${formatInline(escapeHtml(headingMatch[2]))}</div>`;
       continue;
     }
 
-    if (!trimmed) {
+    if (!rawTrimmed) {
+      closeQuote();
       html += '<div class="md-blank"></div>';
       continue;
     }
 
-    html += `<div class="md-line">${formatInline(trimmed)}</div>`;
+    html += `<div class="md-line">${formatInline(escapeHtml(rawTrimmed))}</div>`;
   }
 
   closeList();
+  closeQuote();
+  flushCode();
   return html;
 };
 
 const formatSourceLoc = (source) => {
   if (!source) return '';
+  if (source.url && !source.doc_id) {
+    try {
+      const host = new URL(source.url).hostname.replace(/^www\./, '');
+      return host || '网页';
+    } catch {
+      return '网页';
+    }
+  }
   const parts = [];
   if (source.md_headings) parts.push(source.md_headings);
   if (source.pages && source.pages.length) parts.push(`页 ${source.pages.join(',')}`);
@@ -692,6 +1813,11 @@ const canPreviewSource = (source) =>
   source.doc_id !== null &&
   source.chunk_index !== undefined &&
   source.chunk_index !== null;
+
+const openWebSource = (source) => {
+  if (!source || !source.url) return;
+  window.open(source.url, '_blank', 'noopener');
+};
 
 const resolveQueryForMessage = (messages, index) => {
   for (let i = index - 1; i >= 0; i -= 1) {
@@ -837,11 +1963,26 @@ const applyFinalMessage = (targetMessage, finalMessage) => {
   targetMessage.model_name = finalMessage.model_name || targetMessage.model_name;
   targetMessage.content = finalMessage.content || targetMessage.content;
   targetMessage.sources = finalMessage.sources || targetMessage.sources;
+  if (finalMessage.disclaimers !== undefined) {
+    targetMessage.disclaimers = finalMessage.disclaimers;
+  }
+  if (finalMessage.risk_tags !== undefined) {
+    targetMessage.risk_tags = finalMessage.risk_tags;
+  }
+  if (finalMessage.is_favorite !== undefined) {
+    targetMessage.is_favorite = finalMessage.is_favorite;
+  }
+  if (finalMessage.edited_at !== undefined) {
+    targetMessage.edited_at = finalMessage.edited_at;
+  }
   targetMessage.isLoading = false;
+  targetMessage.statusText = '';
   scrollToBottom();
+  scheduleSuggestionRefresh();
 };
 
 const deleteSession = async (sessionId) => {
+  closeSessionMenu();
   const confirmed = window.confirm('您确定要删除吗？');
   if (!confirmed) return;
   try {
@@ -850,6 +1991,7 @@ const deleteSession = async (sessionId) => {
     if (activeSessionId.value === sessionId) {
       activeSessionId.value = null;
       chatMessages.value = [];
+      clearSuggestions();
     }
   } catch (err) {
     setError(`删除会话失败：${err.message}`);
@@ -865,39 +2007,63 @@ const scrollToBottom = () => {
 };
 
 fetchSessions();
+fetchAttachments();
+
+onMounted(() => {
+  fetchCurrentUser();
+  document.addEventListener('click', handleSessionMenuOutside);
+  if (chatLogRef.value) {
+    chatLogRef.value.addEventListener('click', handleCodeCopy);
+  }
+});
+
+watch(knowledgeMode, (value) => {
+  if (value) {
+    deepSearchEnabled.value = false;
+    deepThinkEnabled.value = false;
+  }
+});
+
 onBeforeUnmount(() => {
   stopDocPolling();
+  if (sessionSearchTimer) {
+    clearTimeout(sessionSearchTimer);
+  }
+  if (suggestionTimer) {
+    clearTimeout(suggestionTimer);
+  }
+  document.removeEventListener('click', handleSessionMenuOutside);
+  if (chatLogRef.value) {
+    chatLogRef.value.removeEventListener('click', handleCodeCopy);
+  }
 });
 </script>
 
 <style scoped>
 .chat-layout {
-  position: relative;
-  width: 1200px;
-  height: 760px;
-  max-width: calc(100vw - 48px);
-  max-height: calc(100vh - 48px);
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 22px;
-  padding: 24px;
-  background: linear-gradient(135deg, #cdd7ff 0%, #eef2ff 45%, #f7eaff 100%);
-  font-family: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-  color: #1f2a44;
-  margin: 24px auto;
-  border-radius: 28px;
+  padding: clamp(12px, 2vw, 24px);
+  background: var(--page-panel);
+  font-family: var(--font-sans);
+  color: var(--text-strong);
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
   overflow: hidden;
 }
 
 .chat-layout::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 12% 18%, rgba(111, 140, 255, 0.28), transparent 45%),
-    radial-gradient(circle at 90% 8%, rgba(245, 189, 255, 0.35), transparent 40%),
-    radial-gradient(circle at 80% 80%, rgba(169, 210, 255, 0.3), transparent 40%);
-  pointer-events: none;
+  content: none;
+  display: none;
 }
 
 .chat-layout > .chat-sidebar,
@@ -910,11 +2076,15 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   padding: 20px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 24px 50px rgba(77, 96, 164, 0.18);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
   backdrop-filter: blur(10px);
+  height: 100%;
   min-height: 0;
+  max-height: none;
+  overflow: hidden;
 }
 
 .sidebar-brand {
@@ -922,14 +2092,14 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(130, 150, 210, 0.2);
+  border-bottom: 1px solid var(--border);
 }
 
 .brand-icon {
   width: 42px;
   height: 42px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #6f88ff, #a66bff);
+  border-radius: var(--radius-md);
+  background: var(--accent-gradient);
   color: #fff;
   display: grid;
   place-items: center;
@@ -944,7 +2114,7 @@ onBeforeUnmount(() => {
 
 .brand-subtitle {
   font-size: 12px;
-  color: #6b728a;
+  color: var(--text-soft);
 }
 
 .sidebar-header {
@@ -954,43 +2124,9 @@ onBeforeUnmount(() => {
   padding: 18px 0;
 }
 
-.new-chat,
-.kb-link {
-  width: 100%;
-  border-radius: 14px;
-  padding: 10px 14px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.new-chat {
-  background: linear-gradient(135deg, #6f88ff, #8d6bff);
-  color: #fff;
-  box-shadow: 0 12px 22px rgba(108, 125, 255, 0.3);
-}
-
-.kb-link {
-  background: #fff;
-  border: 1px solid rgba(111, 136, 255, 0.25);
-  color: #2b3563;
-  box-shadow: 0 8px 18px rgba(94, 112, 190, 0.12);
-}
-
-.new-chat:hover,
-.kb-link:hover {
-  transform: translateY(-1px);
-}
-
-.shortcut {
-  font-size: 12px;
-  color: #7a84a6;
-}
-
 .sidebar-section h3 {
   font-size: 14px;
-  color: #4b567a;
+  color: var(--text-muted);
   margin-bottom: 10px;
 }
 
@@ -1001,73 +2137,95 @@ onBeforeUnmount(() => {
   min-height: 0;
 }
 
-.kb-progress-section {
-  margin-top: 14px;
-  gap: 10px;
-  flex: 0 0 auto;
-}
-
-.kb-progress-body {
+.sidebar-menu {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 8px 0 12px;
 }
 
-.kb-progress-current {
-  font-size: 12px;
-  color: #5c668a;
+.sidebar-menu.compact {
+  padding: 0 0 10px;
 }
 
-.kb-progress-empty {
-  font-size: 12px;
-  color: #6b7390;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.kb-progress-loading,
-.kb-progress-error {
-  font-size: 12px;
-  color: #6b7390;
-}
-
-.kb-progress-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.kb-progress-item {
-  padding: 10px;
-  border-radius: 12px;
-  background: rgba(245, 246, 255, 0.9);
-  box-shadow: inset 0 0 0 1px rgba(111, 136, 255, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.kb-progress-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1f2a44;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.kb-progress-meta {
+.menu-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #6b7390;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
 
-.kb-progress-actions {
+.menu-item:hover {
+  background: rgba(148, 163, 184, 0.18);
+}
+
+.menu-item.ghost {
+  background: rgba(148, 163, 184, 0.12);
+  font-weight: 600;
+}
+
+.menu-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(255, 255, 255, 0.85);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.menu-icon::before {
+  content: attr(data-icon);
+  font-weight: 700;
+}
+
+.sidebar-extra-spacer {
+  margin-top: auto;
+}
+
+.chat-main-actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
   justify-content: flex-end;
+}
+
+.chat-main-actions .ghost {
+  box-shadow: none;
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+.session-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.session-empty {
+  font-size: 12px;
+  color: var(--text-soft);
+  padding: 8px 6px;
 }
 
 .ghost-small {
@@ -1086,6 +2244,7 @@ onBeforeUnmount(() => {
   padding-right: 6px;
   flex: 1;
   min-height: 0;
+  scrollbar-gutter: stable;
 }
 
 .session-list li {
@@ -1111,7 +2270,7 @@ onBeforeUnmount(() => {
   font-size: 13px;
 }
 
-.session-list button span {
+.session-list .session-title {
   display: inline-block;
   max-width: 140px;
   overflow: hidden;
@@ -1215,13 +2374,25 @@ onBeforeUnmount(() => {
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 26px 60px rgba(58, 72, 125, 0.18);
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .chat-topbar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: flex-start;
   gap: 16px;
+}
+
+.sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-actions button {
+  width: 100%;
 }
 
 .chat-topbar h1 {
@@ -1234,28 +2405,15 @@ onBeforeUnmount(() => {
   color: #6a728d;
 }
 
-.topbar-actions {
+.header-actions {
   display: flex;
   flex-direction: column;
   gap: 10px;
   align-items: flex-end;
 }
 
-.topbar-actions label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 12px;
-  color: #5c647f;
-}
-
-.topbar-actions input {
+.header-actions input {
   width: 280px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(111, 136, 255, 0.25);
-  background: #fff;
-  font-size: 12px;
 }
 
 .notice,
@@ -1267,39 +2425,46 @@ onBeforeUnmount(() => {
 }
 
 .notice {
-  background: rgba(207, 234, 255, 0.6);
-  color: #2c5a86;
+  background: var(--notice-bg);
+  color: var(--notice-text);
 }
 
 .error {
-  background: rgba(255, 221, 228, 0.7);
-  color: #a83c50;
+  background: var(--error-bg);
+  color: var(--error-text);
 }
 
 .chat-panel {
   margin-top: 18px;
-  background: #f6f8ff;
-  border-radius: 22px;
+  background: var(--surface-strong);
+  border-radius: var(--radius-lg);
   padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 14px;
   flex: 1;
   min-height: 0;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  max-height: none;
 }
 
 .chat-log {
   flex: 1;
   overflow-y: auto;
-  padding-right: 6px;
+  min-height: 0;
+  padding-right: 10px;
+  padding-bottom: 10px;
+  scrollbar-gutter: stable;
 }
 
 .empty-state {
-  background: #fff;
+  background: var(--surface-soft);
   border-radius: 18px;
   padding: 26px;
   text-align: center;
-  box-shadow: inset 0 0 0 1px rgba(225, 231, 255, 0.9);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .empty-state h2 {
@@ -1308,7 +2473,7 @@ onBeforeUnmount(() => {
 }
 
 .empty-state p {
-  color: #7b839e;
+  color: var(--text-soft);
 }
 
 .chat-message {
@@ -1316,6 +2481,10 @@ onBeforeUnmount(() => {
   gap: 12px;
   align-items: flex-start;
   margin-bottom: 14px;
+}
+
+.chat-message.highlight .chat-bubble {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
 }
 
 .chat-message.user {
@@ -1340,31 +2509,33 @@ onBeforeUnmount(() => {
 }
 
 .assistant-avatar {
-  background:
-    radial-gradient(circle at 30% 30%, #ffffff, transparent 55%),
-    linear-gradient(135deg, #7ee7ff 0%, #5b8dff 50%, #7a5cff 100%);
+  background-image: var(--chat-assistant-avatar-image, none), var(--chat-assistant-avatar-bg);
+  background-size: cover, cover;
+  background-position: center, center;
 }
 
 .user-avatar {
-  background:
-    radial-gradient(circle at 70% 30%, #fff1f2, transparent 55%),
-    linear-gradient(135deg, #ff9bb0 0%, #ffb86b 50%, #ffd36b 100%);
+  background-image: var(--chat-user-avatar-image, none), var(--chat-user-avatar-bg);
+  background-size: cover, cover;
+  background-position: center, center;
 }
 
 .chat-bubble {
   max-width: 70%;
   padding: 12px 14px;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 10px 24px rgba(58, 72, 125, 0.08);
+  border-radius: var(--radius-md);
+  background: var(--chat-assistant-bubble-bg);
+  color: var(--chat-assistant-bubble-text);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
 .chat-message.user .chat-bubble {
-  background: linear-gradient(135deg, #6f88ff, #8d6bff);
-  color: #fff;
+  background: var(--chat-user-bubble-bg);
+  color: var(--chat-user-bubble-text);
 }
 
 .bubble-meta {
@@ -1372,12 +2543,13 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 12px;
   font-size: 12px;
-  opacity: 0.75;
+  color: var(--text-soft);
 }
 
 .chat-message.user .bubble-meta {
   justify-content: flex-end;
   gap: 8px;
+  color: var(--chat-user-bubble-meta);
 }
 
 .chat-bubble strong {
@@ -1387,6 +2559,18 @@ onBeforeUnmount(() => {
 .chat-bubble p {
   margin: 0;
   line-height: 1.5;
+}
+
+.message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.chat-message:hover .message-actions {
+  opacity: 1;
 }
 
 .message-content {
@@ -1449,9 +2633,10 @@ onBeforeUnmount(() => {
 }
 
 .source-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   border: none;
   background: transparent;
   padding: 0;
@@ -1477,6 +2662,48 @@ onBeforeUnmount(() => {
 .source-meta {
   margin-left: 6px;
   color: #6b7390;
+}
+
+.source-snippet {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7390;
+  line-height: 1.4;
+}
+
+.disclaimer-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.disclaimer-card {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: rgba(254, 243, 199, 0.6);
+  color: #7a4b00;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.disclaimer-card .disclaimer-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.disclaimer-card.disclaimer-info {
+  border-color: rgba(147, 197, 253, 0.5);
+  background: rgba(219, 234, 254, 0.7);
+  color: #1e3a8a;
+}
+
+.disclaimer-card.disclaimer-critical {
+  border-color: rgba(248, 113, 113, 0.5);
+  background: rgba(254, 226, 226, 0.7);
+  color: #991b1b;
 }
 
 .source-preview {
@@ -1520,6 +2747,76 @@ onBeforeUnmount(() => {
 
 .source-preview-loading,
 .source-preview-error {
+  font-size: 13px;
+  color: #6b7390;
+}
+
+.debug-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 70vh;
+}
+
+.debug-header h3 {
+  margin: 0 0 6px;
+}
+
+.debug-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: #6b7390;
+}
+
+.debug-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.debug-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.debug-section {
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #f8fafc;
+}
+
+.debug-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.debug-section-header h4 {
+  margin: 0;
+  font-size: 13px;
+  color: #1f2a44;
+}
+
+.debug-block {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+}
+
+.debug-loading,
+.debug-error,
+.debug-empty {
   font-size: 13px;
   color: #6b7390;
 }
@@ -1585,6 +2882,69 @@ onBeforeUnmount(() => {
   color: #2b3563;
 }
 
+.md-quote {
+  border-left: 3px solid rgba(99, 102, 241, 0.5);
+  padding: 6px 10px;
+  margin: 6px 0;
+  background: rgba(99, 102, 241, 0.08);
+  border-radius: 8px;
+  color: #2b3563;
+}
+
+.md-code {
+  margin: 8px 0;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 10px;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.md-code .code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(99, 102, 241, 0.08);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.md-code .code-lang {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4b567a;
+  text-transform: uppercase;
+}
+
+.md-code .code-copy {
+  border: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.md-code .code-copy:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.md-code pre {
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.6;
+  background: transparent;
+}
+
+.md-code code {
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  background: transparent;
+  padding: 0;
+}
+
 .chat-bubble small {
   font-size: 11px;
 }
@@ -1602,7 +2962,7 @@ onBeforeUnmount(() => {
   height: 16px;
   border-radius: 50%;
   border: 2px solid rgba(111, 136, 255, 0.25);
-  border-top-color: #6f88ff;
+  border-top-color: var(--accent);
   animation: spin 0.9s linear infinite;
 }
 
@@ -1629,10 +2989,161 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 10px;
   align-items: center;
-  background: #fff;
-  border-radius: 16px;
+  background: var(--surface-strong);
+  border-radius: var(--radius-lg);
   padding: 12px;
-  box-shadow: inset 0 0 0 1px rgba(218, 225, 255, 0.9);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.deep-chip {
+  position: relative;
+  border: 1px solid rgba(111, 136, 255, 0.2);
+  background: rgba(255, 255, 255, 0.85);
+  color: #45507a;
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.deep-chip.active {
+  background: rgba(59, 130, 246, 0.16);
+  border-color: rgba(59, 130, 246, 0.45);
+  color: var(--accent-strong);
+}
+
+.deep-chip.active::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  bottom: 4px;
+  width: 6px;
+  height: 10px;
+  border-right: 2px solid #16a34a;
+  border-bottom: 2px solid #16a34a;
+  transform: rotate(45deg);
+}
+
+.deep-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.file-input {
+  display: none;
+}
+
+.edit-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #2b3563;
+  font-size: 12px;
+}
+
+.suggestion-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+.suggestion-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5b65a2;
+}
+
+.suggestion-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggestion-chip {
+  border: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.suggestion-chip:hover {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+.suggestion-loading {
+  font-size: 12px;
+  color: #6b7390;
+}
+
+.deep-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.deep-controls.disabled {
+  opacity: 0.6;
+}
+
+.deep-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  font-size: 12px;
+  color: #5b65a2;
+}
+
+.deep-toggle-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #45507a;
+}
+
+.deep-toggle-control input {
+  accent-color: var(--accent);
+}
+
+.deep-hint {
+  color: #6b7390;
+}
+
+.md-cite {
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.md-cite:hover {
+  text-decoration: underline;
 }
 
 .input-wrap {
@@ -1644,25 +3155,28 @@ onBeforeUnmount(() => {
 
 .mode-badge {
   align-self: flex-start;
-  background: rgba(111, 136, 255, 0.15);
-  color: #4852a8;
-  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--accent-strong);
+  border-radius: 999px;
   padding: 2px 8px;
   font-size: 12px;
 }
 
-.chat-input input {
+.chat-input textarea {
   border: none;
   outline: none;
   font-size: 14px;
   padding: 6px 8px;
+  resize: none;
+  background: transparent;
+  font-family: inherit;
 }
 
 .chat-input button {
   border: none;
   padding: 10px 18px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #6f88ff, #8d6bff);
+  border-radius: var(--radius-sm);
+  background: var(--accent-gradient);
   color: #fff;
   font-weight: 600;
   cursor: pointer;
@@ -1676,10 +3190,7 @@ onBeforeUnmount(() => {
 @media (max-width: 1080px) {
   .chat-layout {
     grid-template-columns: 1fr;
-    width: 100%;
-    height: auto;
-    max-height: none;
-    margin: 16px auto;
+    padding: 12px;
   }
 
   .chat-sidebar {
@@ -1690,16 +3201,22 @@ onBeforeUnmount(() => {
     order: 1;
   }
 
-  .topbar-actions {
+  .header-actions {
     align-items: flex-start;
   }
 
-  .topbar-actions input {
+  .header-actions input {
     width: 100%;
   }
 
   .chat-bubble {
     max-width: 85%;
   }
+
+  .message-actions {
+    opacity: 1;
+  }
 }
 </style>
+
+

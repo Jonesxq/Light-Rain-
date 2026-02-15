@@ -1,4 +1,4 @@
-"""LLM configuration module"""
+﻿"""core/config/modules/llm.py."""
 from typing import Optional
 
 from pydantic import Field
@@ -6,9 +6,9 @@ from app.core.config.base import EnvBaseSettings
 
 
 class LLMSettings(EnvBaseSettings):
-    """LLM Configuration (DashScope/Qwen)"""
 
     # 阿里云 DashScope API Key
+    """LLMSettings ??"""
     QWEN_API_KEY: str = Field(
         default="",
         description="DashScope API Key")

@@ -1,3 +1,4 @@
+﻿"""tools/get_system_time.py."""
 from datetime import datetime
 from langchain.tools import tool
 
@@ -6,9 +7,7 @@ _WEEKDAY_CN = ["星期一", "星期二", "星期三", "星期四", "星期五", 
 
 @tool
 def get_system_time() -> str:
-    """
-    获取服务器当前系统日期和时间（不依赖外部 API）。
-    """
+    """get_system_time ???"""
     now = datetime.now()
     weekday = _WEEKDAY_CN[now.weekday()]
     return (

@@ -1,12 +1,12 @@
-"""Celery configuration module"""
-
+﻿
+"""core/config/modules/celery.py."""
 from app.core.config.base import EnvBaseSettings
 from pydantic import Field
 
 
 class CelerySettings(EnvBaseSettings):
-    """Celery configuration"""
     
+    """CelerySettings ??"""
     CELERY_BROKER_URL: str = Field(
         default="redis://localhost:6379/1",
         description="Celery broker URL (Redis DB 1)",

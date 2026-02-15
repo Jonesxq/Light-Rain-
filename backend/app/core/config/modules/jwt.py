@@ -1,12 +1,12 @@
-"""JWT authenticationconfigurationmodule"""
-
+﻿
+"""core/config/modules/jwt.py."""
 from typing import Optional
 from pydantic import Field, PositiveInt, SecretStr
 from app.core.config.base import EnvBaseSettings
 
 class JWTSettings(EnvBaseSettings):
-    """JWT authenticationconfiguration"""
 
+    """JWTSettings ??"""
     JWT_SECRET_KEY: SecretStr = Field(
         ...,
         repr=False,

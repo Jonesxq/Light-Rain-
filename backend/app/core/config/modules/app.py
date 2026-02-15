@@ -1,11 +1,11 @@
-"""applicationconfigurationmodule"""
-
+﻿
+"""core/config/modules/app.py."""
 from pydantic import Field
 from app.core.config.base import EnvBaseSettings
 
 class AppSettings(EnvBaseSettings):
-    """Application metadata configuration"""
     
+    """AppSettings ??"""
     APP_NAME: str = Field(
         default="official_proj_2.0",
         description="Application name"
