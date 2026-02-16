@@ -1803,6 +1803,8 @@ const formatSourceLoc = (source) => {
   if (source.tables && source.tables.length) parts.push(`表格 ${source.tables.join(',')}`);
   if (source.chunk_index !== undefined && source.chunk_index !== null) {
     parts.push(`Chunk ${source.chunk_index}`);
+  } else if (source.chunk_id !== undefined && source.chunk_id !== null) {
+    parts.push(`片段 #${source.chunk_id}`);
   }
   return parts.join(' · ');
 };
@@ -1811,8 +1813,10 @@ const canPreviewSource = (source) =>
   source &&
   source.doc_id !== undefined &&
   source.doc_id !== null &&
-  source.chunk_index !== undefined &&
-  source.chunk_index !== null;
+  (
+    (source.chunk_id !== undefined && source.chunk_id !== null) ||
+    (source.chunk_index !== undefined && source.chunk_index !== null)
+  );
 
 const openWebSource = (source) => {
   if (!source || !source.url) return;
@@ -1901,7 +1905,11 @@ const openSourcePreview = async (source, query) => {
   previewData.value = null;
   previewHtml.value = '';
   try {
-    const data = await apiFetch(`/knowledge/documents/${source.doc_id}/chunks/${source.chunk_index}`);
+    const hasChunkId = source.chunk_id !== undefined && source.chunk_id !== null;
+    const previewPath = hasChunkId
+      ? `/knowledge/documents/${source.doc_id}/chunks/by-id/${source.chunk_id}`
+      : `/knowledge/documents/${source.doc_id}/chunks/${source.chunk_index}`;
+    const data = await apiFetch(previewPath);
     if (requestId !== previewRequestId) return;
     previewData.value = data;
     const keywords = extractKeywords(query || '');

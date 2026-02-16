@@ -51,6 +51,7 @@ class DocumentResponse(BaseModel):
 class KnowledgeChunkPreviewResponse(BaseModel):
     """KnowledgeChunkPreviewResponse ??"""
     doc_id: int
+    chunk_id: Optional[int] = None
     chunk_index: int
     file_name: str
     file_type: str

@@ -31,6 +31,49 @@ UPLOAD_DIR = "static/uploads/kb"
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
 
 
+async def _get_owned_completed_doc_or_404(
+    db: AsyncSession,
+    current_user: User,
+    doc_id: int,
+) -> Document:
+    """校验文档存在、归属与处理状态。"""
+    doc = await kb_crud.get_document(db, doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    kb = await kb_crud.get_kb(db, doc.kb_id)
+    if not kb or kb.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if doc.status != DocStatus.COMPLETED:
+        raise HTTPException(status_code=409, detail="Document is still processing")
+    return doc
+
+
+def _build_chunk_preview_payload(
+    doc: Document,
+    preview: dict,
+    chunk_index: int,
+    chunk_id: int | None = None,
+) -> dict:
+    """统一构建 chunk 预览响应。"""
+    structured_meta = preview.get("structured_meta") or {}
+    loc_meta = structured_meta.get("loc", {}) if isinstance(structured_meta.get("loc"), dict) else {}
+    return {
+        "doc_id": doc.id,
+        "chunk_id": chunk_id,
+        "chunk_index": chunk_index,
+        "file_name": doc.file_name,
+        "file_type": doc.file_type,
+        "content": preview.get("content") or "",
+        "pages": loc_meta.get("pages"),
+        "slides": loc_meta.get("slides"),
+        "paragraphs": loc_meta.get("paragraphs"),
+        "tables": loc_meta.get("tables"),
+        "md_headings": loc_meta.get("md_headings"),
+    }
+
+
 # --- 1. 知识库管理 ---
 @router.post("/create", response_model=KnowledgeBaseResponse)
 async def create_knowledge_base(
@@ -117,36 +160,60 @@ async def get_chunk_preview(
         db: AsyncSession = Depends(get_db)
 ):
     """get_chunk_preview ?????"""
-    doc = await kb_crud.get_document(db, doc_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+    doc = await _get_owned_completed_doc_or_404(db, current_user, doc_id)
+    chunk = await kb_crud.get_document_chunk_by_index(db, doc_id=doc_id, chunk_index=chunk_index)
 
-    kb = await kb_crud.get_kb(db, doc.kb_id)
-    if not kb or kb.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    if doc.status != DocStatus.COMPLETED:
-        raise HTTPException(status_code=409, detail="Document is still processing")
-
-    preview = kb_service.get_raw_chunk_preview(doc, chunk_index)
+    preview = None
+    if chunk:
+        preview = kb_service.get_raw_chunk_preview_by_parent_id(doc, chunk.parent_id)
+        if not preview and chunk.content:
+            preview = {
+                "content": chunk.content,
+                "structured_meta": chunk.structured_meta or {},
+            }
+    if not preview:
+        preview = kb_service.get_raw_chunk_preview(doc, chunk_index)
     if not preview:
         raise HTTPException(status_code=404, detail="Chunk not found")
 
-    structured_meta = preview.get("structured_meta") or {}
-    loc_meta = structured_meta.get("loc", {}) if isinstance(structured_meta.get("loc"), dict) else {}
+    resolved_chunk_index = chunk.chunk_index if chunk else chunk_index
+    resolved_chunk_id = chunk.id if chunk else None
+    return _build_chunk_preview_payload(
+        doc=doc,
+        preview=preview,
+        chunk_index=resolved_chunk_index,
+        chunk_id=resolved_chunk_id,
+    )
 
-    return {
-        "doc_id": doc.id,
-        "chunk_index": chunk_index,
-        "file_name": doc.file_name,
-        "file_type": doc.file_type,
-        "content": preview.get("content") or "",
-        "pages": loc_meta.get("pages"),
-        "slides": loc_meta.get("slides"),
-        "paragraphs": loc_meta.get("paragraphs"),
-        "tables": loc_meta.get("tables"),
-        "md_headings": loc_meta.get("md_headings"),
-    }
+
+@router.get("/documents/{doc_id}/chunks/by-id/{chunk_id}", response_model=KnowledgeChunkPreviewResponse)
+async def get_chunk_preview_by_id(
+        doc_id: int,
+        chunk_id: int,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
+):
+    """按 chunk 主键返回原始分片预览。"""
+    doc = await _get_owned_completed_doc_or_404(db, current_user, doc_id)
+    chunk = await kb_crud.get_document_chunk_by_id(db, doc_id=doc_id, chunk_id=chunk_id)
+    if not chunk:
+        raise HTTPException(status_code=404, detail="Chunk not found")
+
+    preview = kb_service.get_raw_chunk_preview_by_parent_id(doc, chunk.parent_id)
+    if not preview and chunk.content:
+        preview = {
+            "content": chunk.content,
+            "structured_meta": chunk.structured_meta or {},
+        }
+    if not preview:
+        raise HTTPException(status_code=404, detail="Chunk not found")
+
+    return _build_chunk_preview_payload(
+        doc=doc,
+        preview=preview,
+        chunk_index=chunk.chunk_index,
+        chunk_id=chunk.id,
+    )
 
 
 @router.post("/documents/{doc_id}/reindex")

@@ -132,6 +132,34 @@ class KnowledgeCRUD:
         result = await db.execute(statement)
         return list(result.scalars().all())
 
+    async def get_document_chunk_by_id(
+        self,
+        db: AsyncSession,
+        doc_id: int,
+        chunk_id: int,
+    ) -> Optional[DocumentChunk]:
+        """按文档 + chunk 主键获取单条分片。"""
+        statement = select(DocumentChunk).where(
+            DocumentChunk.doc_id == doc_id,
+            DocumentChunk.id == chunk_id,
+        )
+        result = await db.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def get_document_chunk_by_index(
+        self,
+        db: AsyncSession,
+        doc_id: int,
+        chunk_index: int,
+    ) -> Optional[DocumentChunk]:
+        """按文档 + chunk 序号获取单条分片。"""
+        statement = select(DocumentChunk).where(
+            DocumentChunk.doc_id == doc_id,
+            DocumentChunk.chunk_index == chunk_index,
+        )
+        result = await db.execute(statement)
+        return result.scalar_one_or_none()
+
     async def delete_document_chunks(self, db: AsyncSession, doc_id: int) -> int:
         """delete_document_chunks ?????"""
         statement = select(DocumentChunk).where(DocumentChunk.doc_id == doc_id)

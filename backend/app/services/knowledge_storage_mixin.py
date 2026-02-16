@@ -96,15 +96,12 @@ class KnowledgeStorageMixin:
 
         return candidates
 
-    def get_raw_chunk_preview(self, doc: Document, chunk_index: int) -> Optional[dict]:
-        """从 sidecar 读取单个原始分片预览。"""
-        if not doc or not doc.file_path:
-            return None
-        sidecar_path = self._get_sidecar_path(doc.file_path)
+    def _read_sidecar_preview_by_parent_id(self, sidecar_path: str, target_parent_id: str) -> Optional[dict]:
+        """按 parent_id 从 sidecar 读取单个原始分片。"""
         if not sidecar_path or not os.path.exists(sidecar_path):
             return None
-
-        target_parent_id = f"{doc.id}:{chunk_index}"
+        if not target_parent_id:
+            return None
         try:
             with open(sidecar_path, "r", encoding="utf-8") as f:
                 for line in f:
@@ -130,17 +127,33 @@ class KnowledgeStorageMixin:
                     }
         except Exception as e:
             logger.warning(f"Read sidecar preview failed for {sidecar_path}: {e}")
-
         return None
+
+    def get_raw_chunk_preview_by_parent_id(self, doc: Document, parent_id: str) -> Optional[dict]:
+        """按 parent_id 读取单个原始分片预览。"""
+        if not doc or not doc.file_path:
+            return None
+        sidecar_path = self._get_sidecar_path(doc.file_path)
+        return self._read_sidecar_preview_by_parent_id(sidecar_path, str(parent_id or "").strip())
+
+    def get_raw_chunk_preview(self, doc: Document, chunk_index: int) -> Optional[dict]:
+        """从 sidecar 读取单个原始分片预览（按 chunk_index）。"""
+        if not doc or not doc.file_path:
+            return None
+        sidecar_path = self._get_sidecar_path(doc.file_path)
+        target_parent_id = f"{doc.id}:{chunk_index}"
+        return self._read_sidecar_preview_by_parent_id(sidecar_path, target_parent_id)
 
     async def _load_raw_candidates_from_storage(self, kb_id: int) -> List[ChunkCandidate]:
         """从存储与 sidecar 加载原始分片候选。"""
         async with mysql_manager.async_session_maker() as db:
             docs = await kb_crud.get_completed_documents(db, kb_id)
+            chunk_rows = await kb_crud.get_kb_chunks(db, kb_id)
 
         if not docs:
             return []
 
+        chunk_lookup = {str(c.parent_id): c for c in chunk_rows if c.parent_id}
         candidates: List[ChunkCandidate] = []
         for doc in docs:
             if not doc.file_path:
@@ -150,6 +163,38 @@ class KnowledgeStorageMixin:
             if not doc_candidates:
                 logger.warning(f"No raw chunks loaded from sidecar: {sidecar_path}")
                 continue
+            for candidate in doc_candidates:
+                row = chunk_lookup.get(candidate.parent_id)
+                if not row:
+                    continue
+                structured_meta = (
+                    dict(candidate.structured_meta)
+                    if isinstance(candidate.structured_meta, dict)
+                    else {}
+                )
+                chunk_meta = structured_meta.get("chunk")
+                if isinstance(chunk_meta, dict):
+                    chunk_meta = dict(chunk_meta)
+                else:
+                    chunk_meta = {}
+                if row.id is not None and chunk_meta.get("id") in (None, ""):
+                    chunk_meta["id"] = row.id
+                if chunk_meta.get("index") is None:
+                    chunk_meta["index"] = row.chunk_index
+                structured_meta["chunk"] = chunk_meta
+
+                doc_meta = structured_meta.get("doc")
+                if isinstance(doc_meta, dict):
+                    doc_meta = dict(doc_meta)
+                else:
+                    doc_meta = {}
+                if doc_meta.get("doc_id") is None:
+                    doc_meta["doc_id"] = row.doc_id
+                structured_meta["doc"] = doc_meta
+
+                if structured_meta.get("parent_id") in (None, ""):
+                    structured_meta["parent_id"] = row.parent_id
+                candidate.structured_meta = structured_meta
             candidates.extend(doc_candidates)
 
         return candidates

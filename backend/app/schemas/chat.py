@@ -68,6 +68,8 @@ class KnowledgeSource(BaseModel):
     tables: Optional[List[int]] = None
     # Markdown 标题路径（可选）
     md_headings: Optional[str] = None
+    # 分块主键（可选，稳定映射原文）
+    chunk_id: Optional[int] = None
     # 分块序号（可选）
     chunk_index: Optional[int] = None
 

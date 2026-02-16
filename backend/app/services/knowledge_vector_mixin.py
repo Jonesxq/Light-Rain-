@@ -58,5 +58,30 @@ class KnowledgeVectorMixin:
         for chunk in chunks:
             if not chunk.vector_id:
                 continue
-            meta_map[str(chunk.vector_id)] = chunk.structured_meta or {}
+            structured_meta = chunk.structured_meta if isinstance(chunk.structured_meta, dict) else {}
+            merged_meta = dict(structured_meta)
+
+            chunk_meta = merged_meta.get("chunk")
+            if isinstance(chunk_meta, dict):
+                chunk_meta = dict(chunk_meta)
+            else:
+                chunk_meta = {}
+            if chunk.id is not None and chunk_meta.get("id") in (None, ""):
+                chunk_meta["id"] = chunk.id
+            if chunk_meta.get("index") is None:
+                chunk_meta["index"] = chunk.chunk_index
+            merged_meta["chunk"] = chunk_meta
+
+            doc_meta = merged_meta.get("doc")
+            if isinstance(doc_meta, dict):
+                doc_meta = dict(doc_meta)
+            else:
+                doc_meta = {}
+            if doc_meta.get("doc_id") is None:
+                doc_meta["doc_id"] = chunk.doc_id
+            merged_meta["doc"] = doc_meta
+
+            if merged_meta.get("parent_id") in (None, "") and chunk.parent_id:
+                merged_meta["parent_id"] = chunk.parent_id
+            meta_map[str(chunk.vector_id)] = merged_meta
         return meta_map

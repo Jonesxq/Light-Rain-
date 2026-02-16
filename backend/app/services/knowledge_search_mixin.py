@@ -112,6 +112,7 @@ class KnowledgeSearchMixin:
                 "paragraphs": loc_meta.get("paragraphs"),
                 "tables": loc_meta.get("tables"),
                 "md_headings": loc_meta.get("md_headings"),
+                "chunk_id": chunk_meta.get("id"),
                 "chunk_index": chunk_meta.get("index"),
             }
 
@@ -121,6 +122,7 @@ class KnowledgeSearchMixin:
                 continue
 
             key = (
+                source.get("chunk_id"),
                 source.get("doc_id"),
                 source.get("chunk_index"),
                 source.get("file_name"),
