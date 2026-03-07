@@ -1,4 +1,4 @@
-﻿"""tools/text_to_image.py."""
+"""文生图工具 - 提供文本生成图片功能"""
 from http import HTTPStatus
 import mimetypes
 import os
@@ -13,7 +13,14 @@ from app.core.config.settings import settings
 
 
 def _extract_image_urls(output) -> list[str]:
-    """_extract_image_urls ???"""
+    """从API响应中提取图片URL列表
+    
+    Args:
+        output: API响应输出对象
+        
+    Returns:
+        list[str]: 图片URL列表
+    """
     results = getattr(output, "results", None) or []
     urls: list[str] = []
     for item in results:
@@ -28,17 +35,33 @@ def _extract_image_urls(output) -> list[str]:
 
 
 def _get_static_root() -> str:
-    """_get_static_root ???"""
+    """获取静态文件根目录路径
+    
+    Returns:
+        str: 静态文件根目录的绝对路径
+    """
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "static"))
 
 
 def _get_image_storage_dir() -> str:
-    """_get_image_storage_dir ???"""
+    """获取图片存储目录路径
+    
+    Returns:
+        str: 图片存储目录的绝对路径
+    """
     return os.path.join(_get_static_root(), "uploads", "t2i")
 
 
 def _guess_extension(url: str, content_type: str | None) -> str:
-    """_guess_extension ???"""
+    """根据URL或Content-Type猜测文件扩展名
+    
+    Args:
+        url: 图片URL
+        content_type: HTTP响应的Content-Type头
+        
+    Returns:
+        str: 猜测的文件扩展名（包含点号，如.png）
+    """
     if content_type:
         ext = mimetypes.guess_extension(content_type.split(";")[0].strip())
         if ext:
@@ -54,7 +77,14 @@ def _guess_extension(url: str, content_type: str | None) -> str:
 
 
 def _download_to_static(url: str) -> str:
-    """_download_to_static ???"""
+    """下载图片到静态文件目录并返回相对URL
+    
+    Args:
+        url: 要下载的图片URL
+        
+    Returns:
+        str: 本地静态文件的相对URL（如/static/uploads/t2i/xxx.png）
+    """
     storage_dir = _get_image_storage_dir()
     os.makedirs(storage_dir, exist_ok=True)
 
@@ -74,7 +104,16 @@ def _download_to_static(url: str) -> str:
 
 @tool
 def text_to_image(prompt: str) -> str:
-    """text_to_image ???"""
+    """根据文本提示生成图片
+    
+    使用阿里云通义千问文生图API生成图片，并下载到本地静态目录
+    
+    Args:
+        prompt: 文本提示词，描述要生成的图片内容
+        
+    Returns:
+        str: 生成图片的URL或错误信息
+    """
     if not settings.llm.QWEN_API_KEY:
         return "文生图失败：未配置 QWEN_API_KEY"
 

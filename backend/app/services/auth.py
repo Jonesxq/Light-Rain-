@@ -1,4 +1,4 @@
-﻿"""Authentication service - Complete JWT Auth"""
+"""认证服务模块 - 完整的JWT认证体系"""
 
 from datetime import datetime, timedelta
 from typing import Optional
@@ -13,18 +13,18 @@ from app.schemas.user import UserCreate, Token
 from app.utils.email import email_service
 
 class AuthService:
-    """认证服务：注册、登录、刷新令牌、邮箱验证、找回密码等"""
+    """认证服务类：提供用户注册、登录、令牌刷新、邮箱验证、密码找回等功能"""
     
     @staticmethod
     def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
         """生成访问令牌（JWT）
         
         Args:
-            data: Data to encode
-            expires_delta: Expiration time delta (deprecated, use value from configuration)
+            data: 要编码的数据
+            expires_delta: 过期时间增量（已废弃，使用配置中的值）
             
         Returns:
-            JWT token string
+            JWT令牌字符串
         """
         # 由 security_manager 统一处理签名与过期时间
         token, _ = security_manager.create_access_token(data)
@@ -35,11 +35,11 @@ class AuthService:
         """生成刷新令牌（JWT）
         
         Args:
-            data: Data to encode
-            expires_delta: Expiration time delta (deprecated, use value from configuration)
+            data: 要编码的数据
+            expires_delta: 过期时间增量（已废弃，使用配置中的值）
             
         Returns:
-            JWT refresh token string
+            JWT刷新令牌字符串
         """
         # 刷新令牌生命周期更长，用于换取新的 access token
         token, _ = security_manager.create_refresh_token(data)
@@ -54,15 +54,15 @@ class AuthService:
         """注册新用户（默认发送邮箱验证码）
         
         Args:
-            db: Database session
-            user_data: userCreatedata
-            send_verification: whethersendValidateemail
+            db: 数据库会话
+            user_data: 用户创建数据
+            send_verification: 是否发送验证邮件
             
         Returns:
-            Createuserobject
+            创建的用户对象
             
         Raises:
-            ValueError: Username or emailalreadyexists
+            ValueError: 当用户名或邮箱已存在时
         """
         # 1) 校验用户名是否已存在
         if await user_crud.get_by_username(db, user_data.username):
@@ -100,8 +100,8 @@ class AuthService:
         """发送邮箱验证码
         
         Args:
-            db: Database session
-            user: userobject
+            db: 数据库会话
+            user: 用户对象
         """
         # 1) 生成验证码并写入数据库
         code = await verification_code_crud.create(
@@ -125,12 +125,12 @@ class AuthService:
         """校验邮箱验证码并标记用户为已验证
         
         Args:
-            db: Database session
-            user_id: user ID
-            code: Verification code
+            db: 数据库会话
+            user_id: 用户ID
+            code: 验证码
             
         Returns:
-            Validatewhethersuccess
+            验证是否成功
         """
         # 1) 校验验证码是否有效
         verified_code = await verification_code_crud.verify(
@@ -171,16 +171,16 @@ class AuthService:
         """用户登录：校验账号、状态、邮箱验证并签发令牌
         
         Args:
-            db: Database session
-            username: Username or email
-            password: Password
-            device_name: Device name
-            device_type: Device type
-            ip_address: IP address
-            user_agent: User Agent
+            db: 数据库会话
+            username: 用户名或邮箱
+            password: 密码
+            device_name: 设备名称
+            device_type: 设备类型
+            ip_address: IP地址
+            user_agent: 用户代理
             
         Returns:
-            Token object, returns None if authentication fails
+            Token对象，认证失败时返回None
         """
         # 1) 校验用户名/邮箱与密码
         user = await user_crud.authenticate(db, username, password)
@@ -233,11 +233,11 @@ class AuthService:
         """使用 refresh token 换取新的 access token
         
         Args:
-            db: Database session
-            refresh_token: refreshtoken
+            db: 数据库会话
+            refresh_token: 刷新令牌
             
         Returns:
-            New access token, return None if refresh fails
+            新的访问令牌，刷新失败时返回None
         """
         # 1) 校验 refresh token 是否存在且有效
         db_token = await refresh_token_crud.get_by_token(db, refresh_token)
@@ -265,16 +265,16 @@ class AuthService:
         """发起找回密码流程（发送重置验证码）
         
         Args:
-            db: Database session
-            email: User email
+            db: 数据库会话
+            email: 用户邮箱
             
         Returns:
-            whethersuccesssendresetemail
+            是否成功发送重置邮件
         """
         # 1) 查找用户（为避免枚举，用户不存在也返回 True）
         user = await user_crud.get_by_email(db, email)
         if not user:
-            # For security, return True even if user does not exist
+            # 出于安全考虑，即使用户不存在也返回True
             return True
         
         # 2) 生成重置验证码
@@ -301,13 +301,13 @@ class AuthService:
         """验证验证码并重置密码
         
         Args:
-            db: Database session
-            email: User email
-            code: Verification code
-            new_password: New password
+            db: 数据库会话
+            email: 用户邮箱
+            code: 验证码
+            new_password: 新密码
             
         Returns:
-            whethersuccessReset password
+            是否成功重置密码
         """
         # 1) 查找用户
         user = await user_crud.get_by_email(db, email)
@@ -338,11 +338,11 @@ class AuthService:
         """单设备登出：撤销指定 refresh token
         
         Args:
-            db: Database session
-            refresh_token: refreshtoken
+            db: 数据库会话
+            refresh_token: 刷新令牌
             
         Returns:
-            whethersuccesslogout
+            是否成功登出
         """
         return await refresh_token_crud.revoke(db, refresh_token)
     
@@ -351,15 +351,15 @@ class AuthService:
         """全设备登出：撤销用户所有 refresh token
         
         Args:
-            db: Database session
-            user_id: user ID
+            db: 数据库会话
+            user_id: 用户ID
             
         Returns:
-            Revoke tokenquantity
+            撤销的令牌数量
         """
         return await refresh_token_crud.revoke_user_tokens(db, user_id)
 
 
-# Global service instance
+# 全局服务实例
 auth_service = AuthService()
 

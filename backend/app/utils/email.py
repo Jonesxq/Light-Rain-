@@ -1,5 +1,5 @@
-﻿
-"""utils/email.py."""
+
+"""邮件工具模块：提供邮件模板加载、SMTP发送、批量邮件等功能"""
 import asyncio
 import smtplib
 import ssl
@@ -21,23 +21,39 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DEFAULT_TEMPLATE_DIR = BASE_DIR / "static" / "email_template"
 
 class EmailBackend(ABC):
+    """邮件发送后端抽象基类：定义邮件发送和连接测试的接口"""
     
     @abstractmethod
     async def send_email(self, message: MIMEMultipart) -> None:
-        """send_email ?????"""
+        """异步发送邮件
+        
+        Args:
+            message: MIMEMultipart邮件对象
+            
+        Raises:
+            HTTPException: 当邮件发送失败时
+        """
         pass
     
     @abstractmethod
     def test_connection(self) -> bool:
-        """test_connection ???"""
+        """测试邮件服务连接是否正常
+        
+        Returns:
+            bool: 连接成功返回True，失败返回False
+        """
         pass
 
 
 class EmailTemplateLoader:
+    """邮件模板加载器：使用Jinja2加载和渲染邮件HTML模板，支持模板缓存"""
     
-    """EmailTemplateLoader ??"""
     def __init__(self, template_dir: Union[str, Path] | None = None):
-        """__init__ ???"""
+        """初始化模板加载器
+        
+        Args:
+            template_dir: 模板目录路径，默认使用 static/email_template
+        """
         if template_dir is None:
             self.template_dir = DEFAULT_TEMPLATE_DIR
         else:
@@ -56,7 +72,19 @@ class EmailTemplateLoader:
         )
     
     def render_template(self, template_name: str, **kwargs) -> str:
-        """render_template ???"""
+        """渲染邮件模板
+        
+        Args:
+            template_name: 模板名称（不含.html后缀）
+            **kwargs: 模板渲染所需的变量
+            
+        Returns:
+            str: 渲染后的HTML字符串
+            
+        Raises:
+            FileNotFoundError: 当模板文件不存在时
+            ValueError: 当模板渲染失败时
+        """
         try:
             if template_name not in self._template_cache:
                 template = self.env.get_template(f"{template_name}.html")
@@ -73,28 +101,49 @@ class EmailTemplateLoader:
             raise ValueError(f"Failed to render template '{template_name}': {str(e)}")
     
     def template_exists(self, template_name: str) -> bool:
-        """template_exists ???"""
+        """检查模板是否存在
+        
+        Args:
+            template_name: 模板名称（不含.html后缀）
+            
+        Returns:
+            bool: 模板存在返回True，否则返回False
+        """
         return (self.template_dir / f"{template_name}.html").exists()
     
     def list_templates(self) -> List[str]:
-        """list_templates ???"""
+        """列出所有可用的邮件模板
+        
+        Returns:
+            List[str]: 模板名称列表（不含.html后缀）
+        """
         return [f.stem for f in self.template_dir.glob("*.html")]
     
     def clear_cache(self) -> None:
-        """clear_cache ???"""
+        """清空模板缓存"""
         self._template_cache.clear()
 
 
 class SMTPEmailBackend(EmailBackend):
+    """SMTP邮件发送后端：基于smtplib实现邮件发送，支持SSL/TLS加密"""
     
-    """SMTPEmailBackend ??"""
     def __init__(self, email_settings):
-        """__init__ ???"""
+        """初始化SMTP邮件后端
+        
+        Args:
+            email_settings: 邮件配置对象，包含SMTP服务器、端口、认证信息等
+        """
         self.email_settings = email_settings
         self.logger = logger_manager.get_logger(__name__)
     
     def _create_ssl_context(self) -> ssl.SSLContext:
-        """_create_ssl_context ???"""
+        """创建SSL/TLS上下文
+        
+        根据配置设置证书验证模式
+        
+        Returns:
+            ssl.SSLContext: SSL上下文对象
+        """
         ssl_context = ssl.create_default_context()
         
         cert_reqs = getattr(
@@ -112,7 +161,16 @@ class SMTPEmailBackend(EmailBackend):
         return ssl_context
     
     def _create_smtp_server(self, ssl_context: ssl.SSLContext) -> smtplib.SMTP:
-        """_create_smtp_server ???"""
+        """创建SMTP服务器连接
+        
+        根据配置选择使用SSL或TLS加密方式
+        
+        Args:
+            ssl_context: SSL上下文对象
+            
+        Returns:
+            smtplib.SMTP: SMTP服务器连接对象
+        """
         use_ssl = getattr(self.email_settings, "EMAIL_USE_SSL", False)
         use_tls = getattr(self.email_settings, "EMAIL_USE_TLS", True)
         timeout = getattr(self.email_settings, "EMAIL_TIMEOUT", 30)
@@ -136,7 +194,14 @@ class SMTPEmailBackend(EmailBackend):
         return server
     
     async def send_email(self, message: MIMEMultipart) -> None:
-        """send_email ?????"""
+        """异步发送邮件
+        
+        Args:
+            message: MIMEMultipart邮件对象
+            
+        Raises:
+            HTTPException: 当邮件发送失败时（认证失败、连接失败等）
+        """
         server = None
         try:
             ssl_context = self._create_ssl_context()
@@ -191,7 +256,11 @@ class SMTPEmailBackend(EmailBackend):
                     self.logger.warning(f"Error closing SMTP connection: {e}")
     
     def test_connection(self) -> bool:
-        """test_connection ???"""
+        """测试SMTP连接是否正常
+        
+        Returns:
+            bool: 连接成功返回True，失败返回False
+        """
         try:
             ssl_context = self._create_ssl_context()
             server = self._create_smtp_server(ssl_context)
@@ -207,10 +276,16 @@ class SMTPEmailBackend(EmailBackend):
 
 
 class EmailMessage:
+    """邮件消息构建器：使用流式接口构建MIME邮件，支持HTML/纯文本内容和附件"""
     
-    """EmailMessage ??"""
     def __init__(self, subject: str, recipient: str, sender: str):
-        """__init__ ???"""
+        """初始化邮件消息
+        
+        Args:
+            subject: 邮件主题
+            recipient: 收件人邮箱
+            sender: 发件人邮箱
+        """
         self.subject = subject
         self.recipient = recipient
         self.sender = sender
@@ -219,12 +294,26 @@ class EmailMessage:
         self.attachments: List[Dict[str, Any]] = []
     
     def set_html_content(self, content: str) -> "EmailMessage":
-        """set_html_content ???"""
+        """设置HTML邮件内容
+        
+        Args:
+            content: HTML内容字符串
+            
+        Returns:
+            EmailMessage: 返回自身以支持链式调用
+        """
         self.html_content = content
         return self
     
     def set_text_content(self, content: str) -> "EmailMessage":
-        """set_text_content ???"""
+        """设置纯文本邮件内容
+        
+        Args:
+            content: 纯文本内容字符串
+            
+        Returns:
+            EmailMessage: 返回自身以支持链式调用
+        """
         self.text_content = content
         return self
     
@@ -234,7 +323,16 @@ class EmailMessage:
         content: bytes,
         content_type: str = "application/octet-stream",
     ) -> "EmailMessage":
-        """add_attachment ???"""
+        """添加邮件附件
+        
+        Args:
+            filename: 附件文件名
+            content: 附件内容（字节数据）
+            content_type: 附件MIME类型，默认为application/octet-stream
+            
+        Returns:
+            EmailMessage: 返回自身以支持链式调用
+        """
         self.attachments.append({
             "filename": filename,
             "content": content,
@@ -243,7 +341,11 @@ class EmailMessage:
         return self
     
     def build(self) -> MIMEMultipart:
-        """build ???"""
+        """构建MIMEMultipart邮件对象
+        
+        Returns:
+            MIMEMultipart: 构建完成的邮件对象
+        """
         msg = MIMEMultipart("alternative")
         msg["From"] = self.sender
         msg["To"] = self.recipient
@@ -279,15 +381,21 @@ class EmailMessage:
 
 
 class EmailService:
+    """邮件服务类：整合模板加载、邮件构建和发送功能，提供高级邮件发送接口"""
     
-    """EmailService ??"""
     def __init__(
         self,
         backend: EmailBackend,
         config_settings,
         template_loader: Optional[EmailTemplateLoader] = None,
     ):
-        """__init__ ???"""
+        """初始化邮件服务
+        
+        Args:
+            backend: 邮件发送后端实例
+            config_settings: 配置对象
+            template_loader: 模板加载器实例，可选，默认使用EmailTemplateLoader
+        """
         self.backend = backend
         self.settings = config_settings
         self.template_loader = template_loader or EmailTemplateLoader()
@@ -299,7 +407,16 @@ class EmailService:
         code: str = "",
         **extra_vars
     ) -> Dict[str, str]:
-        """_prepare_template_variables ???"""
+        """准备邮件模板变量
+        
+        Args:
+            recipient: 收件人邮箱
+            code: 验证码（可选）
+            **extra_vars: 额外的模板变量
+            
+        Returns:
+            Dict[str, str]: 包含所有模板变量的字典
+        """
         base_vars = {
             "recipient": recipient,
             "code": code,
@@ -323,7 +440,20 @@ class EmailService:
         template_name: str,
         template_vars: Dict[str, str],
     ) -> EmailMessage:
-        """_create_email_message ???"""
+        """创建邮件消息对象
+        
+        Args:
+            subject: 邮件主题
+            recipient: 收件人邮箱
+            template_name: 模板名称
+            template_vars: 模板变量
+            
+        Returns:
+            EmailMessage: 构建好的邮件消息对象
+            
+        Raises:
+            HTTPException: 当模板不存在或渲染失败时
+        """
         try:
             # Check if template exists
             if not self.template_loader.template_exists(template_name):
@@ -361,7 +491,23 @@ class EmailService:
         attachments: Optional[List[Dict[str, Any]]] = None,
         **template_vars,
     ) -> None:
-        """send_email ?????"""
+        """发送邮件（带重试机制）
+        
+        Args:
+            subject: 邮件主题
+            recipient: 收件人邮箱
+            template: 邮件模板名称
+            code: 验证码（可选）
+            retries: 重试次数，默认3次
+            retry_delay: 重试延迟（秒），默认2秒
+            timeout: 超时时间（秒），默认使用配置中的值
+            attachments: 附件列表，每个附件包含filename、content、content_type
+            **template_vars: 额外的模板变量
+            
+        Raises:
+            ValueError: 当收件人邮箱或主题无效时
+            HTTPException: 当邮件发送失败时
+        """
         if timeout is None:
             timeout = getattr(self.settings.email, "EMAIL_TIMEOUT", 30)
         
@@ -451,7 +597,19 @@ class EmailService:
         batch_size: int = 10,
         **template_vars,
     ) -> Dict[str, Any]:
-        """send_bulk_email ?????"""
+        """批量发送邮件
+        
+        Args:
+            subject: 邮件主题
+            recipients: 收件人邮箱列表
+            template: 邮件模板名称
+            code: 验证码（可选）
+            batch_size: 每批发送的邮件数量，默认10
+            **template_vars: 额外的模板变量
+            
+        Returns:
+            Dict[str, Any]: 包含发送结果的字典，包括success、failed和total
+        """
         results = {
             "success": [],
             "failed": [],
@@ -487,15 +645,23 @@ class EmailService:
         return results
     
     def test_connection(self) -> bool:
-        """test_connection ???"""
+        """测试邮件服务连接
+        
+        Returns:
+            bool: 连接成功返回True，失败返回False
+        """
         return self.backend.test_connection()
     
     def get_available_templates(self) -> List[str]:
-        """get_available_templates ???"""
+        """获取所有可用的邮件模板
+        
+        Returns:
+            List[str]: 模板名称列表
+        """
         return self.template_loader.list_templates()
     
     def clear_template_cache(self) -> None:
-        """clear_template_cache ???"""
+        """清空模板缓存"""
         self.template_loader.clear_cache()
 
 
@@ -504,7 +670,11 @@ _email_service_instance = None
 
 
 def get_email_service() -> EmailService:
-    """get_email_service ???"""
+    """获取邮件服务单例
+    
+    Returns:
+        EmailService: 邮件服务实例
+    """
     global _email_service_instance
     
     if _email_service_instance is None:
@@ -521,10 +691,17 @@ def get_email_service() -> EmailService:
 
 # For backward compatibility - create a property that accesses the service lazily
 class EmailServiceProxy:
+    """邮件服务代理类：提供延迟加载的邮件服务访问"""
     
-    """EmailServiceProxy ??"""
     def __getattr__(self, name):
-        """__getattr__ ???"""
+        """动态获取邮件服务的属性
+        
+        Args:
+            name: 属性名称
+            
+        Returns:
+            邮件服务的对应属性
+        """
         service = get_email_service()
         return getattr(service, name)
 

@@ -1,5 +1,5 @@
-﻿
-"""main.py."""
+
+"""FastAPI应用主入口模块：应用初始化、路由注册、中间件配置、异常处理"""
 import os
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
@@ -32,7 +32,11 @@ logger = logger_manager.get_logger(__name__)
 
 # Create lifespan
 async def lifespan(_app: FastAPI):
-    """lifespan ?????"""
+    """应用生命周期管理：启动时初始化数据库和Redis，关闭时清理资源
+    
+    Args:
+        _app: FastAPI应用实例
+    """
     logger.info("🚩 Starting the application...")
     logger.info(f"🚧 You are working in {os.getenv('ENV', 'development')} environment")
     
@@ -86,7 +90,15 @@ app = FastAPI(
 # Global exception handlers
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_request: Request, exc: HTTPException):
-    """http_exception_handler ?????"""
+    """HTTP异常处理器：统一处理HTTPException并返回JSON格式错误
+    
+    Args:
+        _request: 请求对象
+        exc: HTTPException异常对象
+        
+    Returns:
+        JSONResponse: 格式化的错误响应
+    """
     logger.error(f"HTTPException: {exc}")
     error_detail = exc.detail
     
@@ -103,8 +115,18 @@ async def http_exception_handler(_request: Request, exc: HTTPException):
 
 @app.exception_handler(Exception)
 async def general_exception_handler(_request: Request, exc: Exception):
+    """通用异常处理器：捕获所有未处理的异常
+    
+    开发环境返回详细错误信息，生产环境返回通用错误信息
+    
+    Args:
+        _request: 请求对象
+        exc: 异常对象
+        
+    Returns:
+        JSONResponse: 格式化的错误响应
+    """
     # 打印完整异常堆栈，便于定位问题
-    """general_exception_handler ?????"""
     logger.exception(f"Exception: {exc}")
     # 开发环境返回更详细的错误信息
     if os.getenv("ENV", "development") == "development":
@@ -168,13 +190,21 @@ app.include_router(news_router, prefix="/api/v1")
 # Health check endpoint
 @app.get("/health", tags=["Health"])
 async def health_check():
-    """health_check ?????"""
+    """健康检查接口：用于监控服务健康状态
+    
+    Returns:
+        dict: 包含健康状态的字典
+    """
     return {"status": "healthy"}
 
 
 # OpenAPI documentation
 def custom_openapi():
-    """custom_openapi ???"""
+    """自定义OpenAPI文档生成
+    
+    Returns:
+        dict: OpenAPI schema
+    """
     if app.openapi_schema:
         return app.openapi_schema
     

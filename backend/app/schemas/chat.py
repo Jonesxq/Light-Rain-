@@ -1,28 +1,28 @@
-﻿"""schemas/chat.py."""
+"""聊天数据验证模型模块"""
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.models.chat import ChatRole
 
 
-# ========== Message Schemas ==========
+# ========== 消息模型 ==========
 
 class ChatMessageBase(BaseModel):
+    """聊天消息基础模型"""
     # 消息角色（system / user / assistant）
-    """ChatMessageBase ??"""
     role: ChatRole
     # 消息正文内容
     content: str
 
 
 class ChatMessageCreate(ChatMessageBase):
-    """ChatMessageCreate ??"""
+    """聊天消息创建模型"""
     pass
 
 
 class ChatMessageResponse(ChatMessageBase):
+    """聊天消息响应模型"""
     # 消息 ID
-    """ChatMessageResponse ??"""
     id: int
     # 创建时间
     created_at: datetime
@@ -43,8 +43,8 @@ class ChatMessageResponse(ChatMessageBase):
 
 
 class KnowledgeSource(BaseModel):
+    """知识库来源模型"""
     # 文档 ID
-    """KnowledgeSource ??"""
     doc_id: Optional[int] = None
     # Web 标题
     title: Optional[str] = None
@@ -75,7 +75,7 @@ class KnowledgeSource(BaseModel):
 
 
 class ChatDisclaimer(BaseModel):
-    """ChatDisclaimer ??"""
+    """聊天免责声明模型"""
     code: str
     title: str
     body: str
@@ -83,21 +83,21 @@ class ChatDisclaimer(BaseModel):
 
 
 class KnowledgeChatResponse(ChatMessageResponse):
-    """KnowledgeChatResponse ??"""
+    """知识库聊天响应模型"""
     sources: Optional[List[KnowledgeSource]] = None
 
 
-# ========== Session Schemas ==========
+# ========== 会话模型 ==========
 
 class ChatSessionCreate(BaseModel):
+    """聊天会话创建模型"""
     # 会话标题（可选）
-    """ChatSessionCreate ??"""
     title: Optional[str] = "New Chat"
 
 
 class ChatSessionUpdate(BaseModel):
+    """聊天会话更新模型"""
     # 新的会话标题
-    """ChatSessionUpdate ??"""
     title: Optional[str] = None
     is_pinned: Optional[bool] = None
     is_archived: Optional[bool] = None
@@ -105,8 +105,8 @@ class ChatSessionUpdate(BaseModel):
 
 
 class ChatSessionResponse(BaseModel):
+    """聊天会话响应模型"""
     # 会话 ID
-    """ChatSessionResponse ??"""
     id: int
     # 会话标题
     title: str
@@ -130,11 +130,11 @@ class ChatSessionResponse(BaseModel):
             return []
         return list(v)
 
-# ========== API Request Schemas ==========
+# ========== API请求模型 ==========
 
 class ChatRequest(BaseModel):
+    """聊天请求模型"""
     # 用户输入的消息
-    """ChatRequest ??"""
     message: str
     # 深度思考（边想边搜）
     deep_search: bool = False
@@ -143,32 +143,32 @@ class ChatRequest(BaseModel):
 
 
 class ChatSuggestionRequest(BaseModel):
-    """ChatSuggestionRequest ??"""
+    """聊天建议请求模型"""
     limit: int = Field(default=3)
     model: Optional[str] = None
 
 
 class ChatSuggestionResponse(BaseModel):
-    """ChatSuggestionResponse ??"""
+    """聊天建议响应模型"""
     session_id: int
     suggestions: List[str]
 
 
 class ChatRegenerateRequest(BaseModel):
-    """ChatRegenerateRequest ??"""
+    """聊天重新生成请求模型"""
     deep_search: bool = False
     deep_think: bool = False
 
 
 class FavoriteUpdateRequest(BaseModel):
-    """FavoriteUpdateRequest ??"""
+    """收藏更新请求模型"""
     is_favorite: bool
 
 
 
 class KnowledgeChatRequest(BaseModel):
+    """知识库聊天请求模型"""
     # 用户提出的问题
-    """KnowledgeChatRequest ??"""
     message: str
     # 使用哪个知识库
     kb_id: int
@@ -179,7 +179,7 @@ class KnowledgeChatRequest(BaseModel):
 
 
 class ChatAttachmentResponse(BaseModel):
-    """ChatAttachmentResponse ??"""
+    """聊天附件响应模型"""
     id: int
     file_name: str
     file_type: str
@@ -191,7 +191,7 @@ class ChatAttachmentResponse(BaseModel):
 
 
 class ChatPromptSnapshotResponse(BaseModel):
-    """ChatPromptSnapshotResponse ??"""
+    """聊天提示词快照响应模型"""
     id: int
     message_id: int
     user_id: int

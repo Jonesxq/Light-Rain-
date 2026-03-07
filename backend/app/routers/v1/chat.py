@@ -1,4 +1,4 @@
-"""routers/v1/chat.py."""
+"""聊天API路由模块 - 提供会话管理、消息发送、附件上传等功能"""
 import json
 import os
 import uuid
@@ -40,7 +40,17 @@ ATTACHMENT_UPLOAD_DIR = "static/uploads/temp_context"
 ATTACHMENT_MAX_SIZE = 10 * 1024 * 1024  # 10MB
 
 def _build_attachment_preview(text: Optional[str], max_len: int = 200) -> str:
-    """build preview text for attachment."""
+    """构建附件预览文本
+    
+    清理文本中的换行符，截取指定长度并添加省略号
+    
+    Args:
+        text: 原始文本内容
+        max_len: 最大预览长度，默认200字符
+        
+    Returns:
+        str: 格式化的预览文本
+    """
     if not text:
         return ""
     clean = text.replace("\r", " ").replace("\n", " ").strip()
@@ -54,7 +64,16 @@ async def create_session(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """create_session ?????"""
+    """创建新的聊天会话
+    
+    Args:
+        session_data: 会话创建数据（包含标题）
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        ChatSessionResponse: 创建的会话信息
+    """
     return await chat_crud.create_session(db, current_user.id, session_data.title)
 
 @router.get("/sessions", response_model=List[ChatSessionResponse])
@@ -66,7 +85,21 @@ async def get_my_sessions(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """get_my_sessions ?????"""
+    """获取当前用户的聊天会话列表
+    
+    支持分页、搜索和筛选已归档会话
+    
+    Args:
+        skip: 跳过的记录数，用于分页
+        limit: 返回的最大记录数，默认20
+        q: 搜索关键词，用于搜索会话标题
+        include_archived: 是否包含已归档的会话，默认False
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        List[ChatSessionResponse]: 会话列表
+    """
     return await chat_crud.get_user_sessions(
         db,
         current_user.id,
@@ -83,7 +116,22 @@ async def update_session(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """update_session ?????"""
+    """更新聊天会话信息
+    
+    支持更新标题、置顶状态、归档状态和标签
+    
+    Args:
+        session_id: 会话ID
+        payload: 会话更新数据
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        ChatSessionResponse: 更新后的会话信息
+        
+    Raises:
+        HTTPException: 会话不存在或无权限时返回404错误
+    """
     session = await chat_crud.get_session(db, session_id)
     if not session or session.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -106,7 +154,16 @@ async def delete_session(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """delete_session ?????"""
+    """删除聊天会话
+    
+    Args:
+        session_id: 会话ID
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Raises:
+        HTTPException: 会话不存在或无权限时返回404错误
+    """
     success = await chat_crud.delete_session(db, session_id, current_user.id)
     if not success:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -119,7 +176,22 @@ async def get_chat_suggestions(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """get_chat_suggestions ?????"""
+    """获取聊天后续问题建议
+    
+    基于当前会话内容，AI自动生成相关的后续问题
+    
+    Args:
+        session_id: 会话ID
+        payload: 建议请求参数（包含数量和模型）
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        ChatSuggestionResponse: 后续问题建议列表
+        
+    Raises:
+        HTTPException: 会话不存在或无权限时返回404错误
+    """
     session = await chat_crud.get_session(db, session_id)
     if not session or session.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -139,7 +211,19 @@ async def generate_meme(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """generate_meme ?????"""
+    """根据消息内容生成表情包
+    
+    Args:
+        message_id: 消息ID
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        ChatMessageResponse: 包含表情包的消息
+        
+    Raises:
+        HTTPException: 消息不存在时返回404，生成失败时返回502或500错误
+    """
     try:
         return await chat_service.generate_meme(db, current_user.id, message_id)
     except ValueError as exc:
@@ -154,7 +238,17 @@ async def list_attachments(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """list_attachments ?????"""
+    """获取当前用户的附件列表
+    
+    返回所有上传的附件及其预览信息
+    
+    Args:
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        List[ChatAttachmentResponse]: 附件列表
+    """
     attachments = await chat_attachment_crud.list_attachments(db, current_user.id)
     payload = []
     for att in attachments:
@@ -180,7 +274,21 @@ async def upload_attachment(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """upload_attachment ?????"""
+    """上传聊天附件
+    
+    支持PDF、DOCX、TXT、MD和图片格式，最大10MB
+    
+    Args:
+        file: 上传的文件
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        ChatAttachmentResponse: 上传的附件信息
+        
+    Raises:
+        HTTPException: 文件格式不支持时返回400，文件过大返回413，处理失败返回500
+    """
     if not file.filename:
         raise HTTPException(status_code=400, detail="File name missing")
     file_ext = os.path.splitext(file.filename)[1].lower()
@@ -247,7 +355,21 @@ async def delete_attachment(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """delete_attachment ?????"""
+    """删除附件
+    
+    同时删除数据库记录和本地文件
+    
+    Args:
+        attachment_id: 附件ID
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        dict: 操作成功标识
+        
+    Raises:
+        HTTPException: 附件不存在或无权限时返回404错误
+    """
     attachment = await chat_attachment_crud.get_attachment(db, attachment_id)
     if not attachment or attachment.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Attachment not found")
@@ -269,7 +391,19 @@ async def get_history(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """get_history ?????"""
+    """获取会话的历史消息
+    
+    Args:
+        session_id: 会话ID
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        List[ChatMessageResponse]: 历史消息列表
+        
+    Raises:
+        HTTPException: 会话不存在或无权限时返回404错误
+    """
     session = await chat_crud.get_session(db, session_id)
     if not session or session.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -284,9 +418,21 @@ async def send_message(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """send_message ?????"""
+    """发送聊天消息（非流式）
+    
+    Args:
+        session_id: 会话ID
+        chat_req: 聊天请求数据（包含消息内容和配置）
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        ChatMessageResponse: AI回复消息
+        
+    Raises:
+        HTTPException: 服务层错误返回502，其他错误返回500
+    """
     try:
-        # LangChain 会在内部处理 API 调用
         ai_message = await chat_service.process_chat(
             db,
             current_user.id,
@@ -295,10 +441,8 @@ async def send_message(
         )
         return ai_message
     except ValueError as e:
-        # 捕获 Service 层抛出的错误
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
     except Exception as e:
-        # 捕获其他未知错误
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Chat Error")
 
 @router.post("/sessions/{session_id}/stream")
@@ -308,13 +452,31 @@ async def stream_message(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """stream_message ?????"""
+    """发送聊天消息（流式）
+    
+    使用Server-Sent Events实时推送AI回复内容
+    
+    Args:
+        session_id: 会话ID
+        chat_req: 聊天请求数据
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        StreamingResponse: SSE流式响应
+        
+    Raises:
+        HTTPException: 会话不存在或无权限时返回404错误
+    """
     session = await chat_crud.get_session(db, session_id)
     if not session or session.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Session not found")
 
     async def event_generator():
-        """event_generator ?????"""
+        """SSE事件生成器
+        
+        流式输出AI回复内容，出错时推送错误事件
+        """
         try:
             async for payload in chat_service.stream_chat(
                 db,
@@ -338,7 +500,22 @@ async def update_favorite(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """update_favorite ?????"""
+    """更新消息的收藏状态
+    
+    只能收藏助手的消息，不能收藏用户消息
+    
+    Args:
+        message_id: 消息ID
+        payload: 收藏状态更新数据
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        ChatMessageResponse: 更新后的消息
+        
+    Raises:
+        HTTPException: 消息不存在时返回404，收藏用户消息返回400
+    """
     message = await chat_crud.get_message(db, message_id)
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
@@ -360,7 +537,22 @@ async def resend_message_stream(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """resend_message_stream ?????"""
+    """重新发送消息（流式）
+    
+    可以修改原始消息内容后重新发送，AI会生成新的回复
+    
+    Args:
+        message_id: 要重新发送的消息ID
+        chat_req: 聊天请求数据（可包含新的消息内容）
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        StreamingResponse: SSE流式响应
+        
+    Raises:
+        HTTPException: 消息不存在时返回404，知识库无权限返回403
+    """
     message = await chat_crud.get_message(db, message_id)
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
@@ -373,7 +565,7 @@ async def resend_message_stream(
             raise HTTPException(status_code=403, detail="无权访问该知识库")
 
     async def event_generator():
-        """event_generator ?????"""
+        """SSE事件生成器 - 重发消息"""
         try:
             async for payload in chat_service.stream_resend(
                 db=db,
@@ -399,7 +591,22 @@ async def regenerate_message_stream(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """regenerate_message_stream ?????"""
+    """重新生成AI回复（流式）
+    
+    使用相同的用户消息，让AI重新生成回复
+    
+    Args:
+        message_id: 要重新生成的助手消息ID
+        chat_req: 重新生成请求参数
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        StreamingResponse: SSE流式响应
+        
+    Raises:
+        HTTPException: 消息不存在时返回404，知识库无权限返回403
+    """
     message = await chat_crud.get_message(db, message_id)
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
@@ -412,7 +619,7 @@ async def regenerate_message_stream(
             raise HTTPException(status_code=403, detail="无权访问该知识库")
 
     async def event_generator():
-        """event_generator ?????"""
+        """SSE事件生成器 - 重新生成回复"""
         try:
             async for payload in chat_service.stream_regenerate(
                 db=db,
@@ -436,7 +643,21 @@ async def get_message_debug_snapshot(
     current_user: User = Depends(get_current_superuser),
     db: AsyncSession = Depends(get_db),
 ):
-    """get_message_debug_snapshot ?????"""
+    """获取消息的调试快照（仅管理员）
+    
+    用于调试，查看发送给LLM的完整提示词快照
+    
+    Args:
+        message_id: 消息ID
+        current_user: 当前登录的超级用户
+        db: 数据库会话
+        
+    Returns:
+        ChatPromptSnapshotResponse: 提示词快照
+        
+    Raises:
+        HTTPException: 快照不存在时返回404错误
+    """
     snapshot = await chat_prompt_snapshot_crud.get_by_message_id(db, message_id)
     if not snapshot:
         raise HTTPException(status_code=404, detail="Snapshot not found")
@@ -448,14 +669,24 @@ async def chat_with_knowledge(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    # 权限校验：使用 kb_crud.get_kb
-    """chat_with_knowledge ?????"""
+    """基于知识库进行RAG聊天（非流式）
+    
+    Args:
+        req: RAG聊天请求（包含知识库ID和问题）
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        KnowledgeChatResponse: AI基于知识库的回答
+        
+    Raises:
+        HTTPException: 知识库无权限返回403，生成失败返回500
+    """
     kb = await kb_crud.get_kb(db, req.kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权访问该知识库")
 
     try:
-        # 直接传整个 req 对象进去
         return await chat_service.handle_rag_chat(
             db=db,
             user_id=current_user.id,
@@ -471,13 +702,27 @@ async def chat_with_knowledge_stream(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """chat_with_knowledge_stream ?????"""
+    """基于知识库进行RAG聊天（流式）
+    
+    使用Server-Sent Events实时推送基于知识库的AI回答
+    
+    Args:
+        req: RAG聊天请求
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        StreamingResponse: SSE流式响应
+        
+    Raises:
+        HTTPException: 知识库无权限返回403
+    """
     kb = await kb_crud.get_kb(db, req.kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权访问该知识库")
 
     async def event_generator():
-        """event_generator ?????"""
+        """SSE事件生成器 - RAG聊天"""
         try:
             async for payload in chat_service.stream_rag_chat(
                 db=db,

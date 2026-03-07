@@ -114,7 +114,7 @@
               <div class="bubble-meta">
                 <strong>{{ message.role === 'user' ? '我' : '助手' }}</strong>
                 <small>
-                  {{ formatTime(message.created_at) }}
+                  {{ formatTimeCached(message.created_at) }}
                   <span v-if="message.edited_at"> · 已编辑</span>
                 </small>
               </div>
@@ -122,7 +122,7 @@
                 <span class="spinner" aria-hidden="true"></span>
                 <span class="loading-text">{{ message.statusText || '正在思考...' }}</span>
               </div>
-              <div class="message-content" v-html="formatMessage(message.content, message.role)"></div>
+              <div class="message-content" v-html="getFormattedMessage(message)"></div>
               <div v-if="!message.isLoading" class="message-actions">
                 <button
                   v-if="message.role === 'user'"
@@ -189,8 +189,8 @@
                       @click="openWebSource(source)"
                     >
                       <span class="source-name">{{ source.title || source.file_name || '网页来源' }}</span>
-                      <span v-if="formatSourceLoc(source)" class="source-meta">
-                        {{ formatSourceLoc(source) }}
+                      <span v-if="getSourceLoc(source)" class="source-meta">
+                        {{ getSourceLoc(source) }}
                       </span>
                       <span v-if="source.snippet" class="source-snippet">{{ truncateText(source.snippet, 120) }}</span>
                     </button>
@@ -199,11 +199,11 @@
                       class="source-link"
                       type="button"
                       :disabled="!canPreviewSource(source)"
-                      @click="openSourcePreview(source, resolveQueryForMessage(chatMessages, index))"
+                      @click="openSourcePreview(source, getPreviewQuery(index))"
                     >
                       <span class="source-name">{{ source.file_name || '未知文档' }}</span>
-                      <span v-if="formatSourceLoc(source)" class="source-meta">
-                        {{ formatSourceLoc(source) }}
+                      <span v-if="getSourceLoc(source)" class="source-meta">
+                        {{ getSourceLoc(source) }}
                       </span>
                     </button>
                   </li>
@@ -430,6 +430,11 @@ const debugLoading = ref(false);
 const debugError = ref('');
 const debugSnapshot = ref(null);
 const debugMessageId = ref(null);
+const messageHtmlCache = new WeakMap();
+const sourceLocCache = new WeakMap();
+const timeCache = new Map();
+let sessionFetchRequestId = 0;
+let suggestionFetchRequestId = 0;
 const inputPlaceholder = computed(() => {
   if (knowledgeMode.value && selectedKnowledgeBase.value) {
     return `向知识库「${selectedKnowledgeBase.value.name}」提问`;
@@ -450,6 +455,19 @@ const editingMessage = computed(() =>
 const favoriteMessages = computed(() =>
   chatMessages.value.filter((message) => message.role === 'assistant' && message.is_favorite),
 );
+
+const previewQueryByMessageIndex = computed(() => {
+  const queries = [];
+  let latestUserQuery = '';
+  for (let i = 0; i < chatMessages.value.length; i += 1) {
+    queries[i] = latestUserQuery;
+    const message = chatMessages.value[i];
+    if (message && message.role === 'user' && message.content && message.content.trim()) {
+      latestUserQuery = message.content.trim();
+    }
+  }
+  return queries;
+});
 
 const debugSections = computed(() => {
   const payload = debugSnapshot.value?.payload || {};
@@ -537,6 +555,7 @@ const toggleArchivedView = () => {
 };
 
 const clearSuggestions = () => {
+  suggestionFetchRequestId += 1;
   suggestions.value = [];
   suggestionError.value = '';
   suggestionLoading.value = false;
@@ -554,6 +573,8 @@ const fetchSuggestions = async () => {
     clearSuggestions();
     return;
   }
+  suggestionFetchRequestId += 1;
+  const requestId = suggestionFetchRequestId;
   suggestionLoading.value = true;
   suggestionError.value = '';
   try {
@@ -561,12 +582,16 @@ const fetchSuggestions = async () => {
       method: 'POST',
       body: { limit: 3 },
     });
+    if (requestId !== suggestionFetchRequestId) return;
     suggestions.value = Array.isArray(data?.suggestions) ? data.suggestions : [];
   } catch (err) {
+    if (requestId !== suggestionFetchRequestId) return;
     suggestionError.value = err.message || '获取提示失败';
     suggestions.value = [];
   } finally {
-    suggestionLoading.value = false;
+    if (requestId === suggestionFetchRequestId) {
+      suggestionLoading.value = false;
+    }
   }
 };
 
@@ -972,6 +997,8 @@ const fetchMessages = async () => {
 };
 
 const fetchSessions = async () => {
+  sessionFetchRequestId += 1;
+  const requestId = sessionFetchRequestId;
   try {
     const params = new URLSearchParams();
     const query = sessionQuery.value.trim();
@@ -979,9 +1006,11 @@ const fetchSessions = async () => {
     if (showArchived.value) params.set('include_archived', 'true');
     const qs = params.toString();
     const data = await apiFetch(`/chat/sessions${qs ? `?${qs}` : ''}`);
+    if (requestId !== sessionFetchRequestId) return;
     sessions.value = data || [];
     if (!sessions.value.length && !showArchived.value && !query) {
       const fallback = await apiFetch('/chat/sessions?include_archived=true');
+      if (requestId !== sessionFetchRequestId) return;
       if (Array.isArray(fallback) && fallback.length) {
         sessions.value = fallback;
         showArchived.value = true;
@@ -1581,10 +1610,26 @@ const regenerateMessage = async (message) => {
   }
 };
 
-const formatTime = (time) => {
+const MAX_TIME_CACHE_SIZE = 500;
+
+const formatTimeCached = (time) => {
   if (!time) return '';
-  return new Date(time).toLocaleString();
+  const key = String(time);
+  if (timeCache.has(key)) {
+    return timeCache.get(key);
+  }
+  const value = new Date(key).toLocaleString();
+  if (timeCache.size >= MAX_TIME_CACHE_SIZE) {
+    const firstKey = timeCache.keys().next().value;
+    if (firstKey !== undefined) {
+      timeCache.delete(firstKey);
+    }
+  }
+  timeCache.set(key, value);
+  return value;
 };
+
+const formatTime = formatTimeCached;
 
 const STATUS_LABELS = {
   uploading: '上传中',
@@ -1742,7 +1787,8 @@ const formatMessage = (raw, role = 'assistant') => {
       closeQuote();
       const altText = escapeHtml(imageMatch[1] || 'image');
       const resolvedUrl = resolveMediaUrl(imageMatch[2]);
-      html += `<div class="md-image"><img class="chat-image" src="${resolvedUrl}" alt="${altText}" loading="lazy" /></div>`;
+      const safeUrl = escapeHtml(resolvedUrl);
+      html += `<div class="md-image"><img class="chat-image" src="${safeUrl}" alt="${altText}" loading="lazy" /></div>`;
       continue;
     }
 
@@ -1785,6 +1831,19 @@ const formatMessage = (raw, role = 'assistant') => {
   return html;
 };
 
+const getFormattedMessage = (message) => {
+  if (!message) return '';
+  const content = String(message.content || '');
+  const role = message.role || 'assistant';
+  const cached = messageHtmlCache.get(message);
+  if (cached && cached.content === content && cached.role === role) {
+    return cached.html;
+  }
+  const html = formatMessage(content, role);
+  messageHtmlCache.set(message, { content, role, html });
+  return html;
+};
+
 const formatSourceLoc = (source) => {
   if (!source) return '';
   if (source.url && !source.doc_id) {
@@ -1809,6 +1868,16 @@ const formatSourceLoc = (source) => {
   return parts.join(' · ');
 };
 
+const getSourceLoc = (source) => {
+  if (!source || typeof source !== 'object') return '';
+  if (sourceLocCache.has(source)) {
+    return sourceLocCache.get(source);
+  }
+  const value = formatSourceLoc(source);
+  sourceLocCache.set(source, value);
+  return value;
+};
+
 const canPreviewSource = (source) =>
   source &&
   source.doc_id !== undefined &&
@@ -1823,15 +1892,7 @@ const openWebSource = (source) => {
   window.open(source.url, '_blank', 'noopener');
 };
 
-const resolveQueryForMessage = (messages, index) => {
-  for (let i = index - 1; i >= 0; i -= 1) {
-    const message = messages[i];
-    if (message && message.role === 'user' && message.content && message.content.trim()) {
-      return message.content;
-    }
-  }
-  return '';
-};
+const getPreviewQuery = (index) => previewQueryByMessageIndex.value[index] || '';
 
 const STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'that', 'this', 'from', 'are', 'was', 'were', 'you', 'your', 'about', 'have', 'has',
@@ -2014,11 +2075,10 @@ const scrollToBottom = () => {
   });
 };
 
-fetchSessions();
-fetchAttachments();
-
 onMounted(() => {
   fetchCurrentUser();
+  fetchSessions();
+  fetchAttachments();
   document.addEventListener('click', handleSessionMenuOutside);
   if (chatLogRef.value) {
     chatLogRef.value.addEventListener('click', handleCodeCopy);
@@ -2034,6 +2094,14 @@ watch(knowledgeMode, (value) => {
 
 onBeforeUnmount(() => {
   stopDocPolling();
+  if (streamController) {
+    streamController.abort();
+    streamController = null;
+  }
+  sessionFetchRequestId += 1;
+  suggestionFetchRequestId += 1;
+  previewRequestId += 1;
+  window.clearTimeout(scrollToMessage._timer);
   if (sessionSearchTimer) {
     clearTimeout(sessionSearchTimer);
   }

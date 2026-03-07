@@ -1,22 +1,22 @@
-﻿
-"""schemas/token.py."""
+"""令牌数据验证模型模块 - 刷新令牌和验证码的请求/响应模型"""
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 
+
 # ========== Refresh Token Schemas ==========
 
 class RefreshTokenBase(BaseModel):
+    """刷新令牌基础模型 - 包含设备信息"""
     # 设备名称（可选）
-    """RefreshTokenBase ??"""
     device_name: Optional[str] = Field(None, max_length=200)
     # 设备类型（可选，例如 web / mobile）
     device_type: Optional[str] = Field(None, max_length=50)
 
 
 class RefreshTokenCreate(RefreshTokenBase):
+    """刷新令牌创建模型 - 用于创建新的刷新令牌"""
     # 关联用户 ID
-    """RefreshTokenCreate ??"""
     user_id: int
     # 刷新令牌字符串
     token: str
@@ -29,8 +29,8 @@ class RefreshTokenCreate(RefreshTokenBase):
 
 
 class RefreshTokenResponse(RefreshTokenBase):
+    """刷新令牌响应模型 - 返回刷新令牌的详细信息"""
     # 令牌 ID
-    """RefreshTokenResponse ??"""
     id: int
     # 关联用户 ID
     user_id: int
@@ -49,9 +49,9 @@ class RefreshTokenResponse(RefreshTokenBase):
 
 
 class RefreshTokenRequest(BaseModel):
+    """刷新令牌请求模型 - 用于请求新的访问令牌"""
     # 刷新令牌字符串
-    """RefreshTokenRequest ??"""
-    refresh_token: str = Field(..., description="Generate token schemas (app/schemas/token.py)")
+    refresh_token: str = Field(..., description="用于刷新访问令牌的刷新令牌")
     
     model_config = ConfigDict(
         json_schema_extra={
@@ -63,22 +63,22 @@ class RefreshTokenRequest(BaseModel):
 
 
 class RefreshTokenRevoke(BaseModel):
+    """刷新令牌撤销请求模型 - 用于撤销刷新令牌"""
     # 要撤销的令牌（可选）
-    """RefreshTokenRevoke ??"""
-    token: Optional[str] = Field(None, description="Generate token schemas (app/schemas/token.py)")
+    token: Optional[str] = Field(None, description="要撤销的刷新令牌，如果为空则撤销当前会话的令牌")
 
 
 # ========== Verification Code Schemas ==========
 
 class VerificationCodeBase(BaseModel):
+    """验证码基础模型 - 包含验证码类型"""
     # 验证码类型（email_verification / password_reset）
-    """VerificationCodeBase ??"""
-    code_type: str = Field(..., description="Generate token schemas (app/schemas/token.py)")
+    code_type: str = Field(..., description="验证码类型，如邮箱验证或密码重置")
 
 
 class VerificationCodeCreate(VerificationCodeBase):
+    """验证码创建模型 - 用于创建新的验证码"""
     # 关联用户 ID
-    """VerificationCodeCreate ??"""
     user_id: int
     # 验证码内容
     code: str
@@ -89,8 +89,8 @@ class VerificationCodeCreate(VerificationCodeBase):
 
 
 class VerificationCodeResponse(VerificationCodeBase):
+    """验证码响应模型 - 返回验证码的详细信息"""
     # 验证码 ID
-    """VerificationCodeResponse ??"""
     id: int
     # 关联用户 ID
     user_id: int
@@ -109,11 +109,11 @@ class VerificationCodeResponse(VerificationCodeBase):
 
 
 class VerificationCodeVerify(BaseModel):
+    """验证码验证请求模型 - 用于验证用户输入的验证码"""
     # 用户输入的验证码
-    """VerificationCodeVerify ??"""
     code: str = Field(..., min_length=4, max_length=10)
     # 验证码类型
-    code_type: str = Field(..., description="Generate token schemas (app/schemas/token.py)")
+    code_type: str = Field(..., description="验证码类型，如邮箱验证或密码重置")
     
     model_config = ConfigDict(
         json_schema_extra={
@@ -123,4 +123,3 @@ class VerificationCodeVerify(BaseModel):
             }
         }
     )
-

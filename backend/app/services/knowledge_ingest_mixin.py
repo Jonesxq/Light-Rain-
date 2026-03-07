@@ -1,4 +1,4 @@
-"""知识库导入/重建/删除流程。"""
+"""知识库导入/重建/删除流程模块"""
 
 import asyncio
 import os
@@ -21,10 +21,17 @@ logger = logger_manager.get_logger(__name__)
 
 
 class KnowledgeIngestMixin:
-    """知识库文档处理与清理能力。"""
+    """知识库文档处理与清理Mixin：提供文档导入、重建索引和删除功能"""
 
     def _normalize_milvus_delete_ids(self, vector_ids: List[str]) -> Tuple[List[int], int]:
-        """规范化 Milvus 删除 ID，返回有效 ID 与跳过数量。"""
+        """规范化Milvus删除ID，返回有效ID与跳过数量
+        
+        Args:
+            vector_ids: 向量ID字符串列表
+            
+        Returns:
+            元组(规范化后的整数ID列表, 跳过的数量)
+        """
         normalized_ids: List[int] = []
         seen: set[int] = set()
         skipped = 0
@@ -45,7 +52,16 @@ class KnowledgeIngestMixin:
         return normalized_ids, skipped
 
     async def _summarize_chunk(self, llm: ChatOpenAI, raw_text: str, max_chars: int) -> tuple[str, dict]:
-        """单个分片摘要（失败回退原文）。"""
+        """单个分片摘要（失败回退原文）
+        
+        Args:
+            llm: LLM实例
+            raw_text: 原始文本
+            max_chars: 最大字符数
+            
+        Returns:
+            元组(摘要文本, 使用统计字典)
+        """
         if not raw_text:
             return "", {"prompt_tokens": None, "completion_tokens": None, "total_tokens": None, "token_missing": True}
         try:
@@ -66,11 +82,17 @@ class KnowledgeIngestMixin:
             return raw_text, {"prompt_tokens": None, "completion_tokens": None, "total_tokens": None, "token_missing": True}
 
     async def _summarize_chunks(self, raw_chunks: List[str]) -> tuple[List[str], dict]:
-        """并发摘要多个分片并聚合 token 统计。"""
+        """并发摘要多个分片并聚合token统计
+        
+        Args:
+            raw_chunks: 原始分片文本列表
+            
+        Returns:
+            元组(摘要列表, 汇总使用统计字典)
+        """
         if not raw_chunks:
             return [], {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "token_missing": 0}
 
-        # 控制并发，避免摘要过载
         llm = self._get_summary_llm()
         max_chars = max(50, int(settings.llm.RAG_SUMMARY_MAX_CHARS))
         concurrency = max(1, int(settings.llm.RAG_SUMMARY_CONCURRENCY))
@@ -79,7 +101,7 @@ class KnowledgeIngestMixin:
         usage_rows: list[dict] = [{} for _ in raw_chunks]
 
         async def worker(idx: int, text: str) -> None:
-            """摘要并发任务（受信号量控制）。"""
+            """摘要并发任务（受信号量控制）"""
             async with semaphore:
                 summary, usage = await self._summarize_chunk(llm, text, max_chars)
                 summaries[idx] = summary
@@ -104,7 +126,11 @@ class KnowledgeIngestMixin:
         return summaries, agg
 
     async def ingest_document(self, doc_id: int):
-        """导入文档：分块 -> 摘要 -> sidecar -> 向量入库。"""
+        """导入文档：分块 -> 摘要 -> sidecar -> 向量入库
+        
+        Args:
+            doc_id: 文档ID
+        """
         async with mysql_manager.async_session_maker() as db:
             doc = await db.get(Document, doc_id)
             if not doc:
@@ -133,7 +159,6 @@ class KnowledgeIngestMixin:
                         "file_size": doc.file_size,
                     }
                 }
-                # 先做文档分块（包含基础元信息）
                 chunks = self.chunker.load_and_split(
                     doc.file_path,
                     doc.file_type,
@@ -142,7 +167,6 @@ class KnowledgeIngestMixin:
                 if not chunks:
                     raise ValueError("Document chunking produced empty result.")
 
-                # 组织原始分片与结构化元数据
                 prepared_rows: List[dict] = []
                 for chunk in chunks:
                     raw_content = (chunk.page_content or "").strip()
@@ -182,7 +206,6 @@ class KnowledgeIngestMixin:
                     error_msg="",
                 )
 
-                # 生成摘要（用于向量检索）
                 raw_contents = [row["raw_content"] for row in prepared_rows]
                 summary_timer = UsageTimer()
                 summaries, summary_usage = await self._summarize_chunks(raw_contents)
@@ -215,7 +238,6 @@ class KnowledgeIngestMixin:
                 if len(summaries) != len(prepared_rows):
                     raise ValueError("Chunk summary count mismatch.")
 
-                # 写 sidecar（保存原始分片，便于预览与回填）
                 sidecar_path = self._get_sidecar_path(doc.file_path)
                 sidecar_rows = [
                     {
@@ -228,12 +250,10 @@ class KnowledgeIngestMixin:
                 ]
                 await asyncio.to_thread(self._write_sidecar_atomic, sidecar_path, sidecar_rows)
 
-                # 摘要入向量库
                 milvus_docs = [
                     LangChainDocument(
                         page_content=summary,
                         metadata={
-                            # 仅保留字符串字段，兼容已有 schema（避免 dict 写入 VARCHAR）
                             "source": str(doc.file_name or doc.file_path or "")
                         },
                     )
@@ -244,7 +264,6 @@ class KnowledgeIngestMixin:
                 if not ids or len(ids) != len(prepared_rows):
                     raise ValueError("Milvus returned invalid ids for summary chunks.")
 
-                # 写入数据库分片表，保存向量 ID
                 for row, summary, v_id in zip(prepared_rows, summaries, ids):
                     await kb_crud.create_chunk(
                         db,
@@ -257,7 +276,6 @@ class KnowledgeIngestMixin:
                         structured_meta=row["structured_meta"],
                     )
 
-                # 更新文档状态并清理缓存
                 await kb_crud.update_document_status(
                     db,
                     doc_id=doc.id,
@@ -290,7 +308,6 @@ class KnowledgeIngestMixin:
                     except Exception:
                         pass
                 logger.error(f"Failed to ingest document {doc.id}: {str(e)}")
-                # 失败时清理 sidecar，避免脏数据
                 self._remove_sidecar_file(doc.file_path)
                 await kb_crud.update_document_status(
                     db,
@@ -300,13 +317,19 @@ class KnowledgeIngestMixin:
                 )
 
     async def reindex_document(self, doc_id: int) -> bool:
-        """重建文档索引（删除旧向量与分片后再导入）。"""
+        """重建文档索引（删除旧向量与分片后再导入）
+        
+        Args:
+            doc_id: 文档ID
+            
+        Returns:
+            是否成功
+        """
         async with mysql_manager.async_session_maker() as db:
             doc = await db.get(Document, doc_id)
             if not doc:
                 return False
 
-            # 删除已有向量
             chunks = await kb_crud.get_document_chunks(db, doc_id)
             vector_ids = [c.vector_id for c in chunks if c.vector_id]
             if vector_ids:
@@ -320,7 +343,6 @@ class KnowledgeIngestMixin:
                 except Exception as e:
                     logger.warning(f"Milvus delete failed for doc {doc_id}: {e}")
 
-            # 清理旧分片与 sidecar
             await kb_crud.delete_document_chunks(db, doc_id)
             self._remove_sidecar_file(doc.file_path)
 
@@ -336,13 +358,20 @@ class KnowledgeIngestMixin:
         return True
 
     async def delete_document(self, kb_id: int, doc_id: int) -> bool:
-        """删除单个文档（包含向量与文件清理）。"""
+        """删除单个文档（包含向量与文件清理）
+        
+        Args:
+            kb_id: 知识库ID
+            doc_id: 文档ID
+            
+        Returns:
+            是否成功
+        """
         async with mysql_manager.async_session_maker() as db:
             doc = await kb_crud.get_document(db, doc_id)
             if not doc or doc.kb_id != kb_id:
                 return False
 
-            # 删除向量数据
             chunks = await kb_crud.get_document_chunks(db, doc_id)
             vector_ids = [c.vector_id for c in chunks if c.vector_id]
             if vector_ids:
@@ -356,7 +385,6 @@ class KnowledgeIngestMixin:
                 except Exception as e:
                     logger.warning(f"Milvus delete failed for doc {doc_id}: {e}")
 
-            # 删除 sidecar 与原文件
             self._remove_sidecar_file(doc.file_path)
             if doc.file_path and os.path.exists(doc.file_path):
                 try:
@@ -370,13 +398,19 @@ class KnowledgeIngestMixin:
             return success
 
     async def delete_kb(self, kb_id: int) -> bool:
-        """删除知识库（包含所有文档/向量/sidecar）。"""
+        """删除知识库（包含所有文档/向量/sidecar）
+        
+        Args:
+            kb_id: 知识库ID
+            
+        Returns:
+            是否成功
+        """
         async with mysql_manager.async_session_maker() as db:
             kb = await kb_crud.get_kb(db, kb_id)
             if not kb:
                 return False
 
-            # 汇总所有向量 ID 并清理文件
             docs = await kb_crud.get_kb_documents(db, kb_id)
             vector_ids: List[str] = []
             for doc in docs:

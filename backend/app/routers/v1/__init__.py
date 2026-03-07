@@ -1,5 +1,5 @@
-﻿
-"""routers/v1/__init__.py."""
+
+"""API v1 路由模块 - 包含所有v1版本的API端点"""
 from .auth import router as auth_router
 from .users import router as user_router
 from .chat import router as chat_router  # 聊天相关路由

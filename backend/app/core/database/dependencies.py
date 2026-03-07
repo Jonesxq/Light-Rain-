@@ -1,5 +1,5 @@
-﻿
-"""core/database/dependencies.py."""
+
+"""依赖注入模块 - 提供用户认证和令牌清理等依赖函数"""
 from fastapi import Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func
@@ -12,6 +12,7 @@ from app.models.auth_model import Token, TokenType
 from app.core.security import security_manager
 from app.core.config.settings import settings
 
+# 从Cookie中获取访问令牌的依赖
 get_access_token_cookie = APIKeyCookie(
     name="access_token",
     auto_error=False,
@@ -19,6 +20,7 @@ get_access_token_cookie = APIKeyCookie(
     description="Access token for authentication",
 )
 
+# 从Cookie中获取刷新令牌的依赖
 get_refresh_token_cookie = APIKeyCookie(
     name="refresh_token",
     auto_error=False,
@@ -28,9 +30,14 @@ get_refresh_token_cookie = APIKeyCookie(
 
 
 class Dependencies:
-    """Dependencies ??"""
+    """依赖注入类 - 提供用户认证和令牌管理等功能"""
+    
     def __init__(self, db: AsyncSession):
-        """__init__ ???"""
+        """初始化依赖注入类
+        
+        Args:
+            db: 异步数据库会话
+        """
         self.db = db
         self.auth_crud = get_auth_crud(db)
         self.mysql_manager = mysql_manager
@@ -42,7 +49,20 @@ class Dependencies:
         access_token: str = Depends(get_access_token_cookie),
         db: AsyncSession = Depends(mysql_manager.get_db),
     ):
-        """get_current_user ?????"""
+        """获取当前认证用户
+        
+        通过访问令牌验证用户身份，并从数据库中获取用户信息
+        
+        Args:
+            access_token: 从Cookie中获取的访问令牌
+            db: 异步数据库会话
+            
+        Returns:
+            User: 认证通过的用户对象
+            
+        Raises:
+            HTTPException: 认证失败时抛出401未授权异常
+        """
         self.logger.info(
             f"get_current_user called with access_token: "
             f"{'***' if access_token else 'None'}"
@@ -121,7 +141,16 @@ class Dependencies:
         self,
         response: Response,
     ) -> bool:
-        """cleanup_tokens ?????"""
+        """清理认证令牌
+        
+        删除响应中的访问令牌和刷新令牌Cookie
+        
+        Args:
+            response: FastAPI响应对象
+            
+        Returns:
+            bool: 清理成功返回True
+        """
         response.delete_cookie(
             "access_token",
             domain=settings.domain.COOKIE_DOMAIN,

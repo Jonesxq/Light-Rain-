@@ -1,4 +1,4 @@
-"""知识库向量检索与元数据解析。"""
+"""知识库向量检索与元数据解析模块"""
 
 from typing import List, Optional
 
@@ -12,10 +12,19 @@ logger = logger_manager.get_logger(__name__)
 
 
 class KnowledgeVectorMixin:
-    """向量检索与元数据解析能力。"""
+    """向量检索与元数据解析Mixin：提供向量检索和元数据处理功能"""
 
     async def _semantic_search_global(self, kb_id: int, query: str, top_k: int):
-        """全局向量检索（失败则返回空）。"""
+        """全局向量检索（失败则返回空列表）
+        
+        Args:
+            kb_id: 知识库ID
+            query: 查询文本
+            top_k: 返回结果数量
+            
+        Returns:
+            向量检索结果文档列表（失败返回空列表）
+        """
         if top_k <= 0:
             return []
         try:
@@ -26,16 +35,21 @@ class KnowledgeVectorMixin:
             return []
 
     def _extract_parent_id_from_meta(self, meta: Optional[dict]) -> Optional[str]:
-        """从元数据中解析 parent_id（含多级兜底）。"""
+        """从元数据中解析parent_id（含多级兜底策略）
+        
+        Args:
+            meta: 元数据字典
+            
+        Returns:
+            解析出的parent_id字符串，或None
+        """
         if not isinstance(meta, dict):
             return None
 
-        # 优先使用显式 parent_id
         parent_id = meta.get("parent_id")
         if parent_id not in (None, ""):
             return str(parent_id)
 
-        # 兜底：尝试从 doc/ chunk 信息拼出 parent_id
         doc_meta = meta.get("doc", {}) if isinstance(meta.get("doc"), dict) else {}
         chunk_meta = meta.get("chunk", {}) if isinstance(meta.get("chunk"), dict) else {}
         doc_id = doc_meta.get("doc_id")
@@ -45,7 +59,14 @@ class KnowledgeVectorMixin:
         return None
 
     async def _load_structured_meta_by_vector_ids(self, vector_ids: List[str]) -> dict[str, dict]:
-        """批量加载向量 ID 对应的结构化元数据。"""
+        """批量加载向量ID对应的结构化元数据
+        
+        Args:
+            vector_ids: 向量ID列表
+            
+        Returns:
+            向量ID到结构化元数据的字典映射
+        """
         if not vector_ids:
             return {}
 

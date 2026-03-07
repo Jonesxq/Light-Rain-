@@ -1,4 +1,4 @@
-﻿"""services/rag_evaluation.py."""
+"""RAG评估服务：使用RAGas评估知识库的检索和回答质量"""
 import asyncio
 import math
 import random
@@ -33,15 +33,23 @@ logger = logger_manager.get_logger(__name__)
 
 
 class RagEvaluationService:
-
-    """RagEvaluationService ??"""
+    """RAG评估服务：使用RAGas框架评估知识库的检索和回答质量"""
+    
     def __init__(self):
+        """初始化RAG评估服务"""
         # 服务本身无需额外初始化
-        """__init__ ???"""
         pass
 
     def _build_llm(self, model_name: Optional[str], temperature: float = 0.2) -> ChatOpenAI:
-        """_build_llm ???"""
+        """构建LLM实例
+        
+        Args:
+            model_name: 模型名称
+            temperature: 温度参数
+            
+        Returns:
+            ChatOpenAI实例
+        """
         return build_chat_llm(
             model=model_name or settings.llm.DEFAULT_MODEL,
             temperature=temperature,
@@ -49,33 +57,66 @@ class RagEvaluationService:
         )
 
     def _build_embeddings(self) -> DashScopeEmbeddings:
-        """_build_embeddings ???"""
+        """构建嵌入模型实例
+        
+        Returns:
+            DashScopeEmbeddings实例
+        """
         return build_embeddings()
 
     def _build_ragas_llm(self, model_name: Optional[str], temperature: float = 0.2) -> LangchainLLMWrapper:
-        """_build_ragas_llm ???"""
+        """构建RAGas包装的LLM实例
+        
+        Args:
+            model_name: 模型名称
+            temperature: 温度参数
+            
+        Returns:
+            LangchainLLMWrapper实例
+        """
         return LangchainLLMWrapper(self._build_llm(model_name, temperature=temperature))
 
     def _build_ragas_embeddings(self) -> LangchainEmbeddingsWrapper:
-        """_build_ragas_embeddings ???"""
+        """构建RAGas包装的嵌入模型实例
+        
+        Returns:
+            LangchainEmbeddingsWrapper实例
+        """
         return LangchainEmbeddingsWrapper(self._build_embeddings())
 
     async def _load_candidate_chunks(self, kb_id: int, sample_size: int) -> List[ChunkCandidate]:
-        """_load_candidate_chunks ?????"""
+        """加载候选文档切片
+        
+        Args:
+            kb_id: 知识库ID
+            sample_size: 采样数量
+            
+        Returns:
+            ChunkCandidate列表
+        """
         if sample_size <= 0:
             return []
 
         chunks = await kb_service.get_raw_chunk_candidates(kb_id)
+        # 过滤掉内容过短的切片
         filtered = [c for c in chunks if c.content and len(c.content.strip()) >= 50]
         if not filtered:
             return []
 
         if len(filtered) <= sample_size:
             return filtered
+        # 随机采样
         return random.sample(filtered, sample_size)
 
     def _build_langchain_docs(self, chunks: List[ChunkCandidate]) -> List[LangChainDocument]:
-        """_build_langchain_docs ???"""
+        """构建LangChain文档对象
+        
+        Args:
+            chunks: ChunkCandidate列表
+            
+        Returns:
+            LangChainDocument列表
+        """
         docs: List[LangChainDocument] = []
         for chunk in chunks:
             meta = chunk.structured_meta or {}
@@ -113,7 +154,21 @@ class RagEvaluationService:
         user_id: Optional[int] = None,
         kb_id: Optional[int] = None,
     ):
-        """_generate_testset ?????"""
+        """生成RAGas测试集
+        
+        Args:
+            docs: LangChain文档列表
+            sample_size: 样本数量
+            generate_model: 生成模型名称
+            user_id: 用户ID（用于记录使用量）
+            kb_id: 知识库ID（用于记录使用量）
+            
+        Returns:
+            RAGas测试集
+            
+        Raises:
+            Exception: 当测试集生成失败时
+        """
         if not docs:
             return None
 
@@ -170,7 +225,14 @@ class RagEvaluationService:
         return result
 
     def _extract_qa_pairs(self, testset) -> List[Tuple[str, str]]:
-        """_extract_qa_pairs ???"""
+        """从测试集中提取问答对
+        
+        Args:
+            testset: RAGas测试集
+            
+        Returns:
+            (问题, 标准答案)元组列表
+        """
         if not testset:
             return []
 
@@ -199,7 +261,18 @@ class RagEvaluationService:
         answer_model: Optional[str],
         user_id: Optional[int] = None,
     ) -> Tuple[str, List[str], List[dict]]:
-        """_answer_with_rag ?????"""
+        """使用RAG回答问题
+        
+        Args:
+            kb_id: 知识库ID
+            question: 问题
+            top_k: 检索top_k
+            answer_model: 回答模型名称
+            user_id: 用户ID（用于记录使用量）
+            
+        Returns:
+            (回答, 上下文列表, 来源列表)元组
+        """
         context, sources = await kb_service.search_knowledge(
             kb_id=kb_id,
             query=question,
@@ -249,7 +322,14 @@ class RagEvaluationService:
         return answer, contexts, sources
 
     def _safe_float(self, value: object) -> Optional[float]:
-        """_safe_float ???"""
+        """安全转换为浮点数
+        
+        Args:
+            value: 要转换的值
+            
+        Returns:
+            浮点数或None（转换失败时）
+        """
         try:
             number = float(value)
         except Exception:
@@ -259,7 +339,14 @@ class RagEvaluationService:
         return number
 
     def _aggregate_scores(self, score_rows: List[dict]) -> dict:
-        """_aggregate_scores ???"""
+        """聚合评分结果
+        
+        Args:
+            score_rows: 评分行列表
+            
+        Returns:
+            聚合后的评分字典
+        """
         if not score_rows:
             return {}
 
@@ -280,7 +367,14 @@ class RagEvaluationService:
         return aggregated
 
     def _normalize_score_rows(self, scores) -> List[dict]:
-        """_normalize_score_rows ???"""
+        """标准化评分行
+        
+        Args:
+            scores: 评分数据（可能是列表或字典）
+            
+        Returns:
+            标准化后的评分行列表
+        """
         if scores is None:
             return []
         # 已经是 list[dict]
@@ -309,7 +403,24 @@ class RagEvaluationService:
         judge_model: Optional[str] = None,
         max_chunk_chars: int = 1200
     ) -> dict:
-        """evaluate_kb ?????"""
+        """评估知识库
+        
+        Args:
+            kb_id: 知识库ID
+            user_id: 用户ID（用于记录使用量）
+            sample_size: 样本数量
+            top_k: 检索top_k
+            generate_model: 测试集生成模型
+            answer_model: 回答模型
+            judge_model: 评判模型
+            max_chunk_chars: 最大切片字符数
+            
+        Returns:
+            包含评估结果的字典
+            
+        Raises:
+            Exception: 当评估流程失败时
+        """
         try:
             # 1) 加载候选切片并构造文档
             chunks = await self._load_candidate_chunks(kb_id, sample_size)
@@ -431,16 +542,5 @@ class RagEvaluationService:
             raise
 
 
+# 全局服务实例
 rag_evaluation_service = RagEvaluationService()
-
-
-
-
-
-
-
-
-
-
-
-

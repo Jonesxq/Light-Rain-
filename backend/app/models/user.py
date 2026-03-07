@@ -1,5 +1,5 @@
-﻿
-"""models/user.py."""
+
+"""用户数据模型模块"""
 from datetime import datetime
 from typing import Optional
 from sqlmodel import Field, SQLModel,Relationship
@@ -8,8 +8,7 @@ if TYPE_CHECKING:
     from app.models.chat import ChatSession # 避免循环导入
 
 class User(SQLModel, table=True):
-    
-    """User ??"""
+    """用户数据模型"""
     __tablename__ = "users"
     
     # 基础字段
@@ -28,7 +27,7 @@ class User(SQLModel, table=True):
     # 是否为超级管理员
     is_superuser: bool = Field(default=False)
     # 是否已完成邮箱验证
-    is_verified: bool = Field(default=False, description="Generate user model (app/models/user.py)")
+    is_verified: bool = Field(default=False)
     
     # 时间戳
     # 创建时间
@@ -42,7 +41,7 @@ class User(SQLModel, table=True):
     chat_sessions: List["ChatSession"] = Relationship(back_populates="user")
     
     class Config:
-        """Config ??"""
+        """配置类"""
         json_schema_extra = {
             "example": {
                 "username": "johndoe",

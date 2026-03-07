@@ -1,4 +1,4 @@
-"""Disclaimer templates for safety and compliance."""
+"""安全与合规免责声明模板"""
 
 DISCLAIMER_TEMPLATES = {
     "medical": {
@@ -23,7 +23,7 @@ DISCLAIMER_TEMPLATES = {
 
 
 def normalize_labels(labels: list[str] | None) -> list[str]:
-    """Normalize labels into allowed disclaimer codes."""
+    """将标签规范化为允许的免责声明代码"""
     if not labels:
         return []
     allowed = set(DISCLAIMER_TEMPLATES.keys())
@@ -39,11 +39,11 @@ def normalize_labels(labels: list[str] | None) -> list[str]:
 
 
 def build_disclaimers(labels: list[str] | None) -> list[dict]:
-    """Build disclaimer payloads from labels."""
+    """根据标签构建免责声明数据"""
     codes = normalize_labels(labels)
     return [DISCLAIMER_TEMPLATES[code] for code in codes if code in DISCLAIMER_TEMPLATES]
 
 
 def get_disclaimer_map() -> dict:
-    """Return disclaimer template map."""
+    """获取免责声明模板映射"""
     return DISCLAIMER_TEMPLATES

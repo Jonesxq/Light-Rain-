@@ -1,5 +1,5 @@
 ﻿
-"""core/database/mysql.py."""
+"""MySQL数据库管理模块 - 提供异步和同步MySQL连接、会话管理和表创建"""
 from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy import create_engine, text
@@ -8,14 +8,17 @@ from app.core.logger import logger_manager
 from app.core.config.settings import settings
 from sqlmodel import SQLModel
 
-# SQLAlchemy declarativebase class
+# SQLAlchemy声明基类
 Base = declarative_base()
 
 class MySQLManager:
+    """MySQL数据库管理器 - 管理异步和同步数据库连接、会话和表创建"""
     
-    """MySQLManager ??"""
     def __init__(self):
-        """__init__ ???"""
+        """初始化MySQL管理器
+        
+        设置日志记录器和数据库引擎/会话工厂的初始状态
+        """
         self.logger = logger_manager.get_logger(__name__)
         self.async_engine: create_async_engine | None = None
         self.async_session_maker: async_sessionmaker | None = None
@@ -23,9 +26,15 @@ class MySQLManager:
         self.sync_session_maker: sessionmaker | None = None
     
     def get_sqlalchemy_url(self) -> str:
-        """get_sqlalchemy_url ???"""
+        """获取异步SQLAlchemy连接URL
+        
+        确保使用aiomysql驱动进行异步操作
+        
+        Returns:
+            str: 配置好的异步数据库连接URL
+        """
         url = settings.database.DATABASE_URL
-        # ensure using aiomysql driver
+        # 确保使用aiomysql驱动
         if url.startswith("mysql://"):
             return url.replace("mysql://", "mysql+aiomysql://", 1)
         elif url.startswith("mysql+pymysql://"):
@@ -33,9 +42,15 @@ class MySQLManager:
         return url
     
     def get_sync_sqlalchemy_url(self) -> str:
-        """get_sync_sqlalchemy_url ???"""
+        """获取同步SQLAlchemy连接URL
+        
+        确保使用pymysql驱动进行同步操作
+        
+        Returns:
+            str: 配置好的同步数据库连接URL
+        """
         url = settings.database.DATABASE_URL
-        # ensure using pymysql driver
+        # 确保使用pymysql驱动
         if url.startswith("mysql://"):
             return url.replace("mysql://", "mysql+pymysql://", 1)
         elif url.startswith("mysql+aiomysql://"):
@@ -43,7 +58,13 @@ class MySQLManager:
         return url
     
     async def initialize(self) -> None:
-        """initialize ?????"""
+        """初始化MySQL数据库连接
+        
+        创建异步和同步引擎、会话工厂，并创建数据库表
+        
+        Raises:
+            Exception: 初始化失败时抛出异常
+        """
         if self.async_engine:
             self.logger.debug("MySQLManager is already initialized.")
             return
@@ -51,7 +72,7 @@ class MySQLManager:
         try:
             db = settings.database
             
-            # Initialize async engine
+            # 初始化异步引擎
             self.async_engine = create_async_engine(
                 self.get_sqlalchemy_url(),
                 echo=db.ECHO,
@@ -59,7 +80,7 @@ class MySQLManager:
                 pool_timeout=db.POOL_TIMEOUT,
                 pool_size=db.POOL_SIZE,
                 max_overflow=db.POOL_MAX_OVERFLOW,
-                # Set MySQL timezone to UTC (session level)
+                # 设置MySQL时区为UTC（会话级别）
                 connect_args={
                     "init_command": "SET SESSION time_zone = '+00:00'",
                 },
@@ -72,7 +93,7 @@ class MySQLManager:
                 expire_on_commit=False,
             )
             
-            # Initialize sync engine (for background tasks)
+            # 初始化同步引擎（用于后台任务）
             self.sync_engine = create_engine(
                 self.get_sync_sqlalchemy_url(),
                 echo=db.ECHO,
@@ -97,7 +118,14 @@ class MySQLManager:
             raise
     
     async def get_db(self) -> AsyncGenerator[AsyncSession, None]:
-        """get_db ?????"""
+        """获取异步数据库会话的生成器
+        
+        Yields:
+            AsyncSession: 异步数据库会话
+            
+        Raises:
+            RuntimeError: 数据库未初始化时抛出异常
+        """
         if not self.async_session_maker:
             raise RuntimeError("Database not initialized. Call initialize() first.")
         
@@ -105,13 +133,27 @@ class MySQLManager:
             yield session
     
     def get_sync_db(self) -> Session:
-        """get_sync_db ???"""
+        """获取同步数据库会话
+        
+        Returns:
+            Session: 同步数据库会话
+            
+        Raises:
+            RuntimeError: 数据库未初始化时抛出异常
+        """
         if not self.sync_session_maker:
             raise RuntimeError("Database not initialized. Call initialize() first.")
         return self.sync_session_maker()
     
     async def test_connection(self) -> bool:
-        """test_connection ?????"""
+        """测试数据库连接
+        
+        Returns:
+            bool: 连接成功返回True
+            
+        Raises:
+            RuntimeError: 连接测试失败时抛出异常
+        """
         if not self.async_session_maker:
             raise RuntimeError("Database not initialized.")
         
@@ -127,7 +169,13 @@ class MySQLManager:
             raise
     
     async def close(self) -> None:
-        """close ?????"""
+        """关闭数据库连接
+        
+        释放异步和同步引擎资源
+        
+        Raises:
+            Exception: 关闭失败时抛出异常
+        """
         if self.async_engine:
             try:
                 await self.async_engine.dispose()
@@ -149,19 +197,33 @@ class MySQLManager:
                 raise
     
     async def __aenter__(self) -> "MySQLManager":
-        """__aenter__ ?????"""
+        """异步上下文管理器入口
+        
+        Returns:
+            MySQLManager: 当前管理器实例
+        """
         await self.initialize()
         return self
     
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:
-        """__aexit__ ?????"""
+        """异步上下文管理器出口
+        
+        Args:
+            exc_type: 异常类型
+            exc_value: 异常值
+            traceback: 异常追踪
+        """
         await self.close()
 
     async def _create_tables(self) -> None:
-        """_create_tables ?????"""
+        """创建数据库表
+        
+        显式导入所有数据模型以确保它们被注册到SQLModel元数据中，
+        然后创建所有表
+        """
         from app.models.user import User
         from app.models.token import RefreshToken, VerificationCode
-        from app.models.chat import ChatSession, ChatMessage, ChatAttachment, ChatPromptSnapshot  # 你新定义的智聊模型
+        from app.models.chat import ChatSession, ChatMessage, ChatAttachment, ChatPromptSnapshot
         from app.models.llm_settings import UserLLMSettings
         from app.models.usage import UsageEvent, UserUsageSettings
         # 在这里显式导入所有模型，确保它们被注册到 SQLModel.metadata 中
@@ -172,7 +234,7 @@ class MySQLManager:
             await conn.run_sync(SQLModel.metadata.create_all)
 
 
-# singletoninstance
+# 单例实例
 mysql_manager = MySQLManager()
 
 

@@ -1,4 +1,4 @@
-﻿"""models/knowledge.py."""
+"""知识库数据模型模块"""
 from datetime import datetime
 from typing import Optional, List, TYPE_CHECKING
 from sqlmodel import Field, SQLModel, Relationship, Column, Text
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class DocStatus(str, Enum):
-    """DocStatus ??"""
+    """文档处理状态枚举"""
     UPLOADING = "uploading"
     PROCESSING = "processing"  # 正在解析/嵌入
     COMPLETED = "completed"  # 处理完成
@@ -18,7 +18,7 @@ class DocStatus(str, Enum):
 
 
 class KnowledgeBase(SQLModel, table=True):
-    """KnowledgeBase ??"""
+    """知识库数据模型"""
     __tablename__ = "knowledge_bases"
 
     # 主键
@@ -40,7 +40,7 @@ class KnowledgeBase(SQLModel, table=True):
 
 
 class Document(SQLModel, table=True):
-    """Document ??"""
+    """文档数据模型"""
     __tablename__ = "kb_documents"
 
     # 主键
@@ -71,7 +71,7 @@ class Document(SQLModel, table=True):
 
 
 class DocumentChunk(SQLModel, table=True):
-    """DocumentChunk ??"""
+    """文档块数据模型"""
     __tablename__ = "kb_doc_chunks"
 
     id: Optional[int] = Field(default=None, primary_key=True)

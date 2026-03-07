@@ -1,5 +1,4 @@
-﻿
-"""core/logger.py."""
+"""日志管理模块 - 使用Loguru进行日志记录"""
 import sys
 import logging
 from pathlib import Path
@@ -9,22 +8,21 @@ from loguru import logger
 from app.core.config.settings import settings
 
 class LoggerManager:
-    
-    """LoggerManager ??"""
+    """日志管理器 - 统一管理应用日志输出"""
     def __init__(self):
-        """__init__ ???"""
+        """初始化日志管理器"""
         self._initialized = False
         self._loggers = {}
     
     def setup(self) -> None:
-        """setup ???"""
+        """设置日志输出"""
         if self._initialized:
             return
         
-        # removedefault handler
+        # 移除默认处理器
         logger.remove()
         
-        # Console output
+        # 控制台输出
         if settings.logging.LOG_TO_CONSOLE:
             logger.add(
                 sys.stdout,
@@ -36,7 +34,7 @@ class LoggerManager:
                 colorize=True,
             )
         
-        # fileoutput
+        # 文件输出
         if settings.logging.LOG_TO_FILE:
             log_path = Path(settings.logging.LOG_FILE_PATH)
             log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -51,26 +49,25 @@ class LoggerManager:
                 encoding="utf-8",
             )
         
-        # Intercept standard library logging
+        # 拦截标准库日志
         self._intercept_standard_logging()
         
         self._initialized = True
-        logger.info("Logger initialized successfully")
+        logger.info("日志初始化成功")
     
     def _intercept_standard_logging(self) -> None:
-        
-        """_intercept_standard_logging ???"""
+        """拦截标准库日志并转发到Loguru"""
         class InterceptHandler(logging.Handler):
-            """InterceptHandler ??"""
+            """拦截标准库日志处理器"""
             def emit(self, record: logging.LogRecord) -> None:
-                # Get corresponding Loguru level
-                """emit ???"""
+                """发送日志记录"""
+                # 获取对应的Loguru日志级别
                 try:
                     level = logger.level(record.levelname).name
                 except ValueError:
                     level = record.levelno
                 
-                # Find caller
+                # 找到调用者
                 frame, depth = logging.currentframe(), 2
                 while frame.f_code.co_filename == logging.__file__:
                     frame = frame.f_back
@@ -80,15 +77,15 @@ class LoggerManager:
                     level, record.getMessage()
                 )
         
-        # Intercept standard library logging
+        # 拦截标准库日志
         logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
         
-        # Intercept common library logging
+        # 拦截常见库的日志
         for logger_name in ["uvicorn", "uvicorn.access", "uvicorn.error", "fastapi"]:
             logging.getLogger(logger_name).handlers = [InterceptHandler()]
     
     def get_logger(self, name: Optional[str] = None):
-        """get_logger ???"""
+        """获取日志记录器"""
         if not self._initialized:
             self.setup()
         
@@ -97,6 +94,5 @@ class LoggerManager:
         return logger
 
 
-# Createglobalsingleton
+# 创建全局单例
 logger_manager = LoggerManager()
-

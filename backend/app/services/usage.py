@@ -1,4 +1,4 @@
-﻿"""services/usage.py."""
+"""使用量统计服务"""
 from __future__ import annotations
 
 import json
@@ -18,13 +18,14 @@ logger = logger_manager.get_logger(__name__)
 
 
 class UsageService:
-    """UsageService ??"""
+    """使用量统计服务：记录LLM调用、计算成本、管理用户预算等"""
+    
     def __init__(self) -> None:
-        """__init__ ???"""
+        """初始化使用量服务"""
         self._pricing_cache: Optional[dict[str, dict[str, float]]] = None
 
     def _load_pricing(self) -> dict[str, dict[str, float]]:
-        """_load_pricing ???"""
+        """加载定价配置"""
         if self._pricing_cache is not None:
             return self._pricing_cache
         raw = getattr(settings.usage, "LLM_PRICING_JSON", "{}") or "{}"
@@ -51,19 +52,26 @@ class UsageService:
         return pricing
 
     def extract_usage(self, payload: Any) -> dict:
-        """extract_usage ???"""
+        """从响应中提取token使用量
+        
+        Args:
+            payload: LLM响应对象
+            
+        Returns:
+            包含token使用量的字典
+        """
         if payload is None:
             return {"prompt_tokens": None, "completion_tokens": None, "total_tokens": None, "token_missing": True}
 
         usage = None
 
-        # LangChain response objects
+        # LangChain响应对象
         if hasattr(payload, "response_metadata"):
             usage = getattr(payload, "response_metadata", {}).get("token_usage")
         if usage is None and hasattr(payload, "usage_metadata"):
             usage = getattr(payload, "usage_metadata", None)
 
-        # Dict-like
+        # 字典格式
         if usage is None and isinstance(payload, dict):
             usage = (
                 payload.get("usage_metadata")
@@ -98,7 +106,16 @@ class UsageService:
         }
 
     def compute_cost(self, model: Optional[str], prompt_tokens: Optional[int], completion_tokens: Optional[int]) -> float:
-        """compute_cost ???"""
+        """计算调用成本（USD）
+        
+        Args:
+            model: 模型名称
+            prompt_tokens: 输入token数
+            completion_tokens: 输出token数
+            
+        Returns:
+            计算出的成本
+        """
         if model is None:
             return 0.0
         if prompt_tokens is None and completion_tokens is None:
@@ -138,7 +155,23 @@ class UsageService:
         error_message: Optional[str] = None,
         metadata: Optional[dict] = None,
     ) -> None:
-        """record_event ?????"""
+        """记录使用量事件
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            event_type: 事件类型
+            model_name: 模型名称
+            prompt_tokens: 输入token数
+            completion_tokens: 输出token数
+            total_tokens: 总token数
+            token_missing: token是否缺失
+            latency_ms: 延迟（毫秒）
+            cost_usd: 成本（USD）
+            success: 是否成功
+            error_message: 错误信息
+            metadata: 附加元数据
+        """
         try:
             event = UsageEvent(
                 user_id=user_id,
@@ -165,7 +198,15 @@ class UsageService:
             logger.warning(f"Usage event record failed: {exc}")
 
     async def get_or_create_settings(self, db: AsyncSession, user_id: int) -> UserUsageSettings:
-        """get_or_create_settings ?????"""
+        """获取或创建用户使用量设置
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            
+        Returns:
+            用户使用量设置
+        """
         row = await usage_crud.get_user_settings(db, user_id)
         if row:
             return row
@@ -180,7 +221,17 @@ class UsageService:
         monthly_budget_usd: Optional[float],
         daily_request_limit: Optional[int],
     ) -> UserUsageSettings:
-        """update_settings ?????"""
+        """更新用户使用量设置
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            monthly_budget_usd: 月度预算（USD）
+            daily_request_limit: 每日请求限制
+            
+        Returns:
+            更新后的用户使用量设置
+        """
         row = await usage_crud.get_user_settings(db, user_id)
         default_budget = float(settings.usage.USAGE_DEFAULT_MONTHLY_BUDGET_USD)
         default_limit = int(settings.usage.USAGE_DEFAULT_DAILY_REQUEST_LIMIT)
@@ -191,15 +242,23 @@ class UsageService:
         return await usage_crud.upsert_user_settings(db, user_id, float(budget_value), int(limit_value))
 
     def _start_of_day(self, dt: datetime) -> datetime:
-        """_start_of_day ???"""
+        """获取一天的开始时间"""
         return datetime(dt.year, dt.month, dt.day)
 
     def _start_of_month(self, dt: datetime) -> datetime:
-        """_start_of_month ???"""
+        """获取一月的开始时间"""
         return datetime(dt.year, dt.month, 1)
 
     async def get_budget_status(self, db: AsyncSession, user_id: int) -> dict:
-        """get_budget_status ?????"""
+        """获取预算状态
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            
+        Returns:
+            预算状态字典
+        """
         settings_row = await self.get_or_create_settings(db, user_id)
         now = datetime.utcnow()
         month_start = self._start_of_month(now)
@@ -217,7 +276,15 @@ class UsageService:
         }
 
     async def get_rate_status(self, db: AsyncSession, user_id: int) -> dict:
-        """get_rate_status ?????"""
+        """获取请求频率状态
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            
+        Returns:
+            请求频率状态字典
+        """
         settings_row = await self.get_or_create_settings(db, user_id)
         now = datetime.utcnow()
         day_start = self._start_of_day(now)
@@ -235,7 +302,16 @@ class UsageService:
         }
 
     async def get_overview(self, db: AsyncSession, user_id: int, range_days: int) -> dict:
-        """get_overview ?????"""
+        """获取使用量概览
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            range_days: 统计天数
+            
+        Returns:
+            使用量概览字典
+        """
         now = datetime.utcnow()
         start_at = now - timedelta(days=max(range_days, 1) - 1)
         start_at = self._start_of_day(start_at)
@@ -255,7 +331,16 @@ class UsageService:
         }
 
     async def get_timeseries(self, db: AsyncSession, user_id: int, range_days: int) -> list[dict]:
-        """get_timeseries ?????"""
+        """获取时间序列使用量数据
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            range_days: 统计天数
+            
+        Returns:
+            时间序列数据列表
+        """
         now = datetime.utcnow()
         range_days = max(range_days, 1)
         start_at = self._start_of_day(now - timedelta(days=range_days - 1))
@@ -283,18 +368,17 @@ class UsageService:
         return series
 
 
+# 全局服务实例
 usage_service = UsageService()
 
 
 class UsageTimer:
-
-    """UsageTimer ??"""
+    """使用量计时器：测量请求延迟"""
+    
     def __init__(self) -> None:
-        """__init__ ???"""
+        """初始化计时器"""
         self._start = perf_counter()
 
     def stop_ms(self) -> int:
-        """stop_ms ???"""
+        """停止计时并返回延迟（毫秒）"""
         return int((perf_counter() - self._start) * 1000)
-
-

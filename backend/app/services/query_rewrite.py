@@ -1,4 +1,4 @@
-﻿"""services/query_rewrite.py."""
+"""查询改写服务：优化用户查询以提升检索效果"""
 import re
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,15 +30,15 @@ _ABBREVIATION_MAP = {
 
 
 class QueryRewriteService:
-
-    """QueryRewriteService ??"""
+    """查询改写服务：优化用户查询以提升检索效果"""
+    
     def __init__(self) -> None:
+        """初始化查询改写服务（模型在调用时才实例化）"""
         # 仅在调用时实例化模型，便于环境切换与故障降级
-        """__init__ ???"""
         pass
 
     def _get_llm(self) -> ChatOpenAI:
-        """_get_llm ???"""
+        """获取LLM实例"""
         return build_chat_llm(
             model=settings.llm.QUERY_REWRITE_MODEL,
             temperature=0.0,
@@ -46,7 +46,7 @@ class QueryRewriteService:
         )
 
     def _clean_rewrite(self, text: str) -> str:
-        """_clean_rewrite ???"""
+        """清理改写后的文本"""
         if not text:
             return ""
         # 去掉可能的前缀
@@ -56,13 +56,13 @@ class QueryRewriteService:
         return cleaned
 
     def _expand_abbreviations(self, text: str) -> str:
-        """_expand_abbreviations ???"""
+        """扩展常见专业术语缩写"""
         if not text:
             return text
 
         expanded = text
         for abbr, full in _ABBREVIATION_MAP.items():
-            # 如果已包含“缩写（全称）”或“缩写(全称)”，就不重复添加
+            # 如果已包含"缩写（全称）"或"缩写(全称)"，就不重复添加
             already = re.search(rf"{abbr}\s*[\(（]{re.escape(full)}[\)）]", expanded, flags=re.IGNORECASE)
             if already:
                 continue
@@ -79,7 +79,7 @@ class QueryRewriteService:
         return expanded
 
     def _is_non_rewrite_signal(self, text: str) -> bool:
-        """_is_non_rewrite_signal ???"""
+        """检查是否为非改写信号"""
         if not text:
             return False
         lowered = text.strip().lower()
@@ -91,7 +91,17 @@ class QueryRewriteService:
         return any(p in lowered for p in patterns)
 
     async def rewrite_query(self, query: str, user_id: int | None = None, kb_id: int | None = None, db: AsyncSession | None = None) -> str:
-        """rewrite_query ?????"""
+        """改写用户查询
+        
+        Args:
+            query: 原始查询
+            user_id: 用户ID（可选，用于记录使用量）
+            kb_id: 知识库ID（可选，用于记录使用量）
+            db: 数据库会话（可选，用于记录使用量）
+            
+        Returns:
+            改写后的查询
+        """
         if not query or not query.strip():
             return query
 
@@ -126,7 +136,7 @@ class QueryRewriteService:
                     metadata={"kb_id": kb_id} if kb_id is not None else None,
                 )
             rewritten = self._clean_rewrite(getattr(response, "content", "") or "")
-            # 如果模型输出“无需改写”之类的提示，则回退原问题
+            # 如果模型输出"无需改写"之类的提示，则回退原问题
             if self._is_non_rewrite_signal(rewritten):
                 return self._expand_abbreviations(query)
             # 统一做缩写扩展，保证专业术语可理解
@@ -158,6 +168,3 @@ class QueryRewriteService:
 
 # 单例实例
 query_rewrite_service = QueryRewriteService()
-
-
-

@@ -1,4 +1,4 @@
-"""CRUD for chat prompt snapshots."""
+"""聊天提示快照数据库操作模块 - 提供聊天提示快照的CRUD操作"""
 
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +8,7 @@ from app.models.chat import ChatPromptSnapshot
 
 
 class ChatPromptSnapshotCRUD:
-    """ChatPromptSnapshotCRUD ??"""
+    """聊天提示快照CRUD操作类 - 管理聊天提示快照的数据库操作"""
 
     async def create_snapshot(
         self,
@@ -19,6 +19,19 @@ class ChatPromptSnapshotCRUD:
         mode: str,
         payload: dict,
     ) -> ChatPromptSnapshot:
+        """创建新的聊天提示快照
+        
+        Args:
+            db: 异步数据库会话
+            message_id: 消息ID
+            user_id: 用户ID
+            session_id: 会话ID
+            mode: 模式
+            payload: 快照数据
+            
+        Returns:
+            ChatPromptSnapshot: 创建的快照对象
+        """
         snapshot = ChatPromptSnapshot(
             message_id=message_id,
             user_id=user_id,
@@ -36,6 +49,15 @@ class ChatPromptSnapshotCRUD:
         db: AsyncSession,
         message_id: int,
     ) -> Optional[ChatPromptSnapshot]:
+        """根据消息ID获取提示快照
+        
+        Args:
+            db: 异步数据库会话
+            message_id: 消息ID
+            
+        Returns:
+            Optional[ChatPromptSnapshot]: 快照对象，如果不存在则返回None
+        """
         statement = select(ChatPromptSnapshot).where(ChatPromptSnapshot.message_id == message_id)
         result = await db.execute(statement)
         return result.scalars().first()

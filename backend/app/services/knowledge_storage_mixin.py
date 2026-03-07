@@ -1,4 +1,4 @@
-"""知识库 sidecar 文件与原始分片读写。"""
+"""知识库Sidecar文件与原始分片读写模块"""
 
 import asyncio
 import json
@@ -17,14 +17,25 @@ _SIDECAR_SUFFIX = ".chunks.jsonl"
 
 
 class KnowledgeStorageMixin:
-    """Sidecar 文件读写与原始分片加载。"""
+    """Sidecar文件读写与原始分片加载Mixin：提供文档分片的持久化和加载功能"""
 
     def _get_sidecar_path(self, file_path: str) -> str:
-        """根据文档路径拼出 sidecar 路径。"""
+        """根据文档路径拼接出sidecar文件路径
+        
+        Args:
+            file_path: 原始文档路径
+            
+        Returns:
+            Sidecar文件路径
+        """
         return f"{file_path}{_SIDECAR_SUFFIX}" if file_path else ""
 
     def _remove_sidecar_file(self, file_path: str) -> None:
-        """删除 sidecar 文件（失败仅记录日志）。"""
+        """删除sidecar文件（失败仅记录警告日志）
+        
+        Args:
+            file_path: 原始文档路径
+        """
         sidecar_path = self._get_sidecar_path(file_path)
         if not sidecar_path:
             return
@@ -35,11 +46,15 @@ class KnowledgeStorageMixin:
             logger.warning(f"Remove sidecar failed for {sidecar_path}: {e}")
 
     def _write_sidecar_atomic(self, sidecar_path: str, rows: List[dict]) -> None:
-        """原子写入 sidecar（先写临时文件，再替换）。"""
+        """原子写入sidecar文件（先写临时文件，再替换）
+        
+        Args:
+            sidecar_path: Sidecar文件路径
+            rows: 要写入的行数据列表
+        """
         dir_path = os.path.dirname(sidecar_path)
         if dir_path:
             os.makedirs(dir_path, exist_ok=True)
-        # 使用临时文件 + os.replace 保证写入原子性
         tmp_path = f"{sidecar_path}.tmp"
         try:
             with open(tmp_path, "w", encoding="utf-8") as f:
@@ -55,7 +70,14 @@ class KnowledgeStorageMixin:
             raise
 
     def _read_sidecar_candidates(self, sidecar_path: str) -> List[ChunkCandidate]:
-        """从 sidecar 读取原始分片候选列表。"""
+        """从sidecar文件读取原始分片候选列表
+        
+        Args:
+            sidecar_path: Sidecar文件路径
+            
+        Returns:
+            候选分片列表
+        """
         if not sidecar_path or not os.path.exists(sidecar_path):
             return []
 
@@ -77,7 +99,6 @@ class KnowledgeStorageMixin:
                     if not parent_id or not content:
                         continue
 
-                    # 兜底 structured_meta，确保 parent_id 存在
                     structured_meta = item.get("structured_meta")
                     if not isinstance(structured_meta, dict):
                         structured_meta = {}
@@ -97,7 +118,15 @@ class KnowledgeStorageMixin:
         return candidates
 
     def _read_sidecar_preview_by_parent_id(self, sidecar_path: str, target_parent_id: str) -> Optional[dict]:
-        """按 parent_id 从 sidecar 读取单个原始分片。"""
+        """按parent_id从sidecar读取单个原始分片
+        
+        Args:
+            sidecar_path: Sidecar文件路径
+            target_parent_id: 目标parent_id
+            
+        Returns:
+            包含content和structured_meta的字典，或None
+        """
         if not sidecar_path or not os.path.exists(sidecar_path):
             return None
         if not target_parent_id:
@@ -130,14 +159,30 @@ class KnowledgeStorageMixin:
         return None
 
     def get_raw_chunk_preview_by_parent_id(self, doc: Document, parent_id: str) -> Optional[dict]:
-        """按 parent_id 读取单个原始分片预览。"""
+        """按parent_id读取单个原始分片预览
+        
+        Args:
+            doc: 文档对象
+            parent_id: 父分片ID
+            
+        Returns:
+            包含content和structured_meta的字典，或None
+        """
         if not doc or not doc.file_path:
             return None
         sidecar_path = self._get_sidecar_path(doc.file_path)
         return self._read_sidecar_preview_by_parent_id(sidecar_path, str(parent_id or "").strip())
 
     def get_raw_chunk_preview(self, doc: Document, chunk_index: int) -> Optional[dict]:
-        """从 sidecar 读取单个原始分片预览（按 chunk_index）。"""
+        """从sidecar读取单个原始分片预览（按chunk_index）
+        
+        Args:
+            doc: 文档对象
+            chunk_index: 分片索引
+            
+        Returns:
+            包含content和structured_meta的字典，或None
+        """
         if not doc or not doc.file_path:
             return None
         sidecar_path = self._get_sidecar_path(doc.file_path)
@@ -145,7 +190,14 @@ class KnowledgeStorageMixin:
         return self._read_sidecar_preview_by_parent_id(sidecar_path, target_parent_id)
 
     async def _load_raw_candidates_from_storage(self, kb_id: int) -> List[ChunkCandidate]:
-        """从存储与 sidecar 加载原始分片候选。"""
+        """从存储与sidecar加载原始分片候选
+        
+        Args:
+            kb_id: 知识库ID
+            
+        Returns:
+            候选分片列表
+        """
         async with mysql_manager.async_session_maker() as db:
             docs = await kb_crud.get_completed_documents(db, kb_id)
             chunk_rows = await kb_crud.get_kb_chunks(db, kb_id)

@@ -1,4 +1,4 @@
-"""Chat intent helpers."""
+"""聊天意图识别工具模块：识别用户查询意图（时间、天气等）"""
 
 from __future__ import annotations
 
@@ -6,7 +6,14 @@ import re
 
 
 def is_time_query(text: str) -> bool:
-    """Check whether text is asking for time/date."""
+    """判断文本是否是时间/日期查询
+    
+    Args:
+        text: 用户输入文本
+        
+    Returns:
+        bool: 是时间查询返回True，否则返回False
+    """
     if not text:
         return False
     normalized = text.strip()
@@ -33,7 +40,14 @@ def is_time_query(text: str) -> bool:
 
 
 def is_weather_query(text: str) -> bool:
-    """Check whether text is asking about weather."""
+    """判断文本是否是天气查询
+    
+    Args:
+        text: 用户输入文本
+        
+    Returns:
+        bool: 是天气查询返回True，否则返回False
+    """
     if not text:
         return False
     normalized = text.strip()
@@ -45,7 +59,14 @@ def is_weather_query(text: str) -> bool:
 
 
 def extract_location(text: str) -> str | None:
-    """Extract location from a weather question."""
+    """从天气查询中提取地理位置
+    
+    Args:
+        text: 天气查询文本
+        
+    Returns:
+        str | None: 提取到的地理位置，提取失败返回None
+    """
     if not text:
         return None
     normalized = text.strip()

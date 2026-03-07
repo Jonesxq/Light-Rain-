@@ -1,4 +1,4 @@
-﻿"""models/usage.py."""
+"""使用统计数据模型模块 - 记录用户使用事件和预算设置"""
 from datetime import datetime
 from typing import Optional
 
@@ -7,7 +7,10 @@ from sqlmodel import Field, SQLModel
 
 
 class UsageEvent(SQLModel, table=True):
-    """UsageEvent ??"""
+    """使用事件数据模型 - 记录用户的每次API调用或功能使用
+    
+    用于计费、统计分析和预算控制
+    """
     __tablename__ = "usage_events"
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -35,7 +38,10 @@ class UsageEvent(SQLModel, table=True):
 
 
 class UserUsageSettings(SQLModel, table=True):
-    """UserUsageSettings ??"""
+    """用户使用设置数据模型 - 管理用户的预算和限制配置
+    
+    支持月度预算和每日请求限制
+    """
     __tablename__ = "user_usage_settings"
 
     id: Optional[int] = Field(default=None, primary_key=True)

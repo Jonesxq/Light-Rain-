@@ -1,10 +1,10 @@
-﻿"""schemas/usage.py."""
+"""使用统计数据验证模型模块 - 用于使用统计的请求和响应"""
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
 
 class UsageBreakdown(BaseModel):
-    """UsageBreakdown ??"""
+    """使用统计分组模型 - 按模型或类型分组的统计数据"""
     key: str
     request_count: int
     total_tokens: int
@@ -12,7 +12,7 @@ class UsageBreakdown(BaseModel):
 
 
 class BudgetStatus(BaseModel):
-    """BudgetStatus ??"""
+    """预算状态模型 - 用户月度预算使用情况"""
     monthly_budget_usd: float
     monthly_cost_usd: float
     budget_used_ratio: float
@@ -20,7 +20,7 @@ class BudgetStatus(BaseModel):
 
 
 class RateStatus(BaseModel):
-    """RateStatus ??"""
+    """速率限制状态模型 - 用户每日请求限制使用情况"""
     daily_request_limit: int
     today_request_count: int
     rate_used_ratio: float
@@ -28,7 +28,7 @@ class RateStatus(BaseModel):
 
 
 class UsageOverviewResponse(BaseModel):
-    """UsageOverviewResponse ??"""
+    """使用统计概览响应模型 - 综合使用统计数据"""
     total_requests: int
     total_tokens: int
     avg_latency_ms: float
@@ -41,7 +41,7 @@ class UsageOverviewResponse(BaseModel):
 
 
 class UsageTimeseriesPoint(BaseModel):
-    """UsageTimeseriesPoint ??"""
+    """使用统计时间序列点模型 - 单个时间点的统计数据"""
     date: str
     request_count: int
     total_tokens: int
@@ -50,12 +50,12 @@ class UsageTimeseriesPoint(BaseModel):
 
 
 class UsageTimeseriesResponse(BaseModel):
-    """UsageTimeseriesResponse ??"""
+    """使用统计时间序列响应模型 - 时间序列的统计数据"""
     series: List[UsageTimeseriesPoint]
 
 
 class UserUsageSettingsResponse(BaseModel):
-    """UserUsageSettingsResponse ??"""
+    """用户使用设置响应模型 - 用户预算和限制配置"""
     monthly_budget_usd: float
     daily_request_limit: int
     updated_at: Optional[str] = None
@@ -64,6 +64,6 @@ class UserUsageSettingsResponse(BaseModel):
 
 
 class UserUsageSettingsUpdate(BaseModel):
-    """UserUsageSettingsUpdate ??"""
+    """用户使用设置更新模型 - 更新用户预算和限制配置"""
     monthly_budget_usd: Optional[float] = None
     daily_request_limit: Optional[int] = None

@@ -1,4 +1,4 @@
-"""crud/chat_attachment.py."""
+"""聊天附件数据库操作模块 - 提供聊天附件的CRUD操作"""
 from typing import List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +8,7 @@ from app.models.chat import ChatAttachment
 
 
 class ChatAttachmentCRUD:
-    """ChatAttachmentCRUD ??"""
+    """聊天附件CRUD操作类 - 管理聊天附件的数据库操作"""
 
     async def create_attachment(
         self,
@@ -21,7 +21,21 @@ class ChatAttachmentCRUD:
         extracted_text: Optional[str],
         chunks: Optional[list[str]],
     ) -> ChatAttachment:
-        """create_attachment ?????"""
+        """创建新的聊天附件
+        
+        Args:
+            db: 异步数据库会话
+            user_id: 用户ID
+            file_name: 文件名
+            file_type: 文件类型
+            file_size: 文件大小（字节）
+            file_path: 文件存储路径
+            extracted_text: 提取的文本内容
+            chunks: 文本分块列表
+            
+        Returns:
+            ChatAttachment: 创建的附件对象
+        """
         attachment = ChatAttachment(
             user_id=user_id,
             file_name=file_name,
@@ -37,7 +51,15 @@ class ChatAttachmentCRUD:
         return attachment
 
     async def list_attachments(self, db: AsyncSession, user_id: int) -> List[ChatAttachment]:
-        """list_attachments ?????"""
+        """获取用户的所有附件
+        
+        Args:
+            db: 异步数据库会话
+            user_id: 用户ID
+            
+        Returns:
+            List[ChatAttachment]: 附件列表，按创建时间倒序排列
+        """
         statement = (
             select(ChatAttachment)
             .where(ChatAttachment.user_id == user_id)
@@ -47,11 +69,27 @@ class ChatAttachmentCRUD:
         return list(result.scalars().all())
 
     async def get_attachment(self, db: AsyncSession, attachment_id: int) -> Optional[ChatAttachment]:
-        """get_attachment ?????"""
+        """根据ID获取附件
+        
+        Args:
+            db: 异步数据库会话
+            attachment_id: 附件ID
+            
+        Returns:
+            Optional[ChatAttachment]: 附件对象，如果不存在则返回None
+        """
         return await db.get(ChatAttachment, attachment_id)
 
     async def delete_attachment(self, db: AsyncSession, attachment_id: int) -> bool:
-        """delete_attachment ?????"""
+        """删除附件
+        
+        Args:
+            db: 异步数据库会话
+            attachment_id: 附件ID
+            
+        Returns:
+            bool: 删除成功返回True，否则返回False
+        """
         attachment = await db.get(ChatAttachment, attachment_id)
         if not attachment:
             return False

@@ -1,4 +1,4 @@
-"""JSON parsing helpers."""
+"""JSON解析工具模块：从模型输出中解析JSON列表和对象，支持多种容错机制"""
 
 from __future__ import annotations
 
@@ -8,7 +8,17 @@ from typing import List, Optional
 
 
 def parse_json_list(raw: str) -> List[str]:
-    """Parse JSON list from model output, fallback to line split."""
+    """从模型输出中解析JSON列表，失败时降级为文本分割
+    
+    支持标准JSON格式、包含queries/items/suggestions的字典格式，
+    以及多种文本格式（换行、顿号、分号分隔）
+    
+    Args:
+        raw: 模型原始输出
+        
+    Returns:
+        List[str]: 解析后的字符串列表，自动去重和清理
+    """
     if not raw:
         return []
     text = raw.strip()
@@ -61,7 +71,17 @@ def parse_json_list(raw: str) -> List[str]:
 
 
 def parse_json_obj(raw: str) -> Optional[dict]:
-    """Parse JSON object from model output."""
+    """从模型输出中解析JSON对象
+    
+    支持标准JSON格式，以及从文本中提取{}包裹的JSON对象，
+    如果是列表则包装为{"steps": 列表}格式
+    
+    Args:
+        raw: 模型原始输出
+        
+    Returns:
+        Optional[dict]: 解析后的字典对象，解析失败返回None
+    """
     if not raw:
         return None
     text = raw.strip()

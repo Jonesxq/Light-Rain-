@@ -1,4 +1,4 @@
-"""LLM usage estimation helpers."""
+"""LLM使用量估算工具模块：当提供商不返回使用元数据时估算token使用量"""
 
 from __future__ import annotations
 
@@ -11,7 +11,16 @@ from langchain_openai import ChatOpenAI
 
 
 def rough_token_count(text: str) -> int:
-    """Rough token estimate when provider usage is missing."""
+    """粗略估算token数量（当提供商不返回使用量时）
+    
+    包含中文时按字符数计算，否则按每4个字符1个token估算
+    
+    Args:
+        text: 待估算的文本
+        
+    Returns:
+        int: 估算的token数量
+    """
     if not text:
         return 0
     # If CJK is present, count characters; otherwise approximate 4 chars per token.
@@ -25,7 +34,18 @@ def estimate_usage(
     messages: List[BaseMessage],
     output_text: str,
 ) -> dict:
-    """Estimate token usage when provider doesn't return usage metadata."""
+    """估算token使用量（当提供商不返回使用元数据时）
+    
+    优先使用模型内置的token计数方法，失败时降级到粗略估算
+    
+    Args:
+        llm: ChatOpenAI模型实例
+        messages: 输入消息列表
+        output_text: 模型输出文本
+        
+    Returns:
+        dict: 包含prompt_tokens、completion_tokens、total_tokens、token_missing的字典
+    """
     prompt_tokens = None
     completion_tokens = None
 

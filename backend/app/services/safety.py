@@ -1,4 +1,4 @@
-"""Safety and compliance detection."""
+"""安全与合规检测服务"""
 
 from typing import Optional
 
@@ -12,6 +12,7 @@ from app.core.logger import logger_manager
 
 logger = logger_manager.get_logger(__name__)
 
+# 风险关键词定义
 RISK_KEYWORDS = {
     "medical": [
         "医疗", "医生", "诊断", "治疗", "药", "处方", "病症", "症状", "癌", "肿瘤",
@@ -27,10 +28,12 @@ RISK_KEYWORDS = {
     ],
 }
 
+# 允许的标签集合
 ALLOWED_LABELS = {"medical", "legal", "financial"}
 
 
 def _keyword_detect(text: str) -> list[str]:
+    """基于关键词的风险检测"""
     if not text:
         return []
     lowered = text.lower()
@@ -40,7 +43,7 @@ def _keyword_detect(text: str) -> list[str]:
             if w.lower() in lowered:
                 labels.append(label)
                 break
-    # de-dup preserving order
+    # 去重并保持顺序
     seen = []
     for label in labels:
         if label not in seen:
@@ -49,7 +52,7 @@ def _keyword_detect(text: str) -> list[str]:
 
 
 class SafetyService:
-    """Detect risky domains and return labels."""
+    """检测风险领域并返回标签"""
 
     async def detect_risk(
         self,
@@ -57,9 +60,22 @@ class SafetyService:
         llm_config: Optional[dict] = None,
         min_confidence: float = 0.6,
     ) -> list[str]:
+        """检测文本风险
+        
+        Args:
+            text: 待检测文本
+            llm_config: LLM配置（关键词未命中时使用）
+            min_confidence: LLM检测的最低置信度
+            
+        Returns:
+            风险标签列表
+        """
+        # 先尝试关键词快速检测
         keyword_labels = _keyword_detect(text)
         if keyword_labels:
             return keyword_labels
+        
+        # 关键词未命中，且配置了LLM时，使用LLM检测
         if not llm_config or not text or len(text.strip()) < 6:
             return []
 
@@ -97,4 +113,5 @@ class SafetyService:
             return []
 
 
+# 全局服务实例
 safety_service = SafetyService()

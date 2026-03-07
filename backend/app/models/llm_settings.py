@@ -1,5 +1,4 @@
-﻿
-"""models/llm_settings.py."""
+"""LLM设置数据模型模块 - 管理用户的大语言模型配置"""
 from datetime import datetime
 from typing import Optional
 
@@ -8,7 +7,10 @@ from sqlmodel import Field, SQLModel
 
 
 class UserLLMSettings(SQLModel, table=True):
-    """UserLLMSettings ??"""
+    """用户LLM设置数据模型 - 存储用户的自定义LLM API配置
+    
+    支持用户配置自己的API密钥、基础URL和默认模型
+    """
     __tablename__ = "user_llm_settings"
 
     id: Optional[int] = Field(default=None, primary_key=True)

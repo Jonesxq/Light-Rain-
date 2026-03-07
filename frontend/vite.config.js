@@ -3,6 +3,21 @@ import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
   plugins: [vue()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return undefined;
+          }
+          if (id.includes('node_modules/vue-router')) {
+            return 'vendor-router';
+          }
+          return 'vendor';
+        },
+      },
+    },
+  },
   server: {
     allowedHosts: true,
     host: true,

@@ -1,4 +1,4 @@
-"""Context helpers for chat service."""
+"""聊天服务上下文管理模块"""
 
 from typing import List, Optional
 
@@ -16,10 +16,16 @@ logger = logger_manager.get_logger(__name__)
 
 
 class ChatContextMixin:
-    """Chat context helpers."""
+    """聊天上下文管理Mixin：提供会话历史、临时上下文、风险检测等功能"""
 
     async def _auto_rename_session(self, db: AsyncSession, session: ChatSession, user_msg: str):
-        """_auto_rename_session ?????"""
+        """自动重命名会话（当会话标题为默认名称时）
+        
+        Args:
+            db: 数据库会话
+            session: 会话对象
+            user_msg: 用户消息内容
+        """
         if session.title in {"New Chat", "新对话"}:
             new_title = user_msg[:15]
             session.title = new_title
@@ -27,20 +33,25 @@ class ChatContextMixin:
             await db.commit()
 
     async def _build_langchain_history(self, db: AsyncSession, session_id: int, limit: int = 10) -> List[BaseMessage]:
-        # 1) 获取历史消息
-        """_build_langchain_history ?????"""
+        """构建LangChain格式的历史消息列表
+        
+        Args:
+            db: 数据库会话
+            session_id: 会话ID
+            limit: 历史消息数量限制
+            
+        Returns:
+            LangChain消息对象列表
+        """
         db_messages = await chat_crud.get_session_messages(db, session_id)
 
-        # 2) 排除最后一条（当前用户输入已在流程中单独处理）
         if db_messages and db_messages[-1].role == ChatRole.USER:
              db_messages = db_messages[:-1]
 
-        # 3) 截取最近 N 条
         recent_db_msgs = db_messages[-limit:]
 
         langchain_msgs = []
 
-        # 4) 映射为 LangChain Message 对象
         for msg in recent_db_msgs:
             if msg.role == ChatRole.USER:
                 langchain_msgs.append(HumanMessage(content=msg.content))
@@ -52,7 +63,16 @@ class ChatContextMixin:
         return langchain_msgs
 
     async def _get_temp_context(self, db: AsyncSession, user_id: int, query: str) -> str:
-        """_get_temp_context ?????"""
+        """获取临时上下文（用于临时上下文服务）
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            query: 查询文本
+            
+        Returns:
+            临时上下文文本
+        """
         try:
             return await temp_context_service.get_context_for_user(db, user_id, query)
         except Exception:
@@ -64,7 +84,19 @@ class ChatContextMixin:
         user_id: int,
         message_id: int,
     ) -> tuple[ChatMessage, ChatSession]:
-        """_get_message_and_session_for_user ?????"""
+        """获取消息和对应的会话（验证用户权限）
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            message_id: 消息ID
+            
+        Returns:
+            元组(消息对象, 会话对象)
+            
+        Raises:
+            ValueError: 当消息不存在或用户无权访问时
+        """
         message = await chat_crud.get_message(db, message_id)
         if not message:
             raise ValueError("Message not found")
@@ -81,7 +113,18 @@ class ChatContextMixin:
         model: Optional[str],
         resolved: Optional[dict] = None,
     ) -> tuple[list[str], list[str]]:
-        """Return (disclaimer_codes, risk_tags)."""
+        """获取风险信息（免责声明代码和风险标签）
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            text: 待检测的文本
+            model: 模型名称
+            resolved: 已解析的LLM配置（可选）
+            
+        Returns:
+            元组(免责声明代码列表, 风险标签列表)
+        """
         if not text:
             return [], []
         try:
@@ -90,7 +133,6 @@ class ChatContextMixin:
             labels = await safety_service.detect_risk(text, llm_config=resolved)
         except Exception:
             labels = []
-        # disclaimer codes follow labels
         codes = labels or []
         return codes, labels or []
 
@@ -103,6 +145,16 @@ class ChatContextMixin:
         mode: str,
         payload: dict,
     ) -> None:
+        """保存提示词快照（用于调试和分析）
+        
+        Args:
+            db: 数据库会话
+            message_id: 消息ID
+            user_id: 用户ID
+            session_id: 会话ID
+            mode: 模式
+            payload: 快照数据
+        """
         try:
             await chat_prompt_snapshot_crud.create_snapshot(
                 db=db,

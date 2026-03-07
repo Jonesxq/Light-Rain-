@@ -1,13 +1,15 @@
-﻿
-"""models/token.py."""
+"""令牌数据模型模块 - 管理刷新令牌和验证码"""
 from datetime import datetime
 from typing import Optional
 from sqlalchemy import Column, ForeignKey
 from sqlmodel import Field, SQLModel, Relationship
 
+
 class RefreshToken(SQLModel, table=True):
+    """刷新令牌数据模型 - 管理用户的登录刷新令牌
     
-    """RefreshToken ??"""
+    用于实现无感知的用户登录状态保持，支持设备信息记录
+    """
     __tablename__ = "refresh_tokens"
     
     # 主键 ID
@@ -46,7 +48,7 @@ class RefreshToken(SQLModel, table=True):
     last_used_at: Optional[datetime] = Field(default=None)
     
     class Config:
-        """Config ??"""
+        """配置类 - Pydantic模型配置"""
         json_schema_extra = {
             "example": {
                 "user_id": 1,
@@ -58,20 +60,31 @@ class RefreshToken(SQLModel, table=True):
         }
     
     def is_valid(self) -> bool:
-        """is_valid ???"""
+        """检查刷新令牌是否有效
+        
+        检查令牌是否未被撤销且未过期
+        
+        Returns:
+            bool: 令牌有效返回True，否则返回False
+        """
         if self.is_revoked:
             return False
         return datetime.utcnow() < self.expires_at
     
     def revoke(self) -> None:
-        """revoke ???"""
+        """撤销刷新令牌
+        
+        标记令牌为已撤销并记录撤销时间
+        """
         self.is_revoked = True
         self.revoked_at = datetime.utcnow()
 
 
 class VerificationCode(SQLModel, table=True):
+    """验证码数据模型 - 管理邮箱验证、密码重置等验证码
     
-    """VerificationCode ??"""
+    支持验证次数限制，防止暴力破解
+    """
     __tablename__ = "verification_codes"
     
     # 主键 ID
@@ -104,7 +117,7 @@ class VerificationCode(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
     class Config:
-        """Config ??"""
+        """配置类 - Pydantic模型配置"""
         json_schema_extra = {
             "example": {
                 "user_id": 1,
@@ -116,7 +129,13 @@ class VerificationCode(SQLModel, table=True):
         }
     
     def is_valid(self) -> bool:
-        """is_valid ???"""
+        """检查验证码是否有效
+        
+        检查验证码是否未使用、未超次数且未过期
+        
+        Returns:
+            bool: 验证码有效返回True，否则返回False
+        """
         if self.is_used:
             return False
         if self.attempts >= self.max_attempts:
@@ -124,11 +143,16 @@ class VerificationCode(SQLModel, table=True):
         return datetime.utcnow() < self.expires_at
     
     def increment_attempts(self) -> None:
-        """increment_attempts ???"""
+        """增加验证尝试次数
+        
+        用于防止暴力破解
+        """
         self.attempts += 1
     
     def mark_as_used(self) -> None:
-        """mark_as_used ???"""
+        """标记验证码为已使用
+        
+        验证成功后调用此方法
+        """
         self.is_used = True
         self.used_at = datetime.utcnow()
-

@@ -1,5 +1,4 @@
-﻿
-"""crud/user.py."""
+"""用户数据库操作模块"""
 from datetime import datetime, timedelta
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,44 +9,45 @@ from app.core.security import get_password_hash, verify_password
 import secrets
 
 class UserCRUD:
+    """用户CRUD操作类"""
     
     @staticmethod
     async def get_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
-        """get_by_id ?????"""
+        """根据ID获取用户"""
         result = await db.get(User, user_id)
         return result
     
     @staticmethod
     async def get_by_username(db: AsyncSession, username: str) -> Optional[User]:
-        """get_by_username ?????"""
+        """根据用户名获取用户"""
         statement = select(User).where(User.username == username)
         result = await db.execute(statement)
         return result.scalar_one_or_none()
     
     @staticmethod
     async def get_by_email(db: AsyncSession, email: str) -> Optional[User]:
-        """get_by_email ?????"""
+        """根据邮箱获取用户"""
         statement = select(User).where(User.email == email)
         result = await db.execute(statement)
         return result.scalar_one_or_none()
     
     @staticmethod
     async def get_all(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[User]:
-        """get_all ?????"""
+        """获取所有用户"""
         statement = select(User).offset(skip).limit(limit)
         result = await db.execute(statement)
         return list(result.scalars().all())
     
     @staticmethod
     async def create(db: AsyncSession, user_create: UserCreate) -> User:
-        """create ?????"""
+        """创建用户"""
         hashed_password = get_password_hash(user_create.password)
         
         db_user = User(
             username=user_create.username,
             email=user_create.email,
             hashed_password=hashed_password,
-            is_verified=False,  # needEmailValidate
+            is_verified=False,  # 需要邮箱验证
         )
         
         db.add(db_user)
@@ -57,7 +57,7 @@ class UserCRUD:
     
     @staticmethod
     async def update(db: AsyncSession, user_id: int, user_update: UserUpdate) -> Optional[User]:
-        """update ?????"""
+        """更新用户信息"""
         db_user = await UserCRUD.get_by_id(db, user_id)
         if not db_user:
             return None
@@ -79,7 +79,7 @@ class UserCRUD:
     
     @staticmethod
     async def delete(db: AsyncSession, user_id: int) -> bool:
-        """delete ?????"""
+        """删除用户"""
         db_user = await UserCRUD.get_by_id(db, user_id)
         if not db_user:
             return False
@@ -90,11 +90,10 @@ class UserCRUD:
     
     @staticmethod
     async def authenticate(db: AsyncSession, username: str, password: str) -> Optional[User]:
-        # 1) 先用用户名尝试
-        """authenticate ?????"""
+        """用户认证 - 先用用户名尝试，不存在则用邮箱尝试"""
         user = await UserCRUD.get_by_username(db, username)
         
-        # 2) 用户名不存在则用邮箱尝试
+        # 用户名不存在则用邮箱尝试
         if not user:
             user = await UserCRUD.get_by_email(db, username)
         
@@ -104,7 +103,7 @@ class UserCRUD:
         if not verify_password(password, user.hashed_password):
             return None
         
-        # 3) 更新最近登录时间
+        # 更新最近登录时间
         user.last_login_at = datetime.utcnow()
         db.add(user)
         await db.commit()
@@ -113,7 +112,7 @@ class UserCRUD:
     
     @staticmethod
     async def verify_email(db: AsyncSession, user_id: int) -> Optional[User]:
-        """verify_email ?????"""
+        """验证用户邮箱"""
         db_user = await UserCRUD.get_by_id(db, user_id)
         if not db_user:
             return None
@@ -126,7 +125,7 @@ class UserCRUD:
     
     @staticmethod
     async def change_password(db: AsyncSession, user_id: int, new_password: str) -> Optional[User]:
-        """change_password ?????"""
+        """修改用户密码"""
         db_user = await UserCRUD.get_by_id(db, user_id)
         if not db_user:
             return None
@@ -139,6 +138,5 @@ class UserCRUD:
         return db_user
 
 
-# Createglobalinstance
+# 创建全局实例
 user_crud = UserCRUD()
-

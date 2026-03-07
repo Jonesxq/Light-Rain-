@@ -1,4 +1,4 @@
-"""知识库核心初始化与基础依赖。"""
+"""知识库核心初始化与基础依赖模块"""
 
 from typing import List, Tuple
 
@@ -13,18 +13,15 @@ from app.services.knowledge_types import BM25Index, ChunkCandidate
 
 
 class KnowledgeCoreMixin:
-    """知识库核心配置与初始化能力。"""
+    """知识库核心配置与初始化Mixin：提供知识库组件的初始化功能"""
 
     def _init_knowledge_components(self) -> None:
-        """初始化嵌入模型、BM25 缓存与分块器。"""
-        # 1) 初始化嵌入模型
+        """初始化嵌入模型、BM25缓存与文档分块器"""
         self.embeddings = DashScopeEmbeddings(
             model=settings.llm.EMBEDDING_MODEL,
             dashscope_api_key=settings.llm.QWEN_API_KEY
         )
-        # 2) 本地 BM25 缓存：KB -> (时间戳, 候选列表, BM25 索引)
         self._bm25_cache: dict[int, Tuple[float, List[ChunkCandidate], BM25Index]] = {}
-        # 3) 文档分块服务（按类型配置 chunk）
         self.chunker = DocumentChunkingService(
             default_chunk_size=settings.llm.RAG_CHUNK_SIZE_DEFAULT,
             default_chunk_overlap=settings.llm.RAG_CHUNK_OVERLAP_DEFAULT,
@@ -39,7 +36,11 @@ class KnowledgeCoreMixin:
         )
 
     def _get_summary_llm(self) -> ChatOpenAI:
-        """获取用于分片摘要的 LLM 实例。"""
+        """获取用于文档分片摘要的LLM实例
+        
+        Returns:
+            配置好的ChatOpenAI实例（temperature=0，用于摘要生成）
+        """
         return build_chat_llm(
             model=settings.llm.DEFAULT_MODEL,
             temperature=0.0,
@@ -47,7 +48,14 @@ class KnowledgeCoreMixin:
         )
 
     def _get_vector_store(self, kb_id: int):
-        """根据 KB 构建/获取向量库实例。"""
+        """根据知识库ID构建/获取向量库实例
+        
+        Args:
+            kb_id: 知识库ID
+            
+        Returns:
+            Milvus向量存储实例
+        """
         collection_name = f"{settings.llm.MILVUS_COLLECTION_PREFIX}{kb_id}"
 
         return Milvus(

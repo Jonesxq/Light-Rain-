@@ -1,4 +1,4 @@
-﻿"""crud/usage.py."""
+"""使用统计数据库操作模块 - 提供用户使用记录和统计的CRUD操作"""
 from datetime import datetime
 from typing import List, Optional
 
@@ -10,9 +10,18 @@ from app.models.usage import UsageEvent, UserUsageSettings
 
 
 class UsageCRUD:
-    """UsageCRUD ??"""
+    """使用统计CRUD操作类 - 管理用户使用记录和统计数据的数据库操作"""
+    
     async def create_event(self, db: AsyncSession, event: UsageEvent) -> UsageEvent:
-        """create_event ?????"""
+        """创建使用事件记录
+        
+        Args:
+            db: 异步数据库会话
+            event: 使用事件对象
+            
+        Returns:
+            UsageEvent: 创建的事件对象
+        """
         db.add(event)
         await db.commit()
         await db.refresh(event)
@@ -24,7 +33,16 @@ class UsageCRUD:
         user_id: int,
         start_at: datetime,
     ) -> dict:
-        """get_overview_summary ?????"""
+        """获取使用概览统计
+        
+        Args:
+            db: 异步数据库会话
+            user_id: 用户ID
+            start_at: 统计开始时间
+            
+        Returns:
+            dict: 包含总请求数、总token数、平均延迟、总成本等统计信息的字典
+        """
         statement = (
             select(
                 func.count(UsageEvent.id),
@@ -60,7 +78,16 @@ class UsageCRUD:
         user_id: int,
         start_at: datetime,
     ) -> List[dict]:
-        """get_breakdown_by_model ?????"""
+        """按模型分组的使用统计
+        
+        Args:
+            db: 异步数据库会话
+            user_id: 用户ID
+            start_at: 统计开始时间
+            
+        Returns:
+            List[dict]: 每个模型的使用统计列表
+        """
         statement = (
             select(
                 UsageEvent.model_name,
@@ -93,7 +120,16 @@ class UsageCRUD:
         user_id: int,
         start_at: datetime,
     ) -> List[dict]:
-        """get_breakdown_by_type ?????"""
+        """按事件类型分组的使用统计
+        
+        Args:
+            db: 异步数据库会话
+            user_id: 用户ID
+            start_at: 统计开始时间
+            
+        Returns:
+            List[dict]: 每个事件类型的使用统计列表
+        """
         statement = (
             select(
                 UsageEvent.event_type,
@@ -126,7 +162,16 @@ class UsageCRUD:
         user_id: int,
         start_at: datetime,
     ) -> List[dict]:
-        """get_timeseries ?????"""
+        """按日期分组的时间序列使用统计
+        
+        Args:
+            db: 异步数据库会话
+            user_id: 用户ID
+            start_at: 统计开始时间
+            
+        Returns:
+            List[dict]: 每天的使用统计列表
+        """
         statement = (
             select(
                 func.date(UsageEvent.created_at).label("day"),
@@ -155,7 +200,15 @@ class UsageCRUD:
         return payload
 
     async def get_user_settings(self, db: AsyncSession, user_id: int) -> Optional[UserUsageSettings]:
-        """get_user_settings ?????"""
+        """获取用户使用设置
+        
+        Args:
+            db: 异步数据库会话
+            user_id: 用户ID
+            
+        Returns:
+            Optional[UserUsageSettings]: 用户设置对象，如果不存在则返回None
+        """
         statement = select(UserUsageSettings).where(UserUsageSettings.user_id == user_id)
         result = await db.execute(statement)
         return result.scalar_one_or_none()
@@ -167,7 +220,17 @@ class UsageCRUD:
         monthly_budget_usd: float,
         daily_request_limit: int,
     ) -> UserUsageSettings:
-        """upsert_user_settings ?????"""
+        """更新或创建用户使用设置
+        
+        Args:
+            db: 异步数据库会话
+            user_id: 用户ID
+            monthly_budget_usd: 月度预算（美元）
+            daily_request_limit: 每日请求限制
+            
+        Returns:
+            UserUsageSettings: 更新后的设置对象
+        """
         row = await self.get_user_settings(db, user_id)
         if row is None:
             row = UserUsageSettings(
@@ -187,6 +250,3 @@ class UsageCRUD:
 
 
 usage_crud = UsageCRUD()
-
-
-

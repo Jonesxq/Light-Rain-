@@ -1,73 +1,72 @@
-﻿
-"""core/config/modules/email.py."""
+
+"""邮件配置模块"""
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings
 
 class EmailSettings(BaseSettings):
-    
-    # SMTP Server Configuration
-    """EmailSettings ??"""
+    """邮件设置类"""
+    # SMTP服务器配置
     EMAIL_HOST: str = Field(
         default="smtp.gmail.com",
-        description="SMTP server host"
+        description="SMTP服务器主机"
     )
     
     EMAIL_PORT: int = Field(
         default=587,
-        description="SMTP server port"
+        description="SMTP服务器端口"
     )
     
     EMAIL_HOST_USER: str = Field(
         default="",
-        description="SMTP username"
+        description="SMTP用户名"
     )
     
     EMAIL_HOST_PASSWORD: SecretStr = Field(
         default="",
-        description="SMTP password"
+        description="SMTP密码"
     )
     
-    # SSL/TLS Configuration
+    # SSL/TLS配置
     EMAIL_USE_TLS: bool = Field(
         default=True,
-        description="Use TLS for SMTP connection"
+        description="是否使用TLS连接"
     )
     
     EMAIL_USE_SSL: bool = Field(
         default=False,
-        description="Use SSL for SMTP connection"
+        description="是否使用SSL连接"
     )
     
     EMAIL_SSL_CERT_REQS: str = Field(
         default="required",
-        description="SSL certificate requirements (required/optional/none)"
+        description="SSL证书要求（required/optional/none）"
     )
     
-    # Timeout Configuration
+    # 超时配置
     EMAIL_TIMEOUT: int = Field(
         default=30,
-        description="SMTP connection timeout in seconds"
+        description="SMTP连接超时时间（秒）"
     )
     
-    # Email Expiration
+    # 邮件过期时间
     EMAIL_EXPIRATION: int = Field(
         default=3600,
-        description="Email verification code expiration time in seconds"
+        description="邮箱验证码过期时间（秒）"
     )
     
-    # Email From Configuration
+    # 邮件发送者配置
     EMAIL_FROM_NAME: str = Field(
         default="",
-        description="Email sender name"
+        description="邮件发送者名称"
     )
     
     EMAIL_FROM_EMAIL: str = Field(
         default="",
-        description="Email sender address"
+        description="邮件发送者地址"
     )
     
     class Config:
-        """Config ??"""
+        """配置类"""
         env_file = ".env"
         case_sensitive = True
         extra = "ignore"

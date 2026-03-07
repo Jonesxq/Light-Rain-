@@ -1,1 +1,1 @@
-﻿"""schemas/__init__.py."""
+"""数据验证模型模块 - 定义API请求和响应的Pydantic模型"""

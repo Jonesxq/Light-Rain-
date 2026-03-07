@@ -1,5 +1,4 @@
-﻿
-"""core/celery.py."""
+﻿"""Celery异步任务管理模块 - 提供Celery应用配置和任务管理功能"""
 from celery import Celery
 from celery.schedules import crontab
 from app.core.config.settings import settings
@@ -8,15 +7,26 @@ from functools import wraps
 from app.core.database.mysql import mysql_manager
 from app.core.logger import logger_manager
 
+
 def with_db_init(func):
+    """Celery任务数据库初始化装饰器
+    
+    用于在Celery任务执行前初始化数据库连接
+    
+    Args:
+        func: 要装饰的Celery任务函数
+        
+    Returns:
+        function: 包装后的函数
+    """
     @wraps(func)
     def wrapper(*args, **kwargs):
-        """wrapper ???"""
+        """包装函数 - 处理数据库初始化和任务执行"""
         logger = logger_manager.get_logger(__name__)
         
         # Initialize database connection (Celery worker needs separate initialization)
         async def init_db():
-            """init_db ?????"""
+            """异步初始化数据库连接"""
             try:
                 await mysql_manager.initialize()
                 logger.debug("Database initialized successfully for Celery task")
@@ -45,9 +55,13 @@ def with_db_init(func):
 
 
 class CeleryManager:
-    """CeleryManager ??"""
+    """Celery管理器类 - 管理Celery应用的配置和生命周期"""
+    
     def __init__(self):
-        """__init__ ???"""
+        """初始化Celery管理器
+        
+        创建Celery应用实例并配置broker和backend
+        """
         self.celery_app = Celery(
             "app",
             broker=settings.celery.CELERY_BROKER_URL,
@@ -55,7 +69,10 @@ class CeleryManager:
         )
     
     def setup(self):
-        """setup ???"""
+        """配置Celery应用参数
+        
+        设置内容类型、序列化器、时区等配置
+        """
         self.celery_app.conf.update(
             broker_connection_retry_on_startup=True,
             accept_content=settings.celery.CELERY_ACCEPT_CONTENT,
@@ -66,18 +83,21 @@ class CeleryManager:
         )
     
     def autodiscovery(self):
-        """autodiscovery ???"""
+        """自动发现Celery任务
+        
+        扫描app.tasks包中的任务模块
+        """
         self.celery_app.autodiscover_tasks(
             packages=["app.tasks"],
             force=True,
         )
     
     def start(self):
-        """start ???"""
+        """启动Celery应用"""
         self.celery_app.start()
     
     def close(self):
-        """close ???"""
+        """关闭Celery应用连接"""
         self.celery_app.close()
 
 
@@ -138,4 +158,3 @@ celery_app.conf.beat_schedule = {
         }
     }
 }
-

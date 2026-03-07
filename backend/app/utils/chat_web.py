@@ -1,4 +1,4 @@
-"""Web search helpers."""
+"""网页搜索工具模块：提供网页内容抓取、HTML解析、搜索上下文构建等功能"""
 
 from __future__ import annotations
 
@@ -11,7 +11,14 @@ from bs4 import BeautifulSoup
 
 
 def strip_source_content(sources: List[dict]) -> List[dict]:
-    """Remove heavy fields before storing sources."""
+    """精简搜索源数据（移除大字段用于存储）
+    
+    Args:
+        sources: 原始搜索源列表
+        
+    Returns:
+        List[dict]: 精简后的搜索源列表，仅保留title、url、snippet、source_type
+    """
     cleaned: List[dict] = []
     for item in sources or []:
         cleaned.append(
@@ -26,7 +33,16 @@ def strip_source_content(sources: List[dict]) -> List[dict]:
 
 
 def extract_html_text(html: str) -> str:
-    """Extract visible text from HTML."""
+    """从HTML中提取可见文本
+    
+    移除script、style等标签，提取纯文本内容
+    
+    Args:
+        html: HTML字符串
+        
+    Returns:
+        str: 提取的纯文本
+    """
     if not html:
         return ""
     soup = BeautifulSoup(html, "html.parser")
@@ -42,7 +58,16 @@ async def fetch_url_text(
     url: str,
     max_chars: int = 4000,
 ) -> str:
-    """Fetch and extract text from a single URL."""
+    """抓取并提取单个URL的文本内容
+    
+    Args:
+        client: HTTPX异步客户端
+        url: 目标URL
+        max_chars: 最大字符数限制，默认4000
+        
+    Returns:
+        str: 提取的文本内容，失败返回空字符串
+    """
     if not url:
         return ""
     try:
@@ -70,7 +95,16 @@ async def fetch_web_sources(
     top_n: int = 4,
     timeout: float = 8.0,
 ) -> List[dict]:
-    """Fetch top-N sources and attach extracted content."""
+    """抓取前N个搜索源并附加提取的内容
+    
+    Args:
+        sources: 搜索源列表
+        top_n: 抓取数量，默认4个
+        timeout: 超时时间（秒），默认8秒
+        
+    Returns:
+        List[dict]: 增强后的搜索源列表，包含提取的content字段
+    """
     if not sources:
         return []
     target = sources[: max(0, top_n)]
@@ -92,7 +126,15 @@ async def fetch_web_sources(
 
 
 def build_search_context(sources: List[dict], max_len: int = 200) -> str:
-    """Build indexed context for answer prompt."""
+    """构建索引式搜索上下文用于回答提示词
+    
+    Args:
+        sources: 搜索源列表
+        max_len: 每个片段的最大长度，默认200
+        
+    Returns:
+        str: 格式化的搜索上下文字符串
+    """
     if not sources:
         return ""
     lines: List[str] = []

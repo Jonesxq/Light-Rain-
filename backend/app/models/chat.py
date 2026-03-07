@@ -1,5 +1,5 @@
-﻿
-"""models/chat.py."""
+
+"""聊天数据模型模块"""
 from datetime import datetime
 from typing import Optional, List, TYPE_CHECKING # 引入 TYPE_CHECKING
 from enum import Enum
@@ -16,13 +16,13 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 class ChatRole(str, Enum):
-    """ChatRole ??"""
+    """聊天角色枚举"""
     USER = "user"
     ASSISTANT = "assistant"
     SYSTEM = "system"
 
 class ChatSession(SQLModel, table=True):
-    """ChatSession ??"""
+    """聊天会话数据模型"""
     __tablename__ = "chat_sessions"
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -47,7 +47,7 @@ class ChatSession(SQLModel, table=True):
     messages: List["ChatMessage"] = Relationship(back_populates="session", sa_relationship_kwargs={"cascade": "all, delete"})
 
     class Config:
-        """Config ??"""
+        """配置类"""
         json_schema_extra = {
             "example": {
                 "user_id": 1,
@@ -57,7 +57,7 @@ class ChatSession(SQLModel, table=True):
         }
 
 class ChatMessage(SQLModel, table=True):
-    """ChatMessage ??"""
+    """聊天消息数据模型"""
     __tablename__ = "chat_messages"
     id: Optional[int] = Field(default=None, primary_key=True)
     # 所属会话
@@ -94,13 +94,13 @@ class ChatMessage(SQLModel, table=True):
 
     @property
     def disclaimers(self) -> list[dict]:
-        """Return disclaimer payloads for this message."""
+        """返回此消息的免责声明内容"""
         codes = self.disclaimer_codes or []
         return build_disclaimers(codes)
 
 
 class ChatAttachment(SQLModel, table=True):
-    """ChatAttachment ??"""
+    """聊天附件数据模型"""
     __tablename__ = "chat_attachments"
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -115,7 +115,7 @@ class ChatAttachment(SQLModel, table=True):
 
 
 class ChatPromptSnapshot(SQLModel, table=True):
-    """ChatPromptSnapshot ??"""
+    """聊天提示词快照数据模型"""
     __tablename__ = "chat_prompt_snapshots"
 
     id: Optional[int] = Field(default=None, primary_key=True)

@@ -1,5 +1,5 @@
-﻿
-"""core/security.py."""
+
+"""安全模块 - 密码验证、密码哈希和JWT令牌管理"""
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Union
@@ -13,8 +13,8 @@ logger = logger_manager.get_logger(__name__)
 
 
 class PasswordValidator:
+    """密码强度验证器 - 验证密码是否满足安全要求"""
     
-    """PasswordValidator ??"""
     PASSWORD_PATTERNS = {
         "uppercase": r"[A-Z]",
         "lowercase": r"[a-z]",
@@ -23,12 +23,26 @@ class PasswordValidator:
     }
     
     def __init__(self, min_length: int = 8):
-        """__init__ ???"""
+        """初始化密码验证器
+        
+        Args:
+            min_length: 密码最小长度，默认为8
+        """
         self.min_length = min_length
         self.logger = logger
     
     def validate(self, password: str) -> bool:
-        """validate ???"""
+        """验证密码强度
+        
+        Args:
+            password: 待验证的密码
+            
+        Returns:
+            bool: 验证通过返回True
+            
+        Raises:
+            ValueError: 密码不满足要求时抛出异常
+        """
         self._check_length(password)
         self._check_uppercase(password)
         self._check_lowercase(password)
@@ -38,7 +52,7 @@ class PasswordValidator:
         return True
     
     def _check_length(self, password: str):
-        """_check_length ???"""
+        """检查密码长度"""
         if len(password) < self.min_length:
             self.logger.warning("Password validation failed: too short.")
             raise ValueError(
@@ -46,35 +60,35 @@ class PasswordValidator:
             )
     
     def _check_uppercase(self, password: str):
-        """_check_uppercase ???"""
+        """检查是否包含大写字母"""
         if not re.search(self.PASSWORD_PATTERNS["uppercase"], password):
             self.logger.warning("Password validation failed: no uppercase letter.")
             raise ValueError("Password must contain at least one uppercase letter.")
     
     def _check_lowercase(self, password: str):
-        """_check_lowercase ???"""
+        """检查是否包含小写字母"""
         if not re.search(self.PASSWORD_PATTERNS["lowercase"], password):
             self.logger.warning("Password validation failed: no lowercase letter.")
             raise ValueError("Password must contain at least one lowercase letter.")
     
     def _check_digit(self, password: str):
-        """_check_digit ???"""
+        """检查是否包含数字"""
         if not re.search(self.PASSWORD_PATTERNS["digit"], password):
             self.logger.warning("Password validation failed: no digit.")
             raise ValueError("Password must contain at least one digit.")
     
     def _check_special_char(self, password: str):
-        """_check_special_char ???"""
+        """检查是否包含特殊字符"""
         if not re.search(self.PASSWORD_PATTERNS["special"], password):
             self.logger.warning("Password validation failed: no special character.")
             raise ValueError("Password must contain at least one special character.")
 
 
 class PasswordHasher:
+    """密码哈希器 - 使用Argon2算法进行密码哈希和验证"""
     
-    """PasswordHasher ??"""
     def __init__(self):
-        """__init__ ???"""
+        """初始化密码哈希器，配置Argon2参数"""
         self.logger = logger_manager.get_logger(__name__)
         # useArgon2 - highperformanceconfiguration
         self.ph = argon2.PasswordHasher(
@@ -87,7 +101,17 @@ class PasswordHasher:
         self.logger.info("Using Argon2 for password hashing")
     
     def hash(self, password: str) -> str:
-        """hash ???"""
+        """哈希密码
+        
+        Args:
+            password: 明文密码
+            
+        Returns:
+            str: 哈希后的密码
+            
+        Raises:
+            Exception: 哈希失败时抛出异常
+        """
         try:
             hashed = self.ph.hash(password)
             self.logger.debug("Password hashed successfully with Argon2")
@@ -97,7 +121,15 @@ class PasswordHasher:
             raise
     
     def verify(self, plain_password: str, hashed_password: str) -> bool:
-        """verify ???"""
+        """验证密码
+        
+        Args:
+            plain_password: 明文密码
+            hashed_password: 哈希后的密码
+            
+        Returns:
+            bool: 验证成功返回True，失败返回False
+        """
         try:
             self.ph.verify(hashed_password, plain_password)
             return True
@@ -110,8 +142,8 @@ class PasswordHasher:
 
 
 class JWTManager:
+    """JWT令牌管理器 - 创建和验证JWT访问令牌和刷新令牌"""
     
-    """JWTManager ??"""
     def __init__(
         self,
         secret_key: str,
@@ -121,7 +153,16 @@ class JWTManager:
         access_token_expiry: int,
         refresh_token_expiry: int,
     ):
-        """__init__ ???"""
+        """初始化JWT管理器
+        
+        Args:
+            secret_key: JWT密钥
+            algorithm: JWT算法
+            issuer: JWT发行者
+            audience: JWT受众
+            access_token_expiry: 访问令牌过期时间（秒）
+            refresh_token_expiry: 刷新令牌过期时间（秒）
+        """
         self.secret_key = secret_key
         self.algorithm = algorithm
         self.issuer = issuer
@@ -131,21 +172,51 @@ class JWTManager:
         self.logger = logger
     
     def timestamp_to_datetime(self, timestamp: int) -> datetime:
-        """timestamp_to_datetime ???"""
+        """将时间戳转换为UTC日期时间
+        
+        Args:
+            timestamp: Unix时间戳
+            
+        Returns:
+            datetime: UTC日期时间对象
+        """
         return datetime.fromtimestamp(timestamp, tz=timezone.utc)
     
     def create_access_token(self, data: Dict) -> tuple[str, datetime]:
-        """create_access_token ???"""
+        """创建访问令牌
+        
+        Args:
+            data: 要编码到令牌中的数据
+            
+        Returns:
+            tuple: (令牌字符串, 过期时间datetime对象)
+        """
         return self._create_token(data, self.access_token_expiry, "access")
     
     def create_refresh_token(self, data: Dict) -> tuple[str, datetime]:
-        """create_refresh_token ???"""
+        """创建刷新令牌
+        
+        Args:
+            data: 要编码到令牌中的数据
+            
+        Returns:
+            tuple: (令牌字符串, 过期时间datetime对象)
+        """
         return self._create_token(data, self.refresh_token_expiry, "refresh")
     
     def _create_token(
         self, data: Dict, expires_in_seconds: int, token_type: str
     ) -> tuple[str, datetime]:
-        """_create_token ???"""
+        """创建JWT令牌的内部方法
+        
+        Args:
+            data: 要编码到令牌中的数据
+            expires_in_seconds: 令牌有效期（秒）
+            token_type: 令牌类型（access或refresh）
+            
+        Returns:
+            tuple: (令牌字符串, 过期时间datetime对象)
+        """
         exp_time = datetime.now(timezone.utc) + timedelta(seconds=expires_in_seconds)
         # Convert to UTC timestamp
         payload = {
@@ -165,7 +236,15 @@ class JWTManager:
     def decode_token(
         self, token: str, expected_jti: Optional[str] = None
     ) -> Union[Dict, None]:
-        """decode_token ???"""
+        """解码并验证JWT令牌
+        
+        Args:
+            token: JWT令牌字符串
+            expected_jti: 期望的JWT ID（可选）
+            
+        Returns:
+            Dict or None: 解码后的令牌数据，验证失败返回None
+        """
         try:
             decoded_token = jwt.decode(
                 token,
@@ -192,10 +271,14 @@ class JWTManager:
 
 
 class SecurityManager:
+    """安全管理器 - 统一管理密码验证、密码哈希和JWT令牌"""
     
-    """SecurityManager ??"""
     def __init__(self, settings):
-        """__init__ ???"""
+        """初始化安全管理器
+        
+        Args:
+            settings: 应用配置对象
+        """
         self.validator = PasswordValidator()
         self.hasher = PasswordHasher()
         self.jwt_manager = JWTManager(
@@ -208,29 +291,73 @@ class SecurityManager:
         )
     
     def validate_password(self, password: str) -> bool:
-        """validate_password ???"""
+        """验证密码强度
+        
+        Args:
+            password: 待验证的密码
+            
+        Returns:
+            bool: 验证通过返回True
+        """
         return self.validator.validate(password)
     
     def hash_password(self, password: str) -> str:
-        """hash_password ???"""
+        """哈希密码
+        
+        Args:
+            password: 明文密码
+            
+        Returns:
+            str: 哈希后的密码
+        """
         return self.hasher.hash(password)
     
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        """verify_password ???"""
+        """验证密码
+        
+        Args:
+            plain_password: 明文密码
+            hashed_password: 哈希后的密码
+            
+        Returns:
+            bool: 验证成功返回True
+        """
         return self.hasher.verify(plain_password, hashed_password)
     
     def create_access_token(self, data: Dict) -> tuple[str, datetime]:
-        """create_access_token ???"""
+        """创建访问令牌
+        
+        Args:
+            data: 要编码到令牌中的数据
+            
+        Returns:
+            tuple: (令牌字符串, 过期时间datetime对象)
+        """
         return self.jwt_manager.create_access_token(data)
     
     def create_refresh_token(self, data: Dict) -> tuple[str, datetime]:
-        """create_refresh_token ???"""
+        """创建刷新令牌
+        
+        Args:
+            data: 要编码到令牌中的数据
+            
+        Returns:
+            tuple: (令牌字符串, 过期时间datetime对象)
+        """
         return self.jwt_manager.create_refresh_token(data)
     
     def decode_token(
         self, token: str, expected_jti: Optional[str] = None
     ) -> Union[Dict, None]:
-        """decode_token ???"""
+        """解码并验证JWT令牌
+        
+        Args:
+            token: JWT令牌字符串
+            expected_jti: 期望的JWT ID（可选）
+            
+        Returns:
+            Dict or None: 解码后的令牌数据，验证失败返回None
+        """
         return self.jwt_manager.decode_token(token, expected_jti)
 
 
@@ -239,11 +366,26 @@ security_manager = SecurityManager(settings)
 
 # Convenience functions (backward compatible)
 def get_password_hash(password: str) -> str:
-    """get_password_hash ???"""
+    """获取密码哈希（向后兼容函数）
+    
+    Args:
+        password: 明文密码
+        
+    Returns:
+        str: 哈希后的密码
+    """
     return security_manager.hash_password(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """verify_password ???"""
+    """验证密码（向后兼容函数）
+    
+    Args:
+        plain_password: 明文密码
+        hashed_password: 哈希后的密码
+        
+    Returns:
+        bool: 验证成功返回True
+    """
     return security_manager.verify_password(plain_password, hashed_password)
 

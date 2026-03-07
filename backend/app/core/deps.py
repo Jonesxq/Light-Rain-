@@ -1,5 +1,4 @@
-﻿
-"""core/deps.py."""
+"""依赖注入模块 - FastAPI路由的依赖项"""
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +8,7 @@ from app.core.security import security_manager
 from app.crud.user import user_crud
 from app.models.user import User
 
-# HTTP Bearer authenticationscheme
+# HTTP Bearer认证方案
 security = HTTPBearer(auto_error=False)
 
 
@@ -17,22 +16,22 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """get_current_user ?????"""
+    """获取当前已认证的用户"""
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
+            detail="未认证",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
     token = credentials.credentials
     
-    # decode token
+    # 解码令牌
     payload = security_manager.decode_token(token)
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
+            detail="无法验证凭据",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -40,22 +39,22 @@ async def get_current_user(
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
+            detail="无法验证凭据",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Get user from database
+    # 从数据库获取用户
     user = await user_crud.get_by_id(db, user_id)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
+            detail="用户不存在",
         )
     
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user",
+            detail="用户已停用",
         )
     
     return user
@@ -64,11 +63,10 @@ async def get_current_user(
 async def get_current_superuser(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    """get_current_superuser ?????"""
+    """获取当前已认证的超级管理员"""
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
+            detail="权限不足",
         )
     return current_user
-

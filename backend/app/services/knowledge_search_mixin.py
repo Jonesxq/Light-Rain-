@@ -1,4 +1,4 @@
-"""知识库检索与重排逻辑。"""
+"""知识库检索与重排逻辑模块"""
 
 import asyncio
 from http import HTTPStatus
@@ -15,14 +15,22 @@ logger = logger_manager.get_logger(__name__)
 
 
 class KnowledgeSearchMixin:
-    """检索与重排能力（BM25 + 语义 + RRF + rerank）。"""
+    """检索与重排Mixin：提供BM25、语义检索、RRF融合和重排功能"""
 
     async def _items_from_documents(
         self,
         docs,
         raw_lookup: Optional[dict[str, ChunkCandidate]] = None,
     ) -> List[SearchItem]:
-        """从向量检索结果中构建 SearchItem 列表。"""
+        """从向量检索结果中构建SearchItem列表
+        
+        Args:
+            docs: 向量检索结果文档列表
+            raw_lookup: 原始分片查找表
+            
+        Returns:
+            SearchItem列表
+        """
         items: List[SearchItem] = []
         vector_ids: List[str] = []
         item_vector_ids: List[Optional[str]] = []
@@ -43,7 +51,6 @@ class KnowledgeSearchMixin:
         if not items:
             return []
 
-        # 补充结构化元数据，并尽量回填原始分片内容
         meta_map = await self._load_structured_meta_by_vector_ids(vector_ids)
         raw_lookup = raw_lookup or {}
         enriched: List[SearchItem] = []
@@ -63,7 +70,16 @@ class KnowledgeSearchMixin:
         return enriched
 
     async def _gte_rerank_items(self, query: str, items: List[SearchItem], top_k: int) -> List[SearchItem]:
-        """使用 GTE rerank 模型重排（失败则回退原顺序）。"""
+        """使用GTE rerank模型重排（失败则回退原顺序）
+        
+        Args:
+            query: 查询文本
+            items: 待重排的SearchItem列表
+            top_k: 返回结果数量
+            
+        Returns:
+            重排后的SearchItem列表
+        """
         if not items or top_k <= 0:
             return []
 
@@ -86,13 +102,20 @@ class KnowledgeSearchMixin:
                 if reranked:
                     return reranked[:top_n]
         except Exception as e:
-            # 重排失败时不影响主流程
             logger.warning(f"GTE rerank failed, fallback to fusion order: {e}")
 
         return items[:top_n]
 
     def _build_sources(self, items: List[SearchItem], max_sources: int = 5) -> List[dict]:
-        """构建来源列表（去重 + 限量）。"""
+        """构建来源列表（去重 + 限量）
+        
+        Args:
+            items: SearchItem列表
+            max_sources: 最大来源数量
+            
+        Returns:
+            来源信息字典列表
+        """
         sources: List[dict] = []
         seen = set()
 
@@ -116,7 +139,6 @@ class KnowledgeSearchMixin:
                 "chunk_index": chunk_meta.get("index"),
             }
 
-            # 过滤空值
             source = {k: v for k, v in source.items() if v not in (None, "", [], {})}
             if not source:
                 continue
@@ -147,13 +169,23 @@ class KnowledgeSearchMixin:
         rewritten_query: Optional[str] = None,
         user_id: Optional[int] = None,
     ) -> Tuple[str, List[dict]]:
-        """检索知识库：BM25 优先，语义兜底，RRF 融合后重排。"""
+        """检索知识库：BM25优先，语义兜底，RRF融合后重排
+        
+        Args:
+            kb_id: 知识库ID
+            query: 查询文本
+            top_k: 返回结果数量
+            rewritten_query: 重写后的查询（可选）
+            user_id: 用户ID（可选）
+            
+        Returns:
+            元组(上下文文本, 来源信息列表)
+        """
         try:
             if rewritten_query is None:
                 rewritten_query = await query_rewrite_service.rewrite_query(query, user_id=user_id, kb_id=kb_id)
             effective_query = rewritten_query or query
 
-            # 1) 优先 BM25 + 语义兜底
             candidates, bm25 = await self._get_bm25_index(kb_id)
             raw_lookup = self._build_raw_lookup(candidates)
             if not candidates or bm25 is None:
@@ -170,7 +202,6 @@ class KnowledgeSearchMixin:
                 sources = self._build_sources(reranked_items, max_sources=top_k)
                 return context, sources
 
-            # 2) 有 BM25 候选时先走 BM25，再融合语义
             bm25_k = max(settings.llm.RAG_BM25_TOP_K, top_k)
             bm25_candidates = self._bm25_search(effective_query, candidates, bm25, bm25_k)
             if not bm25_candidates:
@@ -187,7 +218,6 @@ class KnowledgeSearchMixin:
                 sources = self._build_sources(reranked_items, max_sources=top_k)
                 return context, sources
 
-            # 3) BM25 + 语义双路融合，再 rerank
             semantic_global_k = max(settings.llm.RAG_SEMANTIC_TOP_K, top_k)
             semantic_docs = await self._semantic_search_global(
                 kb_id=kb_id,

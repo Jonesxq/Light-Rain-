@@ -1,4 +1,4 @@
-"""RAG chat helpers."""
+"""RAG聊天辅助模块（检索增强生成）"""
 
 import json
 from typing import AsyncGenerator, List, Optional
@@ -16,7 +16,7 @@ from app.utils.chat_history import history_to_payload
 from app.utils.llm_usage import estimate_usage
 
 class ChatRagMixin:
-    """RAG mixin."""
+    """RAG Mixin：提供基于知识库的问答功能（检索增强生成）"""
 
     async def _stream_rag_with_context(
         self,
@@ -31,7 +31,23 @@ class ChatRagMixin:
         risk_tags: Optional[list[str]] = None,
         chat_history: Optional[List[BaseMessage]] = None,
     ) -> AsyncGenerator[str, None]:
-        """_stream_rag_with_context ?????"""
+        """流式RAG回答（内部方法，带已有上下文）
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            session_id: 会话ID
+            kb_id: 知识库ID
+            input_text: 用户输入
+            model: 使用的模型名称
+            user_message_id: 用户消息ID
+            disclaimer_codes: 免责声明代码列表
+            risk_tags: 风险标签列表
+            chat_history: 对话历史
+            
+        Yields:
+            SSE格式的数据流，包含内容令牌和完成事件
+        """
         rewritten_query = await query_rewrite_service.rewrite_query(input_text, user_id=user_id, kb_id=kb_id, db=db)
 
         context, sources = await kb_service.search_knowledge(
@@ -152,8 +168,17 @@ class ChatRagMixin:
             user_id: int,
             req: KnowledgeChatRequest
     ):
+        """处理知识库问答（非流式）
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            req: 知识库聊天请求对象
+            
+        Returns:
+            包含AI回复的字典
+        """
         # 1) 获取或创建会话
-        """handle_rag_chat ?????"""
         session_id = req.session_id
         if not session_id:
             # 创建一个新会话，标题取用户提问的前 15 个字
@@ -176,7 +201,6 @@ class ChatRagMixin:
         if session:
             await self._auto_rename_session(db, session, req.message)
 
-        # 3) 检索知识库内容
         # 3) 查询改写：提升检索与问答效果
         rewritten_query = await query_rewrite_service.rewrite_query(req.message, user_id=user_id, kb_id=req.kb_id, db=db)
 
@@ -274,7 +298,6 @@ class ChatRagMixin:
             success=True,
             metadata={"kb_id": req.kb_id, "session_id": session_id},
         )
-        # -------------------------------
 
         # 8) 保存 AI 回复
         ai_msg_db = await chat_crud.create_message(
@@ -283,8 +306,8 @@ class ChatRagMixin:
             role="assistant",
             content=ai_content,
             kb_id=req.kb_id,
-            model_name=resolved["model"],  # 保存使用的模型名称
-            token_count=total_tokens,  # 保存实际消耗的 Token
+            model_name=resolved["model"],
+            token_count=total_tokens,
             sources=sources,
             disclaimer_codes=disclaimer_codes,
             risk_tags=risk_tags,
@@ -325,7 +348,16 @@ class ChatRagMixin:
             user_id: int,
             req: KnowledgeChatRequest
     ) -> AsyncGenerator[str, None]:
-        """stream_rag_chat ?????"""
+        """流式知识库问答
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            req: 知识库聊天请求对象
+            
+        Yields:
+            SSE格式的数据流
+        """
         session_id = req.session_id
         if not session_id:
             session = await chat_crud.create_session(

@@ -1,4 +1,4 @@
-﻿"""crud/chat.py."""
+﻿"""聊天数据库操作模块 - 提供聊天会话和消息的CRUD操作"""
 import json
 from datetime import datetime
 from typing import List, Optional
@@ -12,13 +12,21 @@ from app.models.chat import ChatSession, ChatMessage, ChatRole
 
 
 class ChatCRUD:
+    """聊天CRUD操作类 - 管理聊天会话和消息的数据库操作"""
+    
     # --------------------
     # Cache helpers（序列化/反序列化）
     # --------------------
 
-    """ChatCRUD ??"""
     def _serialize_session(self, session: ChatSession) -> dict:
-        """_serialize_session ???"""
+        """序列化聊天会话对象为字典，用于Redis缓存
+        
+        Args:
+            session: 聊天会话对象
+            
+        Returns:
+            dict: 序列化后的会话字典
+        """
         return {
             "id": session.id,
             "user_id": session.user_id,
@@ -32,7 +40,14 @@ class ChatCRUD:
         }
 
     def _serialize_message(self, message: ChatMessage) -> dict:
-        """_serialize_message ???"""
+        """序列化聊天消息对象为字典，用于Redis缓存
+        
+        Args:
+            message: 聊天消息对象
+            
+        Returns:
+            dict: 序列化后的消息字典
+        """
         return {
             "id": message.id,
             "session_id": message.session_id,
@@ -50,7 +65,14 @@ class ChatCRUD:
         }
 
     def _session_from_cache(self, data: dict) -> ChatSession:
-        """_session_from_cache ???"""
+        """从缓存数据反序列化聊天会话对象
+        
+        Args:
+            data: 缓存中的会话字典数据
+            
+        Returns:
+            ChatSession: 反序列化后的会话对象
+        """
         return ChatSession(
             id=data.get("id"),
             user_id=data.get("user_id"),
@@ -64,7 +86,14 @@ class ChatCRUD:
         )
 
     def _message_from_cache(self, data: dict) -> ChatMessage:
-        """_message_from_cache ???"""
+        """从缓存数据反序列化聊天消息对象
+        
+        Args:
+            data: 缓存中的消息字典数据
+            
+        Returns:
+            ChatMessage: 反序列化后的消息对象
+        """
         return ChatMessage(
             id=data.get("id"),
             session_id=data.get("session_id"),
@@ -84,7 +113,16 @@ class ChatCRUD:
     # ========== Session Operations ==========
 
     async def create_session(self, db: AsyncSession, user_id: int, title: str = "New Chat") -> ChatSession:
-        """create_session ?????"""
+        """创建新的聊天会话
+        
+        Args:
+            db: 异步数据库会话
+            user_id: 用户ID
+            title: 会话标题，默认为"New Chat"
+            
+        Returns:
+            ChatSession: 创建的会话对象
+        """
         session = ChatSession(user_id=user_id, title=title)
         db.add(session)
         await db.commit()
@@ -102,7 +140,21 @@ class ChatCRUD:
         q: Optional[str] = None,
         include_archived: bool = False,
     ) -> List[ChatSession]:
-        """get_user_sessions ?????"""
+        """获取用户的聊天会话列表
+        
+        优先从Redis缓存获取，缓存未命中则查询数据库
+        
+        Args:
+            db: 异步数据库会话
+            user_id: 用户ID
+            skip: 跳过的记录数，用于分页
+            limit: 返回的最大记录数
+            q: 搜索关键词，用于标题搜索
+            include_archived: 是否包含已归档的会话
+            
+        Returns:
+            List[ChatSession]: 聊天会话列表
+        """
         cache_key = f"chat:sessions:{user_id}:{skip}:{limit}:{include_archived}:{q or ''}"
         try:
             cached = await redis_manager.get_async(cache_key)
@@ -144,11 +196,24 @@ class ChatCRUD:
         return sessions
 
     async def get_session(self, db: AsyncSession, session_id: int) -> Optional[ChatSession]:
-        """get_session ?????"""
+        """根据ID获取聊天会话
+        
+        Args:
+            db: 异步数据库会话
+            session_id: 会话ID
+            
+        Returns:
+            Optional[ChatSession]: 会话对象，如果不存在则返回None
+        """
         return await db.get(ChatSession, session_id)
 
     async def update_session_time(self, db: AsyncSession, session_id: int):
-        """update_session_time ?????"""
+        """更新会话的最后更新时间
+        
+        Args:
+            db: 异步数据库会话
+            session_id: 会话ID
+        """
         session = await self.get_session(db, session_id)
         if session:
             session.updated_at = datetime.utcnow()
@@ -166,7 +231,19 @@ class ChatCRUD:
         is_archived: Optional[bool] = None,
         tags: Optional[List[str]] = None,
     ) -> Optional[ChatSession]:
-        """update_session ?????"""
+        """更新聊天会话信息
+        
+        Args:
+            db: 异步数据库会话
+            session_id: 会话ID
+            title: 新的会话标题
+            is_pinned: 是否置顶
+            is_archived: 是否归档
+            tags: 标签列表
+            
+        Returns:
+            Optional[ChatSession]: 更新后的会话对象，如果不存在则返回None
+        """
         session = await self.get_session(db, session_id)
         if not session:
             return None
@@ -189,7 +266,16 @@ class ChatCRUD:
         return session
 
     async def delete_session(self, db: AsyncSession, session_id: int, user_id: int) -> bool:
-        """delete_session ?????"""
+        """删除聊天会话（软删除）
+        
+        Args:
+            db: 异步数据库会话
+            session_id: 会话ID
+            user_id: 用户ID，用于验证权限
+            
+        Returns:
+            bool: 删除成功返回True，否则返回False
+        """
         session = await self.get_session(db, session_id)
         if not session or session.user_id != user_id:
             return False
@@ -208,19 +294,35 @@ class ChatCRUD:
             session_id: int,
             role: ChatRole,
             content: str,
-            kb_id: Optional[int] = None,  # 新增这个参数
+            kb_id: Optional[int] = None,
             model_name: Optional[str] = None,
             token_count: Optional[int] = 0,
             sources: Optional[list[dict]] = None,
             disclaimer_codes: Optional[list[str]] = None,
             risk_tags: Optional[list[str]] = None,
     ) -> ChatMessage:
-        """create_message ?????"""
+        """创建新的聊天消息
+        
+        Args:
+            db: 异步数据库会话
+            session_id: 会话ID
+            role: 消息角色（用户或助手）
+            content: 消息内容
+            kb_id: 关联的知识库ID
+            model_name: 使用的模型名称
+            token_count: 消耗的token数量
+            sources: 引用来源列表
+            disclaimer_codes: 免责声明代码列表
+            risk_tags: 风险标签列表
+            
+        Returns:
+            ChatMessage: 创建的消息对象
+        """
         message = ChatMessage(
             session_id=session_id,
             role=role,
             content=content,
-            kb_id=kb_id,  # 确保赋值给模型对象
+            kb_id=kb_id,
             model_name=model_name,
             token_count=token_count,
             sources=sources,
@@ -235,7 +337,15 @@ class ChatCRUD:
         return message
 
     async def get_message(self, db: AsyncSession, message_id: int) -> Optional[ChatMessage]:
-        """get_message ?????"""
+        """根据ID获取聊天消息
+        
+        Args:
+            db: 异步数据库会话
+            message_id: 消息ID
+            
+        Returns:
+            Optional[ChatMessage]: 消息对象，如果不存在则返回None
+        """
         return await db.get(ChatMessage, message_id)
 
     async def set_message_favorite(
@@ -244,7 +354,16 @@ class ChatCRUD:
         message_id: int,
         is_favorite: bool
     ) -> Optional[ChatMessage]:
-        """set_message_favorite ?????"""
+        """设置消息是否收藏
+        
+        Args:
+            db: 异步数据库会话
+            message_id: 消息ID
+            is_favorite: 是否收藏
+            
+        Returns:
+            Optional[ChatMessage]: 更新后的消息对象，如果不存在则返回None
+        """
         message = await db.get(ChatMessage, message_id)
         if not message:
             return None
@@ -261,7 +380,16 @@ class ChatCRUD:
         message_id: int,
         content: str
     ) -> Optional[ChatMessage]:
-        """update_message_content ?????"""
+        """更新消息内容
+        
+        Args:
+            db: 异步数据库会话
+            message_id: 消息ID
+            content: 新的消息内容
+            
+        Returns:
+            Optional[ChatMessage]: 更新后的消息对象，如果不存在则返回None
+        """
         message = await db.get(ChatMessage, message_id)
         if not message:
             return None
@@ -274,7 +402,16 @@ class ChatCRUD:
         return message
 
     async def delete_messages_after(self, db: AsyncSession, session_id: int, message_id: int) -> List[int]:
-        """delete_messages_after ?????"""
+        """删除指定消息之后的所有消息
+        
+        Args:
+            db: 异步数据库会话
+            session_id: 会话ID
+            message_id: 消息ID，删除此消息之后的所有消息
+            
+        Returns:
+            List[int]: 被删除的消息ID列表
+        """
         messages = await self.get_session_messages(db, session_id)
         if not messages:
             return []
@@ -290,7 +427,17 @@ class ChatCRUD:
         return delete_ids
 
     async def get_session_messages(self, db: AsyncSession, session_id: int) -> List[ChatMessage]:
-        """get_session_messages ?????"""
+        """获取会话的所有消息
+        
+        优先从Redis缓存获取，缓存未命中则查询数据库
+        
+        Args:
+            db: 异步数据库会话
+            session_id: 会话ID
+            
+        Returns:
+            List[ChatMessage]: 消息列表，按创建时间排序
+        """
         cache_key = f"chat:messages:{session_id}"
         try:
             cached = await redis_manager.get_async(cache_key)

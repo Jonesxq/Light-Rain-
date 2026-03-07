@@ -1,4 +1,4 @@
-"""LLM config helpers for chat service."""
+"""聊天服务的LLM配置辅助模块"""
 
 from typing import Optional
 
@@ -15,7 +15,7 @@ logger = logger_manager.get_logger(__name__)
 
 
 class ChatLLMMixin:
-    """LLM config and builder helpers."""
+    """LLM配置和构建器Mixin：提供LLM实例创建和用户配置解析功能"""
 
     def _get_llm(
         self,
@@ -25,7 +25,18 @@ class ChatLLMMixin:
         api_base_url: Optional[str] = None,
         temperature: Optional[float] = None,
     ) -> ChatOpenAI:
-        """_get_llm ???"""
+        """构建LLM实例
+        
+        Args:
+            model_name: 模型名称
+            streaming: 是否启用流式输出
+            api_key: API密钥
+            api_base_url: API基础URL
+            temperature: 温度参数（控制随机性）
+            
+        Returns:
+            配置好的ChatOpenAI实例
+        """
         return build_chat_llm(
             model=model_name,
             api_key=api_key,
@@ -40,7 +51,19 @@ class ChatLLMMixin:
         user_id: int,
         request_model: Optional[str],
     ) -> dict:
-        """_resolve_user_llm_config ?????"""
+        """解析用户的LLM配置（优先使用用户自定义配置，回退到系统默认配置）
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            request_model: 请求中指定的模型名称（覆盖用户配置）
+            
+        Returns:
+            包含model、api_key、api_base_url的配置字典
+            
+        Raises:
+            ValueError: 当用户API密钥解密失败时
+        """
         model_override = (request_model or "").strip() or None
 
         settings_row = await llm_settings_crud.get_by_user_id(db, user_id)

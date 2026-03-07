@@ -1,13 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import LoginView from '../views/Login.vue';
-import RegisterView from '../views/Register.vue';
-import ChatView from '../views/Chat.vue';
-import KnowledgeView from '../views/Knowledge.vue';
-import SettingsView from '../views/Settings.vue';
-import UsageView from '../views/Usage.vue';
-import AiNewsView from '../views/AiNews.vue';
-import MyView from '../views/My.vue';
 import { getToken } from '../api/client.js';
+
+const LoginView = () => import('../views/Login.vue');
+const RegisterView = () => import('../views/Register.vue');
+const ChatView = () => import('../views/Chat.vue');
+const KnowledgeView = () => import('../views/Knowledge.vue');
+const SettingsView = () => import('../views/Settings.vue');
+const UsageView = () => import('../views/Usage.vue');
+const AiNewsView = () => import('../views/AiNews.vue');
+const MyView = () => import('../views/My.vue');
 
 const routes = [
   { path: '/', redirect: '/login' },

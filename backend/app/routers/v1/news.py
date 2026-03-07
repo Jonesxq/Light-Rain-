@@ -1,4 +1,4 @@
-﻿"""routers/v1/news.py."""
+"""新闻路由模块 - 提供AI新闻相关API"""
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,7 +19,19 @@ async def get_ai_latest_news(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """get_ai_latest_news ?????"""
+    """获取最新的AI新闻
+    
+    支持刷新缓存获取最新新闻
+    
+    Args:
+        limit: 返回的新闻数量（1-20条）
+        refresh: 是否刷新缓存（0不刷新，1刷新）
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        NewsListResponse: 新闻列表
+    """
     _ = current_user
     _ = db
     payload = await ai_news_service.get_latest(limit=limit, refresh=bool(refresh))

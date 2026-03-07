@@ -1,4 +1,4 @@
-"""services/temp_context.py."""
+"""临时上下文服务：用于处理聊天附件的临时上下文和BM25检索"""
 import math
 import re
 from typing import List, Optional
@@ -17,7 +17,14 @@ _TOKEN_PATTERN = re.compile(r"[A-Za-z0-9]+|[\u4e00-\u9fff]")
 
 
 def _tokenize(text: str) -> List[str]:
-    """_tokenize ???"""
+    """分词函数
+    
+    Args:
+        text: 待分词文本
+        
+    Returns:
+        分词后的token列表
+    """
     if not text:
         return []
     if jieba:
@@ -26,9 +33,16 @@ def _tokenize(text: str) -> List[str]:
 
 
 class BM25Index:
-    """BM25Index ??"""
+    """BM25索引：用于本地文本检索"""
+    
     def __init__(self, tokenized_corpus: List[List[str]], k1: float = 1.5, b: float = 0.75):
-        """__init__ ???"""
+        """初始化BM25索引
+        
+        Args:
+            tokenized_corpus: 分词后的语料库
+            k1: BM25的k1参数
+            b: BM25的b参数
+        """
         self.k1 = k1
         self.b = b
         self.doc_freqs: List[dict[str, int]] = []
@@ -59,7 +73,14 @@ class BM25Index:
         }
 
     def get_scores(self, query_tokens: List[str]) -> List[float]:
-        """get_scores ???"""
+        """计算查询与文档的BM25分数
+        
+        Args:
+            query_tokens: 分词后的查询
+            
+        Returns:
+            每个文档的分数列表
+        """
         if not self.doc_freqs or not query_tokens:
             return []
 
@@ -81,9 +102,10 @@ class BM25Index:
 
 
 class TempContextService:
-    """TempContextService ??"""
+    """临时上下文服务：处理聊天附件，为用户查询提供临时上下文检索"""
+    
     def __init__(self):
-        """__init__ ???"""
+        """初始化临时上下文服务"""
         self.chunker = DocumentChunkingService(
             default_chunk_size=settings.llm.RAG_CHUNK_SIZE_DEFAULT,
             default_chunk_overlap=settings.llm.RAG_CHUNK_OVERLAP_DEFAULT,
@@ -96,7 +118,14 @@ class TempContextService:
         )
 
     def _chunk_text(self, text: str) -> List[str]:
-        """_chunk_text ???"""
+        """将纯文本分块
+        
+        Args:
+            text: 待分块文本
+            
+        Returns:
+            分块后的文本列表
+        """
         if not text:
             return []
         normalized = self.chunker._normalize_text(text)
@@ -109,14 +138,32 @@ class TempContextService:
         return [c.text for c in chunks if c.text]
 
     def _extract_text_from_document(self, file_path: str, file_type: str) -> tuple[str, List[str]]:
-        """_extract_text_from_document ?????"""
+        """从文档中提取文本并分块
+        
+        Args:
+            file_path: 文件路径
+            file_type: 文件类型
+            
+        Returns:
+            (完整文本, 分块列表)元组
+        """
         docs = self.chunker.load_and_split(file_path, file_type)
         chunks = [doc.page_content.strip() for doc in docs if doc.page_content and doc.page_content.strip()]
         extracted_text = "\n\n".join(chunks)
         return extracted_text, chunks
 
     def _extract_text_from_image(self, file_path: str) -> str:
-        """_extract_text_from_image ?????"""
+        """从图片中提取文本（OCR）
+        
+        Args:
+            file_path: 图片文件路径
+            
+        Returns:
+            提取的文本
+            
+        Raises:
+            ValueError: 当缺少Pillow或pytesseract依赖时
+        """
         try:
             from PIL import Image
         except Exception as exc:
@@ -138,7 +185,19 @@ class TempContextService:
         file_size: int,
         file_path: str,
     ):
-        """create_attachment ?????"""
+        """创建聊天附件
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            file_name: 文件名
+            file_type: 文件类型
+            file_size: 文件大小
+            file_path: 文件路径
+            
+        Returns:
+            创建的附件对象
+        """
         extracted_text = ""
         chunks: List[str] = []
 
@@ -148,6 +207,7 @@ class TempContextService:
         else:
             extracted_text, chunks = self._extract_text_from_document(file_path, file_type)
 
+        # 限制提取文本的最大长度
         max_extract = 20000
         if extracted_text and len(extracted_text) > max_extract:
             extracted_text = extracted_text[:max_extract]
@@ -172,7 +232,18 @@ class TempContextService:
         top_k: int = 5,
         max_chars: int = 4000,
     ) -> str:
-        """get_context_for_user ?????"""
+        """为用户查询获取临时上下文
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            query: 用户查询
+            top_k: 返回的top_k结果
+            max_chars: 最大字符数限制
+            
+        Returns:
+            格式化的上下文字符串
+        """
         attachments = await chat_attachment_crud.list_attachments(db, user_id)
         if not attachments:
             return ""
@@ -216,4 +287,5 @@ class TempContextService:
         return "\n\n".join(parts)
 
 
+# 全局服务实例
 temp_context_service = TempContextService()

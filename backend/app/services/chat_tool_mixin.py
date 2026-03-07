@@ -1,4 +1,4 @@
-"""Tool-chat streaming helpers."""
+"""工具聊天流式输出辅助模块"""
 
 import asyncio
 import json
@@ -23,19 +23,27 @@ from app.utils.chat_intent import is_time_query
 from app.utils.llm_usage import estimate_usage
 
 class _StreamingTokenCallback(AsyncCallbackHandler):
-    """_StreamingTokenCallback ??"""
+    """流式令牌回调：用于捕获LLM流式输出并放入队列"""
     def __init__(self, queue: asyncio.Queue):
-        """__init__ ???"""
+        """初始化流式令牌回调
+        
+        Args:
+            queue: 用于存储令牌的异步队列
+        """
         self.queue = queue
 
     async def on_llm_new_token(self, token: str, **kwargs):  # type: ignore[override]
-        """on_llm_new_token ?????"""
+        """当LLM生成新令牌时的回调
+        
+        Args:
+            token: 生成的新令牌
+        """
         if token:
             await self.queue.put(token)
 
 
 class ChatToolMixin:
-    """Tool chat streaming mixin."""
+    """工具聊天流式输出Mixin：提供工具调用的流式聊天功能"""
 
     async def _stream_tool_chat(
         self,
@@ -49,13 +57,26 @@ class ChatToolMixin:
         disclaimer_codes: Optional[list[str]] = None,
         risk_tags: Optional[list[str]] = None,
     ) -> AsyncGenerator[str, None]:
-        """_stream_tool_chat ?????"""
-        # 直接处理“当前时间/日期”类问题，避免模型输出 tool_call 文本
+        """流式工具聊天（内部方法）
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            session_id: 会话ID
+            input_text: 用户输入
+            chat_history: 对话历史
+            model: 使用的模型名称
+            user_message_id: 用户消息ID
+            disclaimer_codes: 免责声明代码列表
+            risk_tags: 风险标签列表
+            
+        Yields:
+            SSE格式的数据流
+        """
         if is_time_query(input_text):
             try:
                 time_text = get_system_time.invoke({})
             except Exception:
-                # 兼容旧版 tool 接口
                 time_text = get_system_time.run({})
             yield f"data: {json.dumps({'content': time_text})}\n\n"
 
@@ -99,7 +120,6 @@ class ChatToolMixin:
             yield f"data: {json.dumps(payload)}\n\n"
             return
 
-        # 进入工具调用的流式输出（天气问题也走 agent）
         temp_context = await self._get_temp_context(db, user_id, input_text)
         system_prompt = CHAT_SYSTEM_PROMPT
         if temp_context:
@@ -134,7 +154,7 @@ class ChatToolMixin:
         result_holder: dict = {"result": None, "error": None}
 
         async def _run_agent() -> None:
-            """_run_agent ?????"""
+            """异步运行智能体的内部函数"""
             try:
                 result_holder["result"] = await agent_executor.ainvoke(
                     {"input": input_text, "chat_history": chat_history},

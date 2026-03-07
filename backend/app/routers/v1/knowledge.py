@@ -1,4 +1,4 @@
-﻿"""routers/v1/knowledge.py."""
+"""知识库API路由模块 - 提供知识库管理、文档上传、分块预览等功能"""
 import os
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
@@ -36,7 +36,21 @@ async def _get_owned_completed_doc_or_404(
     current_user: User,
     doc_id: int,
 ) -> Document:
-    """校验文档存在、归属与处理状态。"""
+    """校验文档存在、归属与处理状态
+    
+    确保文档存在、属于当前用户且处理完成
+    
+    Args:
+        db: 数据库会话
+        current_user: 当前登录用户
+        doc_id: 文档ID
+        
+    Returns:
+        Document: 验证通过的文档对象
+        
+    Raises:
+        HTTPException: 文档不存在返回404，未处理完成返回409
+    """
     doc = await kb_crud.get_document(db, doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -56,7 +70,17 @@ def _build_chunk_preview_payload(
     chunk_index: int,
     chunk_id: int | None = None,
 ) -> dict:
-    """统一构建 chunk 预览响应。"""
+    """统一构建分块预览响应
+    
+    Args:
+        doc: 文档对象
+        preview: 分块预览数据
+        chunk_index: 分块索引
+        chunk_id: 分块ID（可选）
+        
+    Returns:
+        dict: 格式化的分块预览响应
+    """
     structured_meta = preview.get("structured_meta") or {}
     loc_meta = structured_meta.get("loc", {}) if isinstance(structured_meta.get("loc"), dict) else {}
     return {
@@ -81,8 +105,16 @@ async def create_knowledge_base(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    # 适配你现有的 CRUD 方法签名: (db, user_id, name, description)
-    """create_knowledge_base ?????"""
+    """创建知识库
+    
+    Args:
+        kb_in: 知识库创建数据（包含名称和描述）
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        KnowledgeBaseResponse: 创建的知识库信息
+    """
     return await kb_crud.create_kb(
         db,
         user_id=current_user.id,
@@ -96,7 +128,15 @@ async def list_kbs(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """list_kbs ?????"""
+    """获取当前用户的知识库列表
+    
+    Args:
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        list[KnowledgeBaseResponse]: 知识库列表
+    """
     return await kb_crud.get_user_kbs(db, user_id=current_user.id)
 
 
@@ -106,7 +146,21 @@ async def delete_kb(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """delete_kb ?????"""
+    """删除知识库
+    
+    同时删除知识库中的所有文档和向量数据
+    
+    Args:
+        kb_id: 知识库ID
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        dict: 操作成功标识
+        
+    Raises:
+        HTTPException: 知识库不存在或无权限时返回404错误
+    """
     kb = await kb_crud.get_kb(db, kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
@@ -120,7 +174,21 @@ async def list_kb_documents(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """list_kb_documents ?????"""
+    """获取知识库中的文档列表
+    
+    包括每个文档的处理状态、分块数量等信息
+    
+    Args:
+        kb_id: 知识库ID
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        list[DocumentResponse]: 文档列表
+        
+    Raises:
+        HTTPException: 知识库不存在或无权限时返回404错误
+    """
     kb = await kb_crud.get_kb(db, kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
@@ -159,7 +227,20 @@ async def get_chunk_preview(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """get_chunk_preview ?????"""
+    """根据索引获取文档分块预览
+    
+    Args:
+        doc_id: 文档ID
+        chunk_index: 分块索引
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        KnowledgeChunkPreviewResponse: 分块预览内容
+        
+    Raises:
+        HTTPException: 文档或分块不存在时返回404
+    """
     doc = await _get_owned_completed_doc_or_404(db, current_user, doc_id)
     chunk = await kb_crud.get_document_chunk_by_index(db, doc_id=doc_id, chunk_index=chunk_index)
 
@@ -193,7 +274,20 @@ async def get_chunk_preview_by_id(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """按 chunk 主键返回原始分片预览。"""
+    """根据分块ID获取文档分块预览
+    
+    Args:
+        doc_id: 文档ID
+        chunk_id: 分块ID
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        KnowledgeChunkPreviewResponse: 分块预览内容
+        
+    Raises:
+        HTTPException: 文档或分块不存在时返回404
+    """
     doc = await _get_owned_completed_doc_or_404(db, current_user, doc_id)
     chunk = await kb_crud.get_document_chunk_by_id(db, doc_id=doc_id, chunk_id=chunk_id)
     if not chunk:
@@ -223,7 +317,22 @@ async def reindex_document(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """reindex_document ?????"""
+    """重新索引文档
+    
+    重新解析文档、分块并向量化，异步执行
+    
+    Args:
+        doc_id: 文档ID
+        background_tasks: 后台任务管理器
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        dict: 操作成功标识
+        
+    Raises:
+        HTTPException: 文档不存在返回404，正在处理返回409
+    """
     doc = await kb_crud.get_document(db, doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -246,7 +355,22 @@ async def delete_kb_document(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """delete_kb_document ?????"""
+    """删除知识库中的文档
+    
+    同时删除文档的所有分块和向量数据
+    
+    Args:
+        kb_id: 知识库ID
+        doc_id: 文档ID
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        dict: 操作成功标识
+        
+    Raises:
+        HTTPException: 知识库或文档不存在时返回404
+    """
     kb = await kb_crud.get_kb(db, kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
@@ -265,7 +389,22 @@ async def evaluate_kb(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    """evaluate_kb ?????"""
+    """评估知识库的RAG效果
+    
+    自动生成测试问题并评估检索和回答质量
+    
+    Args:
+        kb_id: 知识库ID
+        payload: 评估配置参数
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        KnowledgeEvalResponse: 评估结果
+        
+    Raises:
+        HTTPException: 知识库不存在或无权限时返回404
+    """
     kb = await kb_crud.get_kb(db, kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
@@ -292,40 +431,50 @@ async def upload_document(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    # 1) 校验知识库权限
-    """upload_document ?????"""
+    """上传文档到知识库
+    
+    支持PDF、DOCX、TXT、MD格式，最大50MB，上传后异步处理
+    
+    Args:
+        kb_id: 知识库ID
+        background_tasks: 后台任务管理器
+        file: 上传的文件
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        DocumentResponse: 上传的文档信息
+        
+    Raises:
+        HTTPException: 知识库无权限返回404，文件格式不支持返回400，文件过大返回413
+    """
     kb = await kb_crud.get_kb(db, kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
 
-    # 2) 校验文件后缀
     file_ext = os.path.splitext(file.filename)[1].lower()
     if file_ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"Unsupported file type: {file_ext}")
 
-    # 3) 保存原始文件到本地路径
     if not os.path.exists(UPLOAD_DIR):
         os.makedirs(UPLOAD_DIR)
 
     unique_filename = f"{uuid.uuid4()}{file_ext}"
     file_path = os.path.join(UPLOAD_DIR, unique_filename)
     file_size = 0
-    # 采用分块写入，降低内存占用并支持大文件
     with open(file_path, "wb") as f:
         while True:
-            chunk = await file.read(1024 * 1024)  # 每次 1MB
+            chunk = await file.read(1024 * 1024)
             if not chunk:
                 break
             file_size += len(chunk)
             if file_size > MAX_UPLOAD_SIZE:
-                # 超过限制立即终止并删除文件
                 f.close()
                 if os.path.exists(file_path):
                     os.remove(file_path)
                 raise HTTPException(status_code=413, detail="File too large")
             f.write(chunk)
 
-    # 4) 数据库创建文档记录（状态: PROCESSING）
     doc = await kb_crud.create_document(
         db,
         kb_id=kb_id,
@@ -335,7 +484,6 @@ async def upload_document(
         file_size=file_size
     )
 
-    # 5) 提交后台任务：解析 -> 切片 -> 向量化 -> 存入 Milvus
     background_tasks.add_task(kb_service.ingest_document, doc.id)
 
     return doc

@@ -1,4 +1,4 @@
-"""Extra chat features (meme, suggestions)."""
+"""聊天额外功能模块（表情包、建议问题）"""
 
 from typing import List, Optional
 
@@ -21,7 +21,7 @@ logger = logger_manager.get_logger(__name__)
 
 
 class ChatExtrasMixin:
-    """Extra chat features mixin."""
+    """聊天额外功能Mixin：提供表情包生成和后续问题建议功能"""
 
     async def generate_meme(
         self,
@@ -29,7 +29,20 @@ class ChatExtrasMixin:
         user_id: int,
         message_id: int,
     ) -> ChatMessage:
-        """Generate meme image from assistant message."""
+        """从助手消息生成表情包图片
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            message_id: 消息ID
+            
+        Returns:
+            包含表情包图片的ChatMessage对象
+            
+        Raises:
+            ValueError: 当消息不存在、无权限或不是助手消息时
+            RuntimeError: 当文生图失败时
+        """
         message = await chat_crud.get_message(db, message_id)
         if not message:
             raise ValueError("Message not found")
@@ -75,7 +88,18 @@ class ChatExtrasMixin:
         limit: int = 3,
         model: Optional[str] = None,
     ) -> List[str]:
-        """Generate follow-up suggestions from recent chat history."""
+        """根据最近聊天历史生成后续问题建议
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            session_id: 会话ID
+            limit: 建议问题数量（1-6）
+            model: 使用的模型名称
+            
+        Returns:
+            后续问题建议列表
+        """
         limit = max(1, min(int(limit or 3), 6))
         messages = await chat_crud.get_session_messages(db, session_id)
         if not messages:

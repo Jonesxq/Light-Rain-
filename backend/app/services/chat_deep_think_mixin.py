@@ -1,4 +1,4 @@
-"""Deep-think chat helpers."""
+"""深度思考聊天辅助模块"""
 
 import json
 from typing import AsyncGenerator, List, Optional
@@ -19,7 +19,7 @@ logger = logger_manager.get_logger(__name__)
 
 
 class ChatDeepThinkMixin:
-    """Deep-think mixin."""
+    """深度思考Mixin：提供深思熟虑的推理能力，先构建推理计划再生成回答"""
 
     async def _build_reasoning_plan(
         self,
@@ -30,7 +30,19 @@ class ChatDeepThinkMixin:
         chat_history: List[BaseMessage],
         model: Optional[str],
     ) -> dict:
-        """Generate a reasoning plan as JSON (internal only)."""
+        """生成推理计划（仅内部使用）
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            session_id: 会话ID
+            question: 用户问题
+            chat_history: 对话历史
+            model: 使用的模型名称
+            
+        Returns:
+            推理计划字典，包含目标、步骤等信息
+        """
         base_question = (question or "").strip()
         history_text = history_to_text(chat_history)
         user_content = f"用户问题：{base_question}"
@@ -102,7 +114,7 @@ class ChatDeepThinkMixin:
                 )
             except Exception:
                 pass
-            logger.warning(f"Deep think plan generation failed: {exc}")
+            logger.warning(f"深度思考计划生成失败: {exc}")
             return {"goal": base_question, "steps": []}
 
     async def _deep_think_answer(
@@ -116,7 +128,21 @@ class ChatDeepThinkMixin:
         disclaimer_codes: Optional[list[str]] = None,
         risk_tags: Optional[list[str]] = None,
     ) -> ChatMessage:
-        """Non-streaming deep think answer."""
+        """非流式深度思考回答：先构建推理计划，再根据计划生成回答
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            session_id: 会话ID
+            question: 用户问题
+            chat_history: 对话历史
+            model: 使用的模型名称
+            disclaimer_codes: 免责声明代码列表
+            risk_tags: 风险标签列表
+            
+        Returns:
+            创建的AI聊天消息对象
+        """
         plan = await self._build_reasoning_plan(db, user_id, session_id, question, chat_history, model)
         try:
             plan_text = json.dumps(plan, ensure_ascii=False)
@@ -206,7 +232,22 @@ class ChatDeepThinkMixin:
         disclaimer_codes: Optional[list[str]] = None,
         risk_tags: Optional[list[str]] = None,
     ) -> AsyncGenerator[str, None]:
-        """Streaming deep think answer."""
+        """流式深度思考回答：实时展示思考进度并流式输出回答
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            session_id: 会话ID
+            input_text: 用户输入
+            model: 使用的模型名称
+            chat_history: 对话历史
+            user_message_id: 用户消息ID
+            disclaimer_codes: 免责声明代码列表
+            risk_tags: 风险标签列表
+            
+        Yields:
+            SSE格式的数据流，包含阶段进度、内容令牌和完成事件
+        """
         yield f"data: {json.dumps({'event': 'stage', 'stage': 'plan', 'message': '分析问题'})}\n\n"
         plan = await self._build_reasoning_plan(db, user_id, session_id, input_text, chat_history, model)
         try:

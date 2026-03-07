@@ -1,4 +1,4 @@
-"""知识库 BM25 缓存与 RRF 融合逻辑。"""
+"""知识库BM25缓存与RRF融合逻辑模块"""
 
 import asyncio
 import json
@@ -11,10 +11,14 @@ from app.services.knowledge_types import BM25Index, ChunkCandidate, SearchItem, 
 
 
 class KnowledgeBM25Mixin:
-    """BM25 缓存与候选融合能力。"""
+    """BM25缓存与候选融合Mixin：提供BM25索引管理和多路检索结果融合功能"""
 
     def _invalidate_bm25_cache(self, kb_id: int) -> None:
-        """清理 BM25 本地缓存并尝试清空 redis 缓存。"""
+        """清理BM25本地缓存并尝试清空Redis缓存
+        
+        Args:
+            kb_id: 知识库ID
+        """
         self._bm25_cache.pop(kb_id, None)
         try:
             asyncio.create_task(
@@ -27,14 +31,20 @@ class KnowledgeBM25Mixin:
             pass
 
     async def _get_bm25_index(self, kb_id: int) -> Tuple[List[ChunkCandidate], Optional[BM25Index]]:
-        """获取/构建 BM25 索引（优先缓存，其次 redis，最后回退本地加载）。"""
+        """获取/构建BM25索引（优先缓存，其次Redis，最后回退本地加载）
+        
+        Args:
+            kb_id: 知识库ID
+            
+        Returns:
+            元组(候选分片列表, BM25索引对象)
+        """
         now = time.time()
         cached = self._bm25_cache.get(kb_id)
         if cached and (now - cached[0]) < settings.llm.RAG_BM25_CACHE_TTL:
             return cached[1], cached[2]
 
         redis_key = f"kb:raw_chunks:{kb_id}"
-        # 先尝试从 redis 读取预计算候选
         try:
             cached_chunks = await redis_manager.get_async(redis_key)
             if cached_chunks:
@@ -56,7 +66,6 @@ class KnowledgeBM25Mixin:
         except Exception:
             pass
 
-        # 兜底：从存储加载原始分片并构建索引
         candidates = await self._load_raw_candidates_from_storage(kb_id)
         if not candidates:
             return [], None
@@ -64,7 +73,6 @@ class KnowledgeBM25Mixin:
         tokenized = [_tokenize(c.content) for c in candidates]
         bm25 = BM25Index(tokenized)
 
-        # 写回 redis，减少下次冷启动成本
         try:
             payload = json.dumps(
                 [
@@ -85,12 +93,26 @@ class KnowledgeBM25Mixin:
         return candidates, bm25
 
     async def get_raw_chunk_candidates(self, kb_id: int) -> List[ChunkCandidate]:
-        """返回 raw chunk 候选列表（用于评估或调试）。"""
+        """返回原始分片候选列表（用于评估或调试）
+        
+        Args:
+            kb_id: 知识库ID
+            
+        Returns:
+            候选分片列表
+        """
         candidates, _ = await self._get_bm25_index(kb_id)
         return candidates
 
     def _build_raw_lookup(self, candidates: List[ChunkCandidate]) -> dict[str, ChunkCandidate]:
-        """构建 parent_id -> 原始分片 的映射。"""
+        """构建parent_id到原始分片的映射
+        
+        Args:
+            candidates: 候选分片列表
+            
+        Returns:
+            parent_id到ChunkCandidate的字典映射
+        """
         return {c.parent_id: c for c in candidates if c.parent_id}
 
     def _bm25_search(
@@ -100,11 +122,20 @@ class KnowledgeBM25Mixin:
         bm25: BM25Index,
         top_k: int
     ) -> List[ChunkCandidate]:
-        """使用 BM25 在候选中检索并返回 top_k。"""
+        """使用BM25在候选中检索并返回top_k结果
+        
+        Args:
+            query: 查询文本
+            candidates: 候选分片列表
+            bm25: BM25索引对象
+            top_k: 返回结果数量
+            
+        Returns:
+            按BM25分数排序的top_k候选分片列表
+        """
         if not candidates or bm25 is None:
             return []
 
-        # BM25 打分并按分数排序
         scores = bm25.get_scores(_tokenize(query))
         if not scores:
             return []
@@ -119,13 +150,19 @@ class KnowledgeBM25Mixin:
             results.append(candidates[idx])
 
         if not results:
-            # 全部为 0 时退化为 top_k 截断
             results = [candidates[i] for i in ranked_indices[:top_k]]
 
         return results
 
     def _candidate_key(self, item: SearchItem) -> str:
-        """生成去重 key（优先 parent_id，其次来源信息，最后内容本身）。"""
+        """生成去重key（优先parent_id，其次来源信息，最后内容本身）
+        
+        Args:
+            item: 检索结果条目
+            
+        Returns:
+            用于去重的key字符串
+        """
         meta = item.meta or {}
         parent_id = self._extract_parent_id_from_meta(meta)
         if parent_id:
@@ -137,19 +174,32 @@ class KnowledgeBM25Mixin:
         if file_name and loc_meta:
             return f"{file_name}:{loc_meta}"
 
-        # 兜底：使用内容本身
         return item.content
 
     def _items_from_bm25(self, candidates: List[ChunkCandidate]) -> List[SearchItem]:
-        """将 BM25 候选转换为 SearchItem 列表。"""
+        """将BM25候选转换为SearchItem列表
+        
+        Args:
+            candidates: BM25候选分片列表
+            
+        Returns:
+            SearchItem列表
+        """
         return [SearchItem(content=c.content, meta=c.structured_meta) for c in candidates]
 
     def _rrf_fusion_items(self, ranked_lists: List[List[SearchItem]], rrf_k: int = 60) -> List[SearchItem]:
-        """RRF 融合：将多路排序结果按排名倒数加权融合。"""
+        """RRF融合：将多路排序结果按排名倒数加权融合
+        
+        Args:
+            ranked_lists: 多路检索结果列表
+            rrf_k: RRF算法参数k（默认60）
+            
+        Returns:
+            融合后的检索结果列表
+        """
         if not ranked_lists:
             return []
 
-        # 使用倒数融合分数，兼顾多路结果
         scores = {}
         picked: dict[str, SearchItem] = {}
 
@@ -159,13 +209,11 @@ class KnowledgeBM25Mixin:
                     continue
                 key = self._candidate_key(item)
                 scores[key] = scores.get(key, 0.0) + 1.0 / (rrf_k + rank)
-                # 优先保留包含元数据的 item
                 if key not in picked or (not picked[key].meta and item.meta):
                     picked[key] = item
 
         if not scores:
             return []
 
-        # 按分数降序排序
         fused = sorted(scores.items(), key=lambda x: x[1], reverse=True)
         return [picked[key] for key, _ in fused]

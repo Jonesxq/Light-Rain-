@@ -1,5 +1,4 @@
-﻿
-"""routers/v1/llm_settings.py."""
+"""LLM设置路由模块 - 提供用户自定义LLM配置API"""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +14,19 @@ router = APIRouter(prefix="/llm-settings", tags=["LLM Settings"])
 
 
 def _normalize_base_url(raw: str | None) -> str | None:
-    """_normalize_base_url ???"""
+    """规范化API基础URL
+    
+    确保URL以http://或https://开头，并以/v1结尾
+    
+    Args:
+        raw: 原始URL
+        
+    Returns:
+        str | None: 规范化后的URL
+        
+    Raises:
+        HTTPException: URL格式不正确时返回400错误
+    """
     if raw is None:
         return None
     value = raw.strip()
@@ -30,7 +41,14 @@ def _normalize_base_url(raw: str | None) -> str | None:
 
 
 def _mask_key(last4: str | None) -> str | None:
-    """_mask_key ???"""
+    """掩码API密钥，只显示后4位
+    
+    Args:
+        last4: API密钥的后4位
+        
+    Returns:
+        str | None: 掩码后的密钥字符串
+    """
     if not last4:
         return None
     return f"****{last4}"
@@ -41,7 +59,15 @@ async def get_my_llm_settings(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """get_my_llm_settings ?????"""
+    """获取当前用户的LLM设置
+    
+    Args:
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        LLMSettingsResponse: LLM设置信息
+    """
     settings_row = await llm_settings_crud.get_by_user_id(db, current_user.id)
     if not settings_row:
         return LLMSettingsResponse(
@@ -69,7 +95,18 @@ async def update_my_llm_settings(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """update_my_llm_settings ?????"""
+    """更新当前用户的LLM设置
+    
+    支持更新API密钥、基础URL、模型和启用状态，API密钥会被加密存储
+    
+    Args:
+        payload: LLM设置更新信息
+        current_user: 当前登录用户
+        db: 数据库会话
+        
+    Returns:
+        LLMSettingsResponse: 更新后的LLM设置信息
+    """
     update_data = payload.model_dump(exclude_unset=True)
 
     if "api_base_url" in update_data:
@@ -111,5 +148,10 @@ async def delete_my_llm_settings(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """delete_my_llm_settings ?????"""
+    """删除当前用户的LLM设置
+    
+    Args:
+        current_user: 当前登录用户
+        db: 数据库会话
+    """
     await llm_settings_crud.delete_for_user(db, current_user.id)

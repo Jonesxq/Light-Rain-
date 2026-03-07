@@ -1,19 +1,38 @@
-﻿"""tools/get_weather.py."""
+"""天气查询工具 - 提供全球天气信息查询功能"""
 from langchain.tools import tool
 import re
 import requests
 
 from app.core.config.settings import settings
 
+# 中文字符正则表达式
 _CHINESE_CHAR_RE = re.compile(r"[\u4e00-\u9fff]")
 
+
 def _looks_chinese(text: str) -> bool:
-    """_looks_chinese ???"""
+    """判断文本是否包含中文字符
+    
+    Args:
+        text: 待检查的文本
+        
+    Returns:
+        bool: 包含中文字符返回True，否则返回False
+    """
     return bool(_CHINESE_CHAR_RE.search(text or ""))
 
+
 def _resolve_location(query: str) -> str:
+    """解析位置查询，优化天气API的查询精度
+    
+    对于中文地点，会尝试匹配中国/中国大陆地区，提高查询准确率
+    
+    Args:
+        query: 位置查询字符串
+        
+    Returns:
+        str: 解析后的位置查询字符串
+    """
     # 未配置密钥时直接返回原查询
-    """_resolve_location ???"""
     if not settings.llm.WEATHER_API_KEY:
         return query
 
@@ -55,10 +74,20 @@ def _resolve_location(query: str) -> str:
         # 兜底：任何异常都不影响主流程
         return query
 
+
 @tool
 def get_weather(location: str) -> str:
+    """查询指定位置的天气信息
+    
+    使用WeatherAPI查询天气，支持全球城市查询，对中文地点有特殊优化
+    
+    Args:
+        location: 要查询天气的位置（城市名、地区名等）
+        
+    Returns:
+        str: 格式化的天气信息，包含温度、湿度、风向、空气质量等
+    """
     # 对地点做一次消歧，避免命中错误的城市/国家
-    """get_weather ???"""
     resolved_location = _resolve_location(location)
 
     # 当前天气接口（开启空气质量）
@@ -110,7 +139,7 @@ def get_weather(location: str) -> str:
 
         # 如果用户是中文地点但返回的国家不是中国，给出轻提示
         if _looks_chinese(location) and country and "china" not in country.lower() and "中国" not in country:
-            lines.append(f"- 提示：当前返回的地区属于 {country}，如需更精确可尝试“{location}，中国/省份”")
+            lines.append(f"- 提示：当前返回的地区属于 {country}，如需更精确可尝试\"{location}，中国/省份\"")
 
         if wind_kph is not None:
             wind_text = f"{wind_kph} km/h"

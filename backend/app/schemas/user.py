@@ -1,22 +1,22 @@
-﻿
-"""schemas/user.py."""
+
+"""用户数据验证模型模块"""
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator
 
-# ========== base Schema ==========
+# ========== 基础数据模型 ==========
 
 class UserBase(BaseModel):
+    """用户基础数据模型"""
     # 用户名（长度 3-50）
-    """UserBase ??"""
     username: str = Field(..., min_length=3, max_length=50)
     # 邮箱
     email: EmailStr
 
 
 class UserCreate(UserBase):
+    """用户创建数据模型"""
     # 明文密码（用于注册）
-    """UserCreate ??"""
     password: str = Field(..., min_length=6, max_length=100)
     
     model_config = ConfigDict(
@@ -31,8 +31,8 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
+    """用户更新数据模型"""
     # 新用户名（可选）
-    """UserUpdate ??"""
     username: Optional[str] = Field(None, min_length=3, max_length=50)
     # 新邮箱（可选）
     email: Optional[EmailStr] = None
@@ -43,8 +43,8 @@ class UserUpdate(BaseModel):
 
 
 class UserResponse(UserBase):
+    """用户响应数据模型"""
     # 用户 ID
-    """UserResponse ??"""
     id: int
     # 是否启用
     is_active: bool
@@ -62,22 +62,22 @@ class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ========== authenticationrelated Schema ==========
+# ========== 认证相关数据模型 ==========
 
 class UserLogin(BaseModel):
+    """用户登录数据模型"""
     # 用户名（与邮箱二选一）
-    """UserLogin ??"""
-    username: Optional[str] = Field(None, description="Generate user schemas (app/schemas/user.py)")
+    username: Optional[str] = Field(None, description="用户名")
     # 邮箱（与用户名二选一）
-    email: Optional[EmailStr] = Field(None, description="Generate user schemas (app/schemas/user.py)")
+    email: Optional[EmailStr] = Field(None, description="邮箱")
     # 登录密码
     password: str = Field(..., min_length=6)
     
     @model_validator(mode='after')
     def check_username_or_email(self):
-        """check_username_or_email ???"""
+        """验证必须提供用户名或邮箱"""
         if not self.username and not self.email:
-            raise ValueError('Must provide username or email')
+            raise ValueError('必须提供用户名或邮箱')
         return self
     
     model_config = ConfigDict(
@@ -91,8 +91,8 @@ class UserLogin(BaseModel):
 
 
 class Token(BaseModel):
+    """令牌数据模型"""
     # 访问令牌
-    """Token ??"""
     access_token: str
     # 刷新令牌（可选）
     refresh_token: Optional[str] = None
@@ -111,24 +111,24 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
+    """令牌数据模型"""
     # 用户名（可选）
-    """TokenData ??"""
     username: Optional[str] = None
     # 用户 ID（可选）
     user_id: Optional[int] = None
 
 
 class RefreshTokenRequest(BaseModel):
+    """刷新令牌请求数据模型"""
     # 刷新令牌字符串
-    """RefreshTokenRequest ??"""
-    refresh_token: str = Field(..., description="Generate user schemas (app/schemas/user.py)")
+    refresh_token: str = Field(..., description="刷新令牌")
 
 
-# ========== EmailValidaterelated Schema ==========
+# ========== 邮箱验证相关数据模型 ==========
 
 class EmailVerificationRequest(BaseModel):
+    """邮箱验证请求数据模型"""
     # 邮箱
-    """EmailVerificationRequest ??"""
     email: EmailStr
     # 验证码
     code: str = Field(..., min_length=4, max_length=10)
@@ -144,16 +144,16 @@ class EmailVerificationRequest(BaseModel):
 
 
 class ResendVerificationRequest(BaseModel):
+    """重新发送验证码请求数据模型"""
     # 邮箱
-    """ResendVerificationRequest ??"""
     email: EmailStr
 
 
-# ========== Passwordresetrelated Schema ==========
+# ========== 密码重置相关数据模型 ==========
 
 class PasswordResetRequest(BaseModel):
+    """密码重置请求数据模型"""
     # 邮箱
-    """PasswordResetRequest ??"""
     email: EmailStr
     
     model_config = ConfigDict(
@@ -166,8 +166,8 @@ class PasswordResetRequest(BaseModel):
 
 
 class PasswordResetConfirm(BaseModel):
+    """密码重置确认数据模型"""
     # 邮箱
-    """PasswordResetConfirm ??"""
     email: EmailStr
     # 验证码
     code: str = Field(..., min_length=4, max_length=10)
@@ -186,8 +186,8 @@ class PasswordResetConfirm(BaseModel):
 
 
 class PasswordChange(BaseModel):
+    """密码修改数据模型"""
     # 旧密码
-    """PasswordChange ??"""
     old_password: str = Field(..., min_length=6)
     # 新密码
     new_password: str = Field(..., min_length=6, max_length=100)

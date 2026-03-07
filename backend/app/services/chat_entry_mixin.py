@@ -1,4 +1,4 @@
-"""Chat entrypoints (process/stream/resend/regenerate)."""
+"""聊天入口点模块（处理/流式/重新发送/重新生成）"""
 
 import json
 from typing import AsyncGenerator, Optional
@@ -27,7 +27,7 @@ logger = logger_manager.get_logger(__name__)
 
 
 class ChatEntryMixin:
-    """Public entrypoints for chat."""
+    """聊天公共入口点Mixin：提供聊天处理、流式输出、消息重发和重新生成功能"""
 
     async def process_chat(
             self,
@@ -36,14 +36,25 @@ class ChatEntryMixin:
             session_id: int,
             chat_request: ChatRequest
     ):
-        # 1) 基础验证与用户消息持久化
-        """process_chat ?????"""
+        """处理聊天（非流式）
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            session_id: 会话ID
+            chat_request: 聊天请求对象
+            
+        Returns:
+            AI回复消息对象
+            
+        Raises:
+            ValueError: 当智能体执行失败或配置缺失时
+        """
         session = await chat_crud.get_session(db, session_id)
         await chat_crud.create_message(db, session_id=session_id, role="user", content=chat_request.message)
         if session:
             await self._auto_rename_session(db, session, chat_request.message)
 
-        # 2) 构建历史对话（LangChain Message 结构）
         chat_history = await self._build_langchain_history(db, session_id, limit=10)
         disclaimer_codes, risk_tags = await self._get_risk_info(
             db=db,
@@ -53,7 +64,6 @@ class ChatEntryMixin:
         )
 
         try:
-            # 3) 当前时间/日期问题，直接用本地时间工具返回
             if is_time_query(chat_request.message):
                 try:
                     time_text = get_system_time.invoke({})
@@ -85,7 +95,6 @@ class ChatEntryMixin:
 
             is_weather = is_weather_query(chat_request.message)
 
-            # 4) 深度研究（联网搜索）
             if chat_request.deep_search and not is_weather:
                 if not settings.llm.SERPER_API_KEY:
                     raise ValueError("搜索不可用：未配置 SERPER_API_KEY")
@@ -101,7 +110,6 @@ class ChatEntryMixin:
                 )
                 return ai_msg
 
-            # 5) 深度思考（推理，不联网）
             if chat_request.deep_think and not is_weather:
                 ai_msg = await self._deep_think_answer(
                     db=db,
@@ -115,7 +123,6 @@ class ChatEntryMixin:
                 )
                 return ai_msg
 
-            # 6) 其他问题走 LLM + 工具路由（天气问题也交给 agent 强制调用工具）
             resolved = await self._resolve_user_llm_config(db, user_id, None)
             llm = self._get_llm(
                 resolved["model"],
@@ -124,7 +131,6 @@ class ChatEntryMixin:
             )
             tools = [online_search, get_weather, get_system_time, text_to_image]
 
-            # 6) 按 agent 规范构建 Prompt
             temp_context = await self._get_temp_context(db, user_id, chat_request.message)
             system_prompt = CHAT_SYSTEM_PROMPT
             if temp_context:
@@ -136,10 +142,8 @@ class ChatEntryMixin:
                 MessagesPlaceholder(variable_name="agent_scratchpad"),
             ])
 
-            # 7) 创建 Tool Calling Agent
             agent = create_tool_calling_agent(llm, tools, prompt)
 
-            # 8) 构建执行器
             agent_executor = AgentExecutor(
                 agent=agent,
                 tools=tools,
@@ -147,7 +151,6 @@ class ChatEntryMixin:
                 handle_parsing_errors=True
             )
 
-            # 9) 执行调用
             timer = UsageTimer()
             try:
                 result = await agent_executor.ainvoke({
@@ -175,10 +178,8 @@ class ChatEntryMixin:
 
             latency_ms = timer.stop_ms()
 
-            # 10) 提取输出内容（兼容 AIMessage）
             ai_content = result.get("output", "")
 
-            # 如果输出是 AIMessage 对象（某些极端配置下），提取文本
             if hasattr(ai_content, "content"):
                 ai_content = ai_content.content
 
@@ -193,7 +194,6 @@ class ChatEntryMixin:
             elif usage.get("total_tokens") is None:
                 usage["total_tokens"] = (usage.get("prompt_tokens") or 0) + (usage.get("completion_tokens") or 0)
 
-            # 11) 统计 Token
             total_tokens = usage.get("total_tokens") or 0
             cost_usd = usage_service.compute_cost(
                 llm.model_name,
@@ -215,7 +215,6 @@ class ChatEntryMixin:
                 metadata={"session_id": session_id},
             )
 
-            # 12) 持久化 AI 回复
             ai_msg = await chat_crud.create_message(
                 db,
                 session_id=session_id,
@@ -255,7 +254,17 @@ class ChatEntryMixin:
             session_id: int,
             chat_request: ChatRequest
     ) -> AsyncGenerator[str, None]:
-        """stream_chat ?????"""
+        """流式聊天
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            session_id: 会话ID
+            chat_request: 聊天请求对象
+            
+        Yields:
+            SSE格式的数据流
+        """
         session = await chat_crud.get_session(db, session_id)
         user_msg = await chat_crud.create_message(db, session_id=session_id, role="user", content=chat_request.message)
         if session:
@@ -336,7 +345,19 @@ class ChatEntryMixin:
         deep_search: bool = False,
         deep_think: bool = False,
     ) -> AsyncGenerator[str, None]:
-        """stream_resend ?????"""
+        """流式重新发送（编辑用户消息并重新生成）
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            message_id: 消息ID
+            new_message: 新的消息内容
+            deep_search: 是否启用深度搜索
+            deep_think: 是否启用深度思考
+            
+        Yields:
+            SSE格式的数据流
+        """
         message, session = await self._get_message_and_session_for_user(db, user_id, message_id)
         if message.role != ChatRole.USER:
             raise ValueError("只能编辑用户消息")
@@ -434,7 +455,18 @@ class ChatEntryMixin:
         deep_search: bool = False,
         deep_think: bool = False,
     ) -> AsyncGenerator[str, None]:
-        """stream_regenerate ?????"""
+        """流式重新生成（基于已有消息重新生成回复）
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            message_id: 消息ID
+            deep_search: 是否启用深度搜索
+            deep_think: 是否启用深度思考
+            
+        Yields:
+            SSE格式的数据流
+        """
         message, session = await self._get_message_and_session_for_user(db, user_id, message_id)
 
         messages = await chat_crud.get_session_messages(db, session.id)
