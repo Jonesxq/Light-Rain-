@@ -1,6 +1,8 @@
 import asyncio
 import json
 import argparse
+from datetime import datetime
+import pytz
 from datasets import Dataset
 
 from ragas import aevaluate
@@ -14,7 +16,7 @@ from app.services.rag_evaluation import rag_evaluation_service
 
 logger = logger_manager.get_logger(__name__)
 
-async def run_custom_evaluation(kb_id: int, dataset_path: str):
+async def run_custom_evaluation(kb_id: int, dataset_path: str, limit: int = None):
     logger.info(f"开始加载外部测试集: {dataset_path}")
     try:
         with open(dataset_path, "r", encoding="utf-8") as f:
@@ -22,6 +24,10 @@ async def run_custom_evaluation(kb_id: int, dataset_path: str):
     except Exception as e:
         logger.error(f"无法读取文件: {e}")
         return
+
+    if limit and limit > 0:
+        data = data[:limit]
+        logger.info(f"限制评估数量为前 {limit} 条")
 
     eval_rows = []
     
@@ -75,18 +81,20 @@ async def run_custom_evaluation(kb_id: int, dataset_path: str):
     
     logger.info(f"============ RAGas 总计分 ============\n{result}")
     
-    output_report = "ragas_evaluation_report.json"
+    shanghai_tz = pytz.timezone('Asia/Shanghai')
+    timestamp = datetime.now(shanghai_tz).strftime("%Y%m%d_%H%M%S")
+    output_report = f"ragas_evaluation_report_{timestamp}.json"
     df = result.to_pandas()
     df.to_json(output_report, orient="records", force_ascii=False, indent=2)
     logger.info(f"详细单条试题分析和打分报告已保存至 {output_report}")
 
 
-async def main(kb_id: int, dataset_path: str):
+async def main(kb_id: int, dataset_path: str, limit: int = None):
     logger.info("正在初始化底层数据库和 Redis 连接...")
     await db_manager.initialize()
     await redis_manager.initialize_async()
     try:
-        await run_custom_evaluation(kb_id, dataset_path)
+        await run_custom_evaluation(kb_id, dataset_path, limit)
     finally:
         await db_manager.close()
         await redis_manager.close()
@@ -95,6 +103,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="外部数据集 RAGas 评估向导")
     parser.add_argument("--kb_id", type=int, required=True, help="知识库ID(对应您的应用系统内该知识库的主键)")
     parser.add_argument("--dataset", type=str, required=True, help="包含问答的JSON格式数据集绝对或相对路径")
+    parser.add_argument("--limit", type=int, default=None, help="限制评估的数量（只评估前N条）")
     
     args = parser.parse_args()
-    asyncio.run(main(args.kb_id, args.dataset))
+    asyncio.run(main(args.kb_id, args.dataset, args.limit))
