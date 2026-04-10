@@ -207,9 +207,11 @@ class KnowledgeIngestMixin:
                 )
 
                 raw_contents = [row["raw_content"] for row in prepared_rows]
+                logger.info(f"开始对 {len(prepared_rows)} 个 Chunk 进行并发大模型摘要提炼...")
                 summary_timer = UsageTimer()
                 summaries, summary_usage = await self._summarize_chunks(raw_contents)
                 summary_latency_ms = summary_timer.stop_ms()
+                logger.info(f"摘要提炼完毕，总耗时 {summary_latency_ms} ms。")
 
                 if kb_owner_id is not None:
                     cost_usd = usage_service.compute_cost(
@@ -259,10 +261,12 @@ class KnowledgeIngestMixin:
                     )
                     for summary in summaries
                 ]
+                logger.info(f"开始将 {len(milvus_docs)} 个文档向量插入到 Milvus (kb_id={doc.kb_id})...")
                 vector_db = self._get_vector_store(doc.kb_id)
-                ids = await asyncio.to_thread(vector_db.add_documents, milvus_docs)
+                ids = vector_db.add_documents(milvus_docs)
                 if not ids or len(ids) != len(prepared_rows):
                     raise ValueError("Milvus returned invalid ids for summary chunks.")
+                logger.info("Milvus 向量插入成功。")
 
                 for row, summary, v_id in zip(prepared_rows, summaries, ids):
                     await kb_crud.create_chunk(
@@ -338,8 +342,7 @@ class KnowledgeIngestMixin:
                     logger.warning(f"Skip {skipped} non-numeric Milvus ids for doc {doc_id}.")
                 try:
                     if delete_ids:
-                        vector_db = self._get_vector_store(doc.kb_id)
-                        await asyncio.to_thread(vector_db.delete, ids=delete_ids)
+                        self._get_vector_store(doc.kb_id).delete(ids=delete_ids)
                 except Exception as e:
                     logger.warning(f"Milvus delete failed for doc {doc_id}: {e}")
 
@@ -380,8 +383,7 @@ class KnowledgeIngestMixin:
                     logger.warning(f"Skip {skipped} non-numeric Milvus ids for doc {doc_id}.")
                 try:
                     if delete_ids:
-                        vector_db = self._get_vector_store(kb_id)
-                        await asyncio.to_thread(vector_db.delete, ids=delete_ids)
+                        self._get_vector_store(kb_id).delete(ids=delete_ids)
                 except Exception as e:
                     logger.warning(f"Milvus delete failed for doc {doc_id}: {e}")
 
@@ -429,8 +431,7 @@ class KnowledgeIngestMixin:
                     logger.warning(f"Skip {skipped} non-numeric Milvus ids for kb {kb_id}.")
                 try:
                     if delete_ids:
-                        vector_db = self._get_vector_store(kb_id)
-                        await asyncio.to_thread(vector_db.delete, ids=delete_ids)
+                        self._get_vector_store(kb_id).delete(ids=delete_ids)
                 except Exception as e:
                     logger.warning(f"Milvus delete failed for kb {kb_id}: {e}")
 

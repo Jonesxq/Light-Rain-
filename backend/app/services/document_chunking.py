@@ -7,21 +7,16 @@ from typing import Any, Dict, Iterable, List, Optional
 import os
 from collections import defaultdict
 
-import fitz  # PyMuPDF - 用于PDF解析
-from docx import Document as DocxDocument
-from docx.text.paragraph import Paragraph
-from docx.table import Table
-from docx.oxml.text.paragraph import CT_P
-from docx.oxml.table import CT_Tbl
+from app.core.logger import logger_manager
+
+logger = logger_manager.get_logger(__name__)
+
 from langchain_core.documents import Document
 
 try:
-    # 尝试导入unstructured库用于PPT/PPTX解析
-    from unstructured.partition.pptx import partition_pptx
-    from unstructured.partition.ppt import partition_ppt
-except Exception:
-    partition_pptx = None
-    partition_ppt = None
+    from docling.document_converter import DocumentConverter
+except ImportError:
+    DocumentConverter = None
 
 
 # Markdown 标题识别正则表达式（匹配 # 到 ###### 开头的标题）
@@ -95,9 +90,15 @@ class DocumentChunkingService:
             LangChain Document对象列表，每个对象包含分块内容和元数据
         """
         file_type = file_type.lower()
+        logger.info(f"开始加载和解析文件: {file_path} (类型: {file_type})")
+        
         blocks = self._load_blocks(file_path, file_type)
         chunk_size, chunk_overlap = self._get_chunk_params(file_type)
+        
+        logger.info(f"成功提取 {len(blocks)} 个文本块，开始智能分块 (size={chunk_size}, overlap={chunk_overlap})")
         chunks = self._chunk_blocks(blocks, chunk_size, chunk_overlap)
+        
+        logger.info(f"智能分块完成，共生成 {len(chunks)} 个 Chunk。开始组装元数据...")
 
         source_meta = {
             "file_name": os.path.basename(file_path),
@@ -160,143 +161,32 @@ class DocumentChunkingService:
         Returns:
             TextBlock对象列表
         """
-        if file_type == ".pdf":
-            return self._load_pdf(file_path)
-        if file_type == ".docx":
-            return self._load_docx(file_path)
         if file_type == ".md":
             return self._load_md(file_path)
         if file_type == ".txt":
             return self._load_txt(file_path)
-        if file_type in {".pptx", ".ppt"}:
-            return self._load_ppt(file_path, file_type)
+        if file_type in {".pdf", ".docx", ".pptx", ".ppt"}:
+            return self._load_via_docling_to_md(file_path)
         # 回退：作为纯文本处理
         return self._load_txt(file_path)
 
-    def _load_txt(self, file_path: str) -> List[TextBlock]:
-        """加载纯文本文件
+    def _load_via_docling_to_md(self, file_path: str) -> List[TextBlock]:
+        """使用Docling统一解析为Markdown文本块
         
         Args:
-            file_path: 文本文件路径
+            file_path: 文档文件路径
             
         Returns:
-            包含完整文本的TextBlock对象列表
+            按Markdown标题分割的TextBlock对象列表
         """
-        text = self._read_text_file(file_path)
-        return [TextBlock(text=text, meta={})]
-
-    def _load_md(self, file_path: str) -> List[TextBlock]:
-        """加载Markdown文件：支持标题层级结构
-        
-        Args:
-            file_path: Markdown文件路径
-            
-        Returns:
-            按标题分割的TextBlock对象列表，包含标题路径元数据
-        """
-        text = self._read_text_file(file_path)
-        return self._split_md_to_blocks(text)
-
-    def _load_pdf(self, file_path: str) -> List[TextBlock]:
-        """加载PDF文件：使用PyMuPDF解析每页文本
-        
-        Args:
-            file_path: PDF文件路径
-            
-        Returns:
-            按页分割的TextBlock对象列表，包含页码元数据
-        """
-        blocks: List[TextBlock] = []
-        with fitz.open(file_path) as doc:
-            for page_idx in range(doc.page_count):
-                page = doc.load_page(page_idx)
-                text = self._extract_pdf_page_text(page)
-                if text.strip():
-                    blocks.append(TextBlock(text=text, meta={"page": page_idx + 1}))
-        return blocks
-
-    def _load_docx(self, file_path: str) -> List[TextBlock]:
-        """加载DOCX文件：按段落和表格顺序提取文本
-        
-        Args:
-            file_path: Word文档文件路径
-            
-        Returns:
-            包含段落、表格、页眉页脚的TextBlock对象列表
-        """
-        blocks: List[TextBlock] = []
-        doc = DocxDocument(file_path)
-        paragraph_idx = 0
-        table_idx = 0
-
-        # 1) 按文档原始顺序遍历段落/表格
-        for item in self._iter_docx_blocks(doc):
-            if isinstance(item, Paragraph):
-                paragraph_idx += 1
-                text = self._normalize_text(item.text)
-                if text.strip():
-                    blocks.append(TextBlock(text=text, meta={"paragraph": paragraph_idx}))
-            elif isinstance(item, Table):
-                table_idx += 1
-                text = self._extract_docx_table_text(item)
-                if text.strip():
-                    blocks.append(TextBlock(text=text, meta={"table": table_idx}))
-
-        # 2) 补充页眉/页脚（若存在）
-        for section_idx, section in enumerate(doc.sections, start=1):
-            header_text = self._normalize_text(section.header.text or "")
-            if header_text.strip():
-                blocks.append(TextBlock(text=header_text, meta={"header": section_idx}))
-            footer_text = self._normalize_text(section.footer.text or "")
-            if footer_text.strip():
-                blocks.append(TextBlock(text=footer_text, meta={"footer": section_idx}))
-        return blocks
-
-    def _load_ppt(self, file_path: str, file_type: str) -> List[TextBlock]:
-        """加载PPT/PPTX文件：使用unstructured库按幻灯片聚合文本
-        
-        Args:
-            file_path: PowerPoint文件路径
-            file_type: 文件类型（.pptx或.ppt）
-            
-        Returns:
-            按幻灯片聚合的TextBlock对象列表，包含幻灯片号元数据
-            
-        Raises:
-            RuntimeError: 当unstructured库不可用时
-        """
-        if file_type == ".pptx" and partition_pptx:
-            elements = partition_pptx(filename=file_path)
-        elif file_type == ".ppt" and partition_ppt:
-            elements = partition_ppt(filename=file_path)
-        else:
-            raise RuntimeError("PPT/PPTX解析需要unstructured库的pptx支持。")
-
-        # 按幻灯片聚合文本，避免碎片化
-        slide_texts: Dict[int, List[str]] = defaultdict(list)
-        orphan_texts: List[str] = []
-        for el in elements:
-            text = getattr(el, "text", None) or str(el)
-            text = self._normalize_text(text)
-            if not text.strip() or len(text.strip()) < 2:
-                continue
-            meta: Dict[str, Any] = {}
-            meta_obj = getattr(el, "metadata", None)
-            slide = getattr(meta_obj, "page_number", None) if meta_obj else None
-            if slide:
-                slide_texts[int(slide)].append(text)
-            else:
-                orphan_texts.append(text)
-
-        blocks: List[TextBlock] = []
-        for slide, texts in sorted(slide_texts.items(), key=lambda x: x[0]):
-            merged = "\n".join(texts).strip()
-            if merged:
-                blocks.append(TextBlock(text=merged, meta={"slide": slide}))
-        # 无页码的文本块单独追加
-        for text in orphan_texts:
-            blocks.append(TextBlock(text=text, meta={}))
-        return blocks
+        if not DocumentConverter:
+            raise RuntimeError("docling 库未安装，无法处理该类型文档")
+        converter = DocumentConverter()
+        logger.info(f"使用 Docling 转换文档: {file_path}")
+        result = converter.convert(file_path)
+        md_text = result.document.export_to_markdown()
+        logger.info(f"Docling 转换文档完成，将其交接给 Markdown 切块算法处理...")
+        return self._split_md_to_blocks(md_text)
 
     def _split_md_to_blocks(self, text: str) -> List[TextBlock]:
         """将Markdown文本分割为带标题路径的块：支持标题层级结构
@@ -581,67 +471,64 @@ class DocumentChunkingService:
             raw = f.read()
         return raw.decode("utf-8", errors="ignore")
 
-    def _extract_pdf_page_text(self, page: fitz.Page) -> str:
-        """提取PDF页面文本：优先使用text模式，内容过少时使用blocks模式
-        
+    def _merge_short_paragraphs(self, paragraphs: List[str], min_len: int = 80) -> List[str]:
+        """将过短的段落向下合并，减少碎片化文本块
+
+        策略：若当前段落长度不足 min_len，则与下一段落合并（用双换行连接），
+        直到达到 min_len 或没有更多段落为止。
+
         Args:
-            page: PyMuPDF页面对象
-            
+            paragraphs: 段落列表
+            min_len: 短段落最小字符数阈值，默认80
+
         Returns:
-            页面文本内容
+            合并后的段落列表
         """
-        try:
-            text = page.get_text("text") or ""
-        except Exception:
-            text = ""
+        if not paragraphs:
+            return []
+        merged: List[str] = []
+        buf = paragraphs[0]
+        for para in paragraphs[1:]:
+            if len(buf) < min_len:
+                buf = buf + "\n\n" + para
+            else:
+                merged.append(buf)
+                buf = para
+        if buf:
+            merged.append(buf)
+        return merged
 
-        # 若主路径文本很少，尝试使用 blocks 兜底
-        if len(text.strip()) < 20:
-            try:
-                blocks = page.get_text("blocks") or []
-                # blocks: (x0, y0, x1, y1, "text", block_no, block_type)
-                blocks = sorted(blocks, key=lambda b: (b[1], b[0]))
-                text = "\n".join([b[4] for b in blocks if len(b) > 4 and b[4]])
-            except Exception:
-                pass
+    def _load_txt(self, file_path: str) -> List[TextBlock]:
+        """加载纯文本文件为文本块列表
 
-        return self._normalize_text(text, soft_wrap=True)
+        处理策略:
+            1. 启用软换行合并（单个换行 → 空格），避免每行被割裂为独立段落
+            2. 对段落做预合并，将过短的段落归并入下一段，减少碎片 chunk
 
-    def _iter_docx_blocks(self, doc: DocxDocument) -> Iterable[Paragraph | Table]:
-        """遍历DOCX块：按文档原始顺序遍历段落和表格
-        
         Args:
-            doc: python-docx文档对象
-            
-        Yields:
-            Paragraph或Table对象
-        """
-        for child in doc.element.body.iterchildren():
-            if isinstance(child, CT_P):
-                yield Paragraph(child, doc)
-            elif isinstance(child, CT_Tbl):
-                yield Table(child, doc)
+            file_path: 文本文件路径
 
-    def _extract_docx_table_text(self, table: Table) -> str:
-        """提取DOCX表格文本：将表格转换为文本格式
-        
-        表格格式:
-            - 行之间用换行分隔
-            - 单元格之间用" | "分隔
-            
-        Args:
-            table: python-docx表格对象
-            
         Returns:
-            表格文本内容
+            TextBlock 列表（每段为一个块，后续由分块算法进一步切分）
         """
-        rows: List[str] = []
-        for row in table.rows:
-            cells = []
-            for cell in row.cells:
-                cell_text = self._normalize_text(cell.text or "")
-                if cell_text:
-                    cells.append(cell_text)
-            if cells:
-                rows.append(" | ".join(cells))
-        return "\n".join(rows).strip()
+        text = self._read_text_file(file_path)
+        # soft_wrap=True：将段内的单个换行视为空格，保留双换行作为段落分隔
+        text = self._normalize_text(text, soft_wrap=True)
+        if not text:
+            return []
+        # 按双换行切段，并合并过短段落
+        raw_paras = [p.strip() for p in re.split(r"\n{2,}", text) if p.strip()]
+        merged_paras = self._merge_short_paragraphs(raw_paras, min_len=80)
+        return [TextBlock(text=p, meta={}) for p in merged_paras]
+
+    def _load_md(self, file_path: str) -> List[TextBlock]:
+        """加载 Markdown 文件为带标题层级的文本块列表
+
+        Args:
+            file_path: Markdown 文件路径
+
+        Returns:
+            按标题层级分割的 TextBlock 列表
+        """
+        text = self._read_text_file(file_path)
+        return self._split_md_to_blocks(text)

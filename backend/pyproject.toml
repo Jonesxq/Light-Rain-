@@ -32,14 +32,13 @@ dependencies = [
     "langchain-milvus>=0.3.3",
     "dashscope>=1.25.8",
     "beautifulsoup4>=4.12.0",
-    "pymupdf>=1.26.7",
-    "python-docx>=1.2.0",
-    "unstructured>=0.18.27",
+    "docling>=2.0.0",
     "jieba>=0.42.1",
     "pytesseract>=0.3.10",
     "Pillow>=10.2.0",
     "ragas>=0.3.0",
     "datasets>=2.16.0",
+    "lark-oapi>=1.5.3",
 ]
 
 [project.optional-dependencies]
