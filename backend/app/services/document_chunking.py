@@ -14,9 +14,29 @@ logger = logger_manager.get_logger(__name__)
 from langchain_core.documents import Document
 
 try:
-    from docling.document_converter import DocumentConverter
+    from docling.document_converter import DocumentConverter, PdfFormatOption
+    from docling.datamodel.base_models import InputFormat
+    from docling.datamodel.pipeline_options import PdfPipelineOptions, AcceleratorOptions, AcceleratorDevice
+    
+    # 恢复 GPU (CUDA) 加速模式
+    _acc_options = AcceleratorOptions(device=AcceleratorDevice.CUDA) 
+    _pipeline_options = PdfPipelineOptions(
+        accelerator_options=_acc_options,
+        num_threads=2,            # 适度并发，兼顾速度与 6GB 显存稳定性
+        images_scale=2.0,         # 恢复标准分辨率以保证表格识别精度
+        do_table_structure=True, 
+        do_ocr=True,
+    )
+    _pipeline_options.generate_page_images = False 
+    
+    _GLOBAL_CONVERTER = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(pipeline_options=_pipeline_options)
+        }
+    )
 except ImportError:
     DocumentConverter = None
+    _GLOBAL_CONVERTER = None
 
 
 # Markdown 标题识别正则表达式（匹配 # 到 ###### 开头的标题）
@@ -179,11 +199,11 @@ class DocumentChunkingService:
         Returns:
             按Markdown标题分割的TextBlock对象列表
         """
-        if not DocumentConverter:
-            raise RuntimeError("docling 库未安装，无法处理该类型文档")
-        converter = DocumentConverter()
+        if not _GLOBAL_CONVERTER:
+            raise RuntimeError("docling 库未安装或初始化失败，无法处理该类型文档")
+        
         logger.info(f"使用 Docling 转换文档: {file_path}")
-        result = converter.convert(file_path)
+        result = _GLOBAL_CONVERTER.convert(file_path)
         md_text = result.document.export_to_markdown()
         logger.info(f"Docling 转换文档完成，将其交接给 Markdown 切块算法处理...")
         return self._split_md_to_blocks(md_text)

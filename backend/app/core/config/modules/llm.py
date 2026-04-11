@@ -63,6 +63,8 @@ class LLMSettings(EnvBaseSettings):
     RAG_BM25_TOP_K: int = Field(default=50, description="BM25初筛候选数量")
     # 语义检索保留数（在 BM25 候选内做向量检索）
     RAG_SEMANTIC_TOP_K: int = Field(default=20, description="语义检索保留数量")
+    # 最终返回给 LLM 的知识片段数量
+    RAG_FINAL_TOP_K: int = Field(default=3, description="最终返回给LLM的知识片段数量")
     # BM25 缓存 TTL（秒）
     RAG_BM25_CACHE_TTL: int = Field(default=600, description="BM25缓存过期时间（秒）")
     # chunk 摘要最大字符数（用于向量入库）

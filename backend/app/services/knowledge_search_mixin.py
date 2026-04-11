@@ -106,16 +106,19 @@ class KnowledgeSearchMixin:
 
         return items[:top_n]
 
-    def _build_sources(self, items: List[SearchItem], max_sources: int = 5) -> List[dict]:
+    def _build_sources(self, items: List[SearchItem], max_sources: Optional[int] = None) -> List[dict]:
         """构建来源列表（去重 + 限量）
         
         Args:
             items: SearchItem列表
-            max_sources: 最大来源数量
+            max_sources: 最大来源数量（默认取配置）
             
         Returns:
             来源信息字典列表
         """
+        if max_sources is None:
+            max_sources = settings.llm.RAG_FINAL_TOP_K
+
         sources: List[dict] = []
         seen = set()
 
@@ -165,7 +168,7 @@ class KnowledgeSearchMixin:
         self,
         kb_id: int,
         query: str,
-        top_k: int = 3,
+        top_k: Optional[int] = None,
         rewritten_query: Optional[str] = None,
         user_id: Optional[int] = None,
     ) -> Tuple[str, List[dict]]:
@@ -174,13 +177,16 @@ class KnowledgeSearchMixin:
         Args:
             kb_id: 知识库ID
             query: 查询文本
-            top_k: 返回结果数量
+            top_k: 返回结果数量（默认取配置）
             rewritten_query: 重写后的查询（可选）
             user_id: 用户ID（可选）
             
         Returns:
             元组(上下文文本, 来源信息列表)
         """
+        if top_k is None:
+            top_k = settings.llm.RAG_FINAL_TOP_K
+
         try:
             if rewritten_query is None:
                 rewritten_query = await query_rewrite_service.rewrite_query(query, user_id=user_id, kb_id=kb_id)

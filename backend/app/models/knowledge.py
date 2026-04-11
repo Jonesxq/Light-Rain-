@@ -56,7 +56,7 @@ class Document(SQLModel, table=True):
 
     # 解析状态与错误信息
     status: DocStatus = Field(default=DocStatus.UPLOADING)
-    error_msg: Optional[str] = Field(default=None)  # 如果失败记录原因
+    error_msg: Optional[str] = Field(default=None, sa_column=Column(Text))  # 如果失败记录原因
 
     # 分块数量
     chunk_count: int = Field(default=0)  # 切片总数

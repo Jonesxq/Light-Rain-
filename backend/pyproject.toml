@@ -79,3 +79,13 @@ python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu124" }
+torchvision = { index = "pytorch-cu124" }
+

@@ -313,11 +313,13 @@ class KnowledgeIngestMixin:
                         pass
                 logger.error(f"Failed to ingest document {doc.id}: {str(e)}")
                 self._remove_sidecar_file(doc.file_path)
+                error_msg_raw = str(e)
+                error_msg_truncated = (error_msg_raw[:4997] + "...") if len(error_msg_raw) > 5000 else error_msg_raw
                 await kb_crud.update_document_status(
                     db,
                     doc_id=doc.id,
                     status=DocStatus.FAILED,
-                    error_msg=str(e),
+                    error_msg=error_msg_truncated,
                 )
 
     async def reindex_document(self, doc_id: int) -> bool:
