@@ -97,12 +97,21 @@ class KnowledgeSearchMixin:
             )
             if response and response.status_code == HTTPStatus.OK:
                 results = getattr(response.output, "results", []) or []
-                ranked = sorted(results, key=lambda r: r.relevance_score, reverse=True)
+                # 过滤低于阈值的片段
+                ranked = [
+                    r for r in results 
+                    if getattr(r, "relevance_score", 0) >= settings.llm.RAG_RELEVANCE_THRESHOLD
+                ]
+                # 按得分降序排列
+                ranked.sort(key=lambda r: r.relevance_score, reverse=True)
                 reranked = [items[r.index] for r in ranked if 0 <= r.index < len(items)]
-                if reranked:
-                    return reranked[:top_n]
+                # 只要重排响应成功，就返回过滤后的结果（即使为空）
+                return reranked[:top_n]
+            
+            # 响应不成功时记录警告并回退
+            logger.warning(f"GTE rerank response error: {response.status_code if response else 'No response'}")
         except Exception as e:
-            logger.warning(f"GTE rerank failed, fallback to fusion order: {e}")
+            logger.warning(f"GTE rerank failed with exception, fallback to fusion order: {e}")
 
         return items[:top_n]
 

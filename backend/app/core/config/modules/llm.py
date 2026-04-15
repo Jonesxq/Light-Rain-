@@ -59,6 +59,8 @@ class LLMSettings(EnvBaseSettings):
     # RAG 检索配置
     # 重排序模型（DashScope）
     RERANK_MODEL: str = Field(default="gte-rerank-v2", description="重排序模型")
+    # RAG 相关度阈值（重排得分低于此值将被丢弃）
+    RAG_RELEVANCE_THRESHOLD: float = Field(default=0.01, description="RAG相关度阈值")
     # BM25 初筛候选数
     RAG_BM25_TOP_K: int = Field(default=50, description="BM25初筛候选数量")
     # 语义检索保留数（在 BM25 候选内做向量检索）
