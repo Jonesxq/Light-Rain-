@@ -2,7 +2,7 @@
 from typing import List, Optional
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select, desc, update
+from sqlmodel import select, desc, update, func
 from app.models.knowledge import KnowledgeBase, Document, DocumentChunk, DocStatus
 from app.models.chat import ChatMessage
 
@@ -43,6 +43,42 @@ class KnowledgeCRUD:
         statement = select(KnowledgeBase).where(KnowledgeBase.user_id == user_id).order_by(desc(KnowledgeBase.created_at))
         result = await db.execute(statement)
         return list(result.scalars().all())
+
+    async def get_user_kbs_with_doc_count(self, db: AsyncSession, user_id: int) -> List[dict]:
+        """获取用户知识库及文档数量
+
+        Args:
+            db: 异步数据库会话
+            user_id: 用户ID
+
+        Returns:
+            List[dict]: 包含知识库基础信息和文档数量的列表
+        """
+        statement = (
+            select(
+                KnowledgeBase.id,
+                KnowledgeBase.name,
+                KnowledgeBase.user_id,
+                KnowledgeBase.created_at,
+                func.count(Document.id).label("doc_count"),
+            )
+            .outerjoin(Document, Document.kb_id == KnowledgeBase.id)
+            .where(KnowledgeBase.user_id == user_id)
+            .group_by(KnowledgeBase.id)
+            .order_by(desc(KnowledgeBase.created_at))
+        )
+        result = await db.execute(statement)
+        rows = result.all()
+        return [
+            {
+                "id": row.id,
+                "name": row.name,
+                "user_id": row.user_id,
+                "created_at": row.created_at,
+                "doc_count": row.doc_count or 0,
+            }
+            for row in rows
+        ]
 
     async def get_kb(self, db: AsyncSession, kb_id: int) -> Optional[KnowledgeBase]:
         """根据ID获取知识库

@@ -21,6 +21,8 @@ class KnowledgeBaseResponse(BaseModel):
     user_id: int
     # 创建时间
     created_at: datetime
+    # 文件数量
+    doc_count: int = 0
 
     class Config:
         """配置类"""
@@ -32,6 +34,10 @@ class DocumentResponse(BaseModel):
     id: int
     # 文件名
     file_name: str
+    # 文件类型
+    file_type: str
+    # 文件大小（字节）
+    file_size: int = 0
     # 处理状态（completed / failed / processing）
     status: str
     # 分块数量
