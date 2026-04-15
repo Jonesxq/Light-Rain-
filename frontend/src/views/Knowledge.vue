@@ -1,234 +1,192 @@
 <template>
-  <div class="page knowledge-page">
-    <header class="header">
-      <div>
-        <h1>我的知识库</h1>
-        <p>创建知识库、上传文档并管理内容。</p>
+  <main class="knowledge-page">
+    <div class="knowledge-shell">
+      <div class="top-actions">
+        <button class="back-chat-btn" type="button" @click="goChat">返回聊天</button>
       </div>
-      <div class="header-actions">
-        <div class="actions action-bar">
-          <button class="ghost" @click="goSettings">模型设置</button>
-          <button class="ghost" @click="goChat">返回聊天</button>
-          <button class="ghost" @click="goMy">我的</button>
-          <button class="ghost" @click="logout">退出登录</button>
-        </div>
-      </div>
-    </header>
 
-    <div v-if="notice" class="notice">{{ notice }}</div>
-    <div v-if="error" class="error">{{ error }}</div>
+      <div v-if="error" class="banner banner-error">{{ error }}</div>
 
-    <section class="card">
-      <div class="actions" style="justify-content: space-between;">
-        <h2>知识库管理</h2>
-        <button class="ghost" @click="fetchKnowledgeBases">刷新列表</button>
-      </div>
-      <form class="actions" style="flex-direction: column;" @submit.prevent="createKnowledgeBase">
-        <label>
-          名称
-          <input v-model="kbForm.name" required />
-        </label>
-        <label>
-          描述
-          <textarea v-model="kbForm.description" placeholder="可选"></textarea>
-        </label>
-        <button type="submit">创建知识库</button>
-      </form>
-      <div class="kb-grid">
-        <div
-          v-for="kb in knowledgeBases"
-          :key="kb.id"
-          class="kb-card"
-          :class="{ active: activeKb && activeKb.id === kb.id }"
-        >
-          <button class="kb-select" @click="selectKnowledgeBase(kb)">
-            <strong>{{ kb.name }}</strong>
-            <span>#{{ kb.id }}</span>
-          </button>
-          <button class="kb-delete" @click.stop="deleteKnowledgeBase(kb.id)">删除</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="card" v-if="activeKb">
-      <div class="actions" style="justify-content: space-between;">
-        <h2>知识库文件</h2>
-        <button class="ghost" @click="fetchDocuments">刷新文件</button>
-      </div>
-      <div class="actions" style="flex-direction: column;">
-        <label>
-          上传文件到：{{ activeKb.name }}
-          <input type="file" @change="onFileChange" />
-        </label>
-        <button @click="uploadDocument">上传文件</button>
-      </div>
-      <div v-if="lastUpload" class="notice">
-        上传成功：{{ lastUpload.file_name }} (状态: {{ lastUpload.status }})
-      </div>
-      <div v-if="documents.items.length" class="doc-list">
-        <div v-for="doc in documents.items" :key="doc.id" class="doc-item">
-          <div>
-            <strong>{{ doc.file_name }}</strong>
-            <div class="doc-meta">
-              <span class="status-pill" :class="`status-${doc.status}`">{{ formatDocStatus(doc.status) }}</span>
-              <span v-if="doc.chunk_count">切片：{{ doc.processed_chunks || 0 }}/{{ doc.chunk_count }}</span>
-              <span v-else>切片：{{ doc.processed_chunks || 0 }}</span>
-            </div>
-            <div v-if="doc.status === 'processing' || doc.status === 'uploading'" class="doc-progress">
-              <div class="progress-bar" :class="{ indeterminate: !doc.chunk_count }">
-                <div
-                  class="progress-fill"
-                  :style="{ width: `${getDocProgress(doc)}%` }"
-                ></div>
-              </div>
-              <span class="progress-text">{{ getProgressText(doc) }}</span>
-            </div>
-            <div v-if="doc.status === 'failed' && doc.error_msg" class="doc-error">
-              失败原因：{{ doc.error_msg }}
-            </div>
-          </div>
-          <div class="doc-actions">
-            <span class="doc-time">{{ formatTime(doc.created_at) }}</span>
-            <button
-              v-if="doc.status === 'failed' || doc.status === 'completed'"
-              class="ghost doc-retry"
-              @click="reindexDocument(doc)"
-            >
-              {{ doc.status === 'failed' ? '重试' : '重建索引' }}
+      <div class="knowledge-grid">
+        <section class="panel create-panel">
+          <h2 class="title-create">新建知识库</h2>
+          <form class="kb-form" @submit.prevent="createKnowledgeBase">
+            <label class="field">
+              <span>名称</span>
+              <input v-model="kbForm.name" placeholder="输入知识库名称..." required />
+            </label>
+            <label class="field">
+              <span>描述</span>
+              <textarea
+                v-model="kbForm.description"
+                placeholder="描述该知识库的用途或范围..."
+                rows="4"
+              ></textarea>
+            </label>
+            <button class="create-btn" type="submit" :disabled="!kbForm.name.trim()">
+              创建知识库
             </button>
-            <button class="doc-delete" @click="deleteDocument(doc)">删除</button>
-          </div>
-        </div>
-      </div>
-      <div v-else class="placeholder">该知识库暂无文档。</div>
-    </section>
+          </form>
+        </section>
 
-    <CenterToast :message="successMessage" />
-  </div>
+        <section class="panel files-panel">
+          <div class="panel-head">
+            <h2 class="title-section">知识库文件</h2>
+            <button
+              class="icon-ghost"
+              type="button"
+              title="刷新文件"
+              @click="activeKb ? fetchDocuments() : fetchKnowledgeBases()"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">filter_list</span>
+            </button>
+          </div>
+
+          <div
+            class="upload-dropzone"
+            :class="{ active: dropzoneActive, disabled: !activeKb || uploading }"
+            @click="activeKb && !uploading && triggerFileSelect()"
+            @dragover.prevent="handleDropZoneDragOver"
+            @dragleave.prevent="handleDropZoneDragLeave"
+            @drop.prevent="handleDropZoneFile"
+          >
+            <input
+              ref="fileInputRef"
+              class="file-input"
+              type="file"
+              accept=".pdf,.docx,.txt"
+              @change="onFileChange"
+            />
+            <div class="upload-circle">
+              <span class="material-symbols-outlined" aria-hidden="true">upload</span>
+            </div>
+            <p class="upload-title">
+              {{ activeKb ? (uploading ? '上传中...' : '上传文件') : '请先选择知识库' }}
+            </p>
+            <p class="upload-desc">拖拽文件到此处，或点击浏览。支持 PDF, DOCX, TXT</p>
+          </div>
+
+          <h4 class="recent-title">最近上传</h4>
+
+          <div v-if="activeKb && documents.items.length" class="doc-list">
+            <article v-for="doc in documents.items" :key="doc.id" class="doc-row">
+              <div class="doc-main">
+                <span class="doc-icon" :class="getFileToneClass(doc)">
+                  <span class="material-symbols-outlined" aria-hidden="true">{{ getFileIcon(doc) }}</span>
+                </span>
+                <div class="doc-copy">
+                  <p class="doc-name">{{ doc.file_name }}</p>
+                  <p class="doc-meta">{{ formatDocMeta(doc) }}</p>
+                  <p v-if="doc.status !== 'completed'" class="doc-status">
+                    {{ formatDocStatus(doc.status) }}
+                    <span v-if="doc.status === 'processing' || doc.status === 'uploading'">
+                      · {{ getProgressText(doc) }}
+                    </span>
+                  </p>
+                  <div
+                    v-if="doc.status === 'processing' || doc.status === 'uploading'"
+                    class="progress-bar"
+                    :class="{ indeterminate: !doc.chunk_count }"
+                  >
+                    <div class="progress-fill" :style="{ width: `${getDocProgress(doc)}%` }"></div>
+                  </div>
+                  <p v-if="doc.status === 'failed' && doc.error_msg" class="doc-error">
+                    失败原因：{{ doc.error_msg }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="doc-actions">
+                <span class="chunk-pill">{{ formatChunkCount(doc) }}</span>
+                <details class="doc-menu" @toggle="handleDocMenuToggle">
+                  <summary aria-label="文档菜单">
+                    <span class="material-symbols-outlined" aria-hidden="true">more_vert</span>
+                  </summary>
+                  <div class="doc-menu-card">
+                    <button type="button" class="doc-menu-item danger" @click.stop.prevent="deleteDocument(doc)">
+                      删除
+                    </button>
+                  </div>
+                </details>
+              </div>
+            </article>
+          </div>
+
+          <div v-else-if="activeKb" class="empty-block">该知识库暂无文档。</div>
+          <div v-else class="empty-block">请选择左侧知识库后查看文档。</div>
+        </section>
+
+        <section class="panel list-panel">
+          <div class="panel-head list-head">
+            <h2 class="title-section">已有知识库</h2>
+            <span class="count-chip">{{ knowledgeBases.length }} 个项目</span>
+          </div>
+
+          <div v-if="!knowledgeBases.length" class="empty-block">暂无知识库，请先创建。</div>
+
+          <div v-else class="kb-list">
+            <article
+              v-for="(kb, index) in knowledgeBases"
+              :key="kb.id"
+              class="kb-row"
+              :class="{ active: activeKb && activeKb.id === kb.id }"
+            >
+              <button class="kb-select" type="button" @click="selectKnowledgeBase(kb)">
+                <span class="kb-icon" :class="getKbToneClass(index)">
+                  <span class="material-symbols-outlined" aria-hidden="true">{{ getKbIcon(index) }}</span>
+                </span>
+                <span class="kb-copy">
+                  <span class="kb-name">{{ kb.name }}</span>
+                  <span class="kb-meta">{{ formatKbMeta(kb) }}</span>
+                </span>
+              </button>
+              <button class="kb-delete" type="button" @click.stop="deleteKnowledgeBase(kb.id)">删除</button>
+            </article>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <button class="help-fab" type="button" aria-label="帮助">
+      <span class="material-symbols-outlined" aria-hidden="true">help_outline</span>
+    </button>
+  </main>
+
+  <CenterToast :message="successMessage" />
 </template>
 
 <script setup>
-import { ref, onBeforeUnmount } from 'vue';
+import { ref, onBeforeUnmount, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { apiFetch, clearTokens } from '../api/client.js';
+import { apiFetch } from '../api/client.js';
 import CenterToast from '../components/CenterToast.vue';
 import { useCenterToast } from '../composables/useCenterToast.js';
 
 const router = useRouter();
-const notice = ref('');
 const error = ref('');
 const { message: successMessage, show: showSuccess } = useCenterToast();
 
 const knowledgeBases = ref([]);
 const kbForm = ref({ name: '', description: '' });
-const uploadForm = ref({ file: null });
-const lastUpload = ref(null);
 const activeKb = ref(null);
 const documents = ref({ items: [] });
+const uploadForm = ref({ file: null });
+const dropzoneActive = ref(false);
+const uploading = ref(false);
+const fileInputRef = ref(null);
 let documentPollTimer = null;
 
 const setNotice = (message) => {
   showSuccess(message);
-  notice.value = '';
   error.value = '';
 };
 
 const setError = (message) => {
   error.value = message;
-  notice.value = '';
 };
 
 const goChat = () => {
   router.push('/chat');
-};
-
-const goSettings = () => {
-  router.push('/settings');
-};
-
-const goMy = () => {
-  router.push('/my');
-};
-
-const logout = () => {
-  clearTokens();
-  router.push('/login');
-};
-
-const fetchKnowledgeBases = async () => {
-  try {
-    const data = await apiFetch('/knowledge/list');
-    knowledgeBases.value = data || [];
-    if (!activeKb.value && knowledgeBases.value.length) {
-      selectKnowledgeBase(knowledgeBases.value[0]);
-    }
-  } catch (err) {
-    setError(`获取知识库失败：${err.message}`);
-  }
-};
-
-const createKnowledgeBase = async () => {
-  try {
-    const data = await apiFetch('/knowledge/create', {
-      method: 'POST',
-      body: kbForm.value,
-    });
-    knowledgeBases.value.unshift(data);
-    kbForm.value = { name: '', description: '' };
-    setNotice('知识库创建成功');
-  } catch (err) {
-    setError(`创建知识库失败：${err.message}`);
-  }
-};
-
-const onFileChange = (event) => {
-  uploadForm.value.file = event.target.files[0];
-};
-
-const uploadDocument = async () => {
-  if (!activeKb.value || !uploadForm.value.file) {
-    setError('请选择知识库和文件');
-    return;
-  }
-  try {
-    const formData = new FormData();
-    formData.append('file', uploadForm.value.file);
-    const data = await apiFetch(`/knowledge/${activeKb.value.id}/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-    lastUpload.value = data;
-    uploadForm.value.file = null;
-    setNotice('文件上传成功，正在后台处理。');
-    await fetchDocuments();
-  } catch (err) {
-    setError(`上传失败：${err.message}`);
-  }
-};
-
-const selectKnowledgeBase = async (kb) => {
-  activeKb.value = kb;
-  documents.value.items = [];
-  await fetchDocuments();
-};
-
-const deleteKnowledgeBase = async (kbId) => {
-  const confirmed = window.confirm('您确定要删除吗？');
-  if (!confirmed) return;
-  try {
-    await apiFetch(`/knowledge/${kbId}`, { method: 'DELETE' });
-    knowledgeBases.value = knowledgeBases.value.filter((kb) => kb.id !== kbId);
-    if (activeKb.value && activeKb.value.id === kbId) {
-      activeKb.value = knowledgeBases.value[0] || null;
-      documents.value.items = [];
-      if (activeKb.value) {
-        await fetchDocuments();
-      }
-    }
-    updateDocumentPolling();
-  } catch (err) {
-    setError(`删除知识库失败：${err.message}`);
-  }
 };
 
 const hasProcessingDocs = () =>
@@ -259,18 +217,134 @@ const updateDocumentPolling = () => {
 
 const fetchDocuments = async ({ silent = false } = {}) => {
   if (!activeKb.value) {
+    documents.value.items = [];
     if (!silent) setError('请选择知识库');
     return;
   }
   try {
     const data = await apiFetch(`/knowledge/${activeKb.value.id}/documents`);
-    documents.value.items = data || [];
+    documents.value.items = (data || []).sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at),
+    );
     updateDocumentPolling();
   } catch (err) {
-    if (!silent) {
-      setError(`获取文档失败：${err.message}`);
-    }
+    if (!silent) setError(`获取文档失败：${err.message}`);
   }
+};
+
+const fetchKnowledgeBases = async ({ preferKbId = null } = {}) => {
+  try {
+    const data = await apiFetch('/knowledge/list');
+    knowledgeBases.value = data || [];
+    if (!knowledgeBases.value.length) {
+      activeKb.value = null;
+      documents.value.items = [];
+      stopDocumentPolling();
+      return;
+    }
+
+    const currentId = preferKbId ?? activeKb.value?.id;
+    const nextKb =
+      knowledgeBases.value.find((item) => item.id === currentId) || knowledgeBases.value[0];
+    const changed = !activeKb.value || activeKb.value.id !== nextKb.id;
+    activeKb.value = nextKb;
+
+    if (changed || !documents.value.items.length) {
+      await fetchDocuments({ silent: true });
+    }
+  } catch (err) {
+    setError(`获取知识库失败：${err.message}`);
+  }
+};
+
+const createKnowledgeBase = async () => {
+  try {
+    const data = await apiFetch('/knowledge/create', {
+      method: 'POST',
+      body: kbForm.value,
+    });
+    kbForm.value = { name: '', description: '' };
+    setNotice('知识库创建成功');
+    await fetchKnowledgeBases({ preferKbId: data.id });
+  } catch (err) {
+    setError(`创建知识库失败：${err.message}`);
+  }
+};
+
+const selectKnowledgeBase = async (kb) => {
+  if (activeKb.value?.id === kb.id) return;
+  activeKb.value = kb;
+  documents.value.items = [];
+  await fetchDocuments({ silent: true });
+};
+
+const deleteKnowledgeBase = async (kbId) => {
+  const confirmed = window.confirm('您确定要删除吗？');
+  if (!confirmed) return;
+  try {
+    await apiFetch(`/knowledge/${kbId}`, { method: 'DELETE' });
+    setNotice('知识库删除成功');
+    const preferKbId = activeKb.value?.id === kbId ? null : activeKb.value?.id;
+    await fetchKnowledgeBases({ preferKbId });
+  } catch (err) {
+    setError(`删除知识库失败：${err.message}`);
+  }
+};
+
+const triggerFileSelect = () => {
+  fileInputRef.value?.click();
+};
+
+const uploadSelectedFile = async (file) => {
+  if (!file) return;
+  if (uploading.value) return;
+  if (!activeKb.value) {
+    setError('请先选择知识库');
+    return;
+  }
+
+  uploadForm.value.file = file;
+  uploading.value = true;
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    await apiFetch(`/knowledge/${activeKb.value.id}/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    uploadForm.value.file = null;
+    setNotice('文件上传成功，正在后台处理。');
+    await Promise.all([
+      fetchDocuments({ silent: true }),
+      fetchKnowledgeBases({ preferKbId: activeKb.value.id }),
+    ]);
+  } catch (err) {
+    setError(`上传失败：${err.message}`);
+  } finally {
+    uploading.value = false;
+    if (fileInputRef.value) fileInputRef.value.value = '';
+  }
+};
+
+const onFileChange = async (event) => {
+  const file = event?.target?.files?.[0];
+  await uploadSelectedFile(file);
+};
+
+const handleDropZoneDragOver = () => {
+  if (!activeKb.value || uploading.value) return;
+  dropzoneActive.value = true;
+};
+
+const handleDropZoneDragLeave = () => {
+  dropzoneActive.value = false;
+};
+
+const handleDropZoneFile = async (event) => {
+  dropzoneActive.value = false;
+  if (!activeKb.value || uploading.value) return;
+  const file = event?.dataTransfer?.files?.[0];
+  await uploadSelectedFile(file);
 };
 
 const deleteDocument = async (doc) => {
@@ -281,327 +355,710 @@ const deleteDocument = async (doc) => {
     await apiFetch(`/knowledge/${activeKb.value.id}/documents/${doc.id}`, { method: 'DELETE' });
     documents.value.items = documents.value.items.filter((item) => item.id !== doc.id);
     setNotice('文档删除成功');
+    await fetchKnowledgeBases({ preferKbId: activeKb.value.id });
     updateDocumentPolling();
   } catch (err) {
     setError(`删除文档失败：${err.message}`);
   }
 };
 
-const formatTime = (time) => {
-  if (!time) return '';
-  return new Date(time).toLocaleString();
+const handleDocMenuToggle = (event) => {
+  const current = event?.target;
+  if (!current?.open) return;
+  document.querySelectorAll('.doc-menu[open]').forEach((node) => {
+    if (node !== current) node.removeAttribute('open');
+  });
 };
 
-const STATUS_LABELS = {
-  uploading: '上传中',
-  processing: '处理中',
-  completed: '已完成',
-  failed: '失败',
+const formatDocStatus = (status) => {
+  const labels = {
+    uploading: '上传中',
+    processing: '处理中',
+    completed: '已完成',
+    failed: '失败',
+  };
+  return labels[status] || status || '未知';
 };
-
-const formatDocStatus = (status) => STATUS_LABELS[status] || status || '未知';
 
 const getDocProgress = (doc) => {
-  if (!doc) return 0;
-  const total = Number(doc.chunk_count || 0);
-  const processed = Number(doc.processed_chunks || 0);
+  const total = Number(doc?.chunk_count || 0);
+  const processed = Number(doc?.processed_chunks || 0);
   if (!total) return 40;
-  const ratio = Math.min(1, Math.max(0, processed / total));
-  return Math.round(ratio * 100);
+  return Math.round(Math.min(1, Math.max(0, processed / total)) * 100);
 };
 
 const getProgressText = (doc) => {
   if (!doc) return '';
-  if (doc.chunk_count) return `进度 ${getDocProgress(doc)}%`;
+  if (doc.chunk_count) return `${getDocProgress(doc)}%`;
   return '处理中...';
 };
 
-const reindexDocument = async (doc) => {
-  if (!doc || !doc.id) return;
-  if (doc.status === 'processing' || doc.status === 'uploading') {
-    setError('文档正在处理中，请稍后再试');
-    return;
-  }
-  const confirmed = window.confirm(`确定要重建索引「${doc.file_name}」吗？`);
-  if (!confirmed) return;
-  try {
-    await apiFetch(`/knowledge/documents/${doc.id}/reindex`, { method: 'POST' });
-    setNotice('已提交重建任务，稍后会自动更新状态。');
-    await fetchDocuments({ silent: true });
-  } catch (err) {
-    setError(`重建失败：${err.message}`);
-  }
+const formatRelativeTime = (time) => {
+  if (!time) return '';
+  const ts = new Date(time).getTime();
+  if (Number.isNaN(ts)) return '';
+  const delta = Math.max(0, Date.now() - ts);
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (delta < minute) return '刚刚';
+  if (delta < hour) return `${Math.floor(delta / minute)} 分钟前`;
+  if (delta < day) return `${Math.floor(delta / hour)} 小时前`;
+  if (delta < day * 2) return '昨天';
+  if (delta < day * 7) return `${Math.floor(delta / day)} 天前`;
+  if (delta < day * 30) return `${Math.floor(delta / (day * 7))} 周前`;
+  if (delta < day * 365) return `${Math.floor(delta / (day * 30))} 个月前`;
+  return `${Math.floor(delta / (day * 365))} 年前`;
 };
 
-fetchKnowledgeBases();
+const formatFileSize = (bytes) => {
+  const value = Number(bytes || 0);
+  if (!Number.isFinite(value) || value <= 0) return '0 B';
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
+  if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(value / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+};
+
+const formatKbMeta = (kb) =>
+  `创建于 ${formatRelativeTime(kb.created_at)} · ${Number(kb.doc_count || 0)} 个文件`;
+
+const formatDocMeta = (doc) =>
+  `${formatFileSize(doc.file_size)} · ${formatRelativeTime(doc.created_at)}`;
+
+const formatChunkCount = (doc) => `${Math.max(0, Number(doc?.chunk_count || 0))} 切块`;
+
+const extractExt = (doc) => {
+  const direct = String(doc?.file_type || '').toLowerCase();
+  if (direct) return direct.startsWith('.') ? direct : `.${direct}`;
+  const name = String(doc?.file_name || '').toLowerCase();
+  const idx = name.lastIndexOf('.');
+  return idx >= 0 ? name.slice(idx) : '';
+};
+
+const getFileIcon = (doc) => {
+  const ext = extractExt(doc);
+  if (ext === '.pdf') return 'picture_as_pdf';
+  if (ext === '.doc' || ext === '.docx') return 'description';
+  if (ext === '.txt') return 'article';
+  return 'insert_drive_file';
+};
+
+const getFileToneClass = (doc) => {
+  const ext = extractExt(doc);
+  if (ext === '.pdf') return 'tone-pdf';
+  if (ext === '.doc' || ext === '.docx') return 'tone-doc';
+  if (ext === '.txt') return 'tone-text';
+  return 'tone-default';
+};
+
+const getKbToneClass = (index) => ['tone-doc', 'tone-pdf', 'tone-text'][index % 3];
+const getKbIcon = (index) => ['book', 'code', 'analytics'][index % 3];
+
+onMounted(() => {
+  fetchKnowledgeBases();
+});
+
 onBeforeUnmount(() => {
   stopDocumentPolling();
 });
 </script>
 
 <style scoped>
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
+
 .knowledge-page {
-  position: relative;
-  width: 1200px;
-  height: 760px;
-  max-width: calc(100vw - 48px);
-  max-height: calc(100vh - 48px);
-  margin: 24px auto;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  background: var(--page-panel);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-lg);
-  overflow: auto;
-  font-family: var(--font-sans);
-  color: var(--text-strong);
+  min-height: 100vh;
+  background: #f7f9fb;
+  color: #191c1e;
+  font-family: "Inter", "Noto Sans SC", sans-serif;
 }
 
-.knowledge-page::before {
-  content: none;
+.knowledge-page .material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-variation-settings: "FILL" 0, "wght" 420, "GRAD" 0, "opsz" 24;
+}
+
+.knowledge-shell {
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 2.5rem;
+}
+
+.top-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.back-chat-btn {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 0.875rem;
+  padding: 0.52rem 0.95rem;
+  background: #fff;
+  color: #1d4ed8;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 300ms ease-out;
+}
+
+.back-chat-btn:hover {
+  border-color: rgba(37, 99, 235, 0.3);
+  background: #eff6ff;
+}
+
+.knowledge-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.panel {
+  background: #fff;
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+}
+
+.create-panel {
+  grid-column: span 7 / span 7;
+  padding: 2rem;
+}
+
+.files-panel {
+  grid-column: span 5 / span 5;
+  grid-row: span 2 / span 2;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.list-panel {
+  grid-column: span 7 / span 7;
+  padding: 0;
+  overflow: hidden;
+}
+
+.title-create,
+.title-section {
+  margin: 0;
+  color: #0f172a;
+  font-family: "Manrope", "Inter", "Noto Sans SC", sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.title-create {
+  margin-bottom: 2rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.title-section {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.kb-form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.field span {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #424752;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  border: none;
+  border-radius: 0.75rem;
+  background: #f2f4f6;
+  color: #191c1e;
+  font-size: 1rem;
+  font-family: inherit;
+  padding: 1rem;
+  outline: none;
+  transition: box-shadow 300ms ease-out;
+}
+
+.field input:focus,
+.field textarea:focus {
+  box-shadow: 0 0 0 2px rgba(0, 63, 171, 0.2);
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 9rem;
+}
+
+.create-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.95rem 2.5rem;
+  width: fit-content;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: "Manrope", "Inter", "Noto Sans SC", sans-serif;
+  color: #fff;
+  background: linear-gradient(135deg, #003fab 0%, #0354dd 100%);
+  box-shadow: 0 14px 30px rgba(0, 63, 171, 0.22);
+  cursor: pointer;
+  transition: transform 300ms ease-out, box-shadow 300ms ease-out, opacity 300ms ease-out;
+}
+
+.create-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 30px rgba(0, 63, 171, 0.24);
+}
+
+.create-btn:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.icon-ghost {
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 300ms ease-out, background-color 300ms ease-out;
+}
+
+.icon-ghost:hover {
+  color: #003fab;
+  background: #f2f4f6;
+}
+
+.upload-dropzone {
+  border: 2px dashed rgba(194, 198, 212, 0.8);
+  border-radius: 1rem;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  background: rgba(248, 250, 252, 0.45);
+  cursor: pointer;
+  transition: border-color 300ms ease-out, background-color 300ms ease-out;
+}
+
+.upload-dropzone:hover {
+  border-color: rgba(0, 63, 171, 0.28);
+  background: rgba(239, 246, 255, 0.6);
+}
+
+.upload-dropzone.active {
+  border-color: rgba(0, 63, 171, 0.5);
+  background: rgba(219, 234, 254, 0.35);
+}
+
+.upload-dropzone.disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.upload-circle {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 999px;
+  margin: 0 auto 1rem;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-circle .material-symbols-outlined {
+  font-size: 2rem;
+  color: #003fab;
+}
+
+.upload-title {
+  margin: 0 0 0.25rem;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: "Manrope", "Inter", "Noto Sans SC", sans-serif;
+  color: #0f172a;
+}
+
+.upload-desc {
+  margin: 0;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.6875rem;
+  line-height: 1.6;
+}
+
+.file-input {
   display: none;
 }
 
-.knowledge-page > * {
-  position: relative;
-  z-index: 1;
+.recent-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.knowledge-page .header {
+.doc-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.doc-row {
+  position: relative;
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
-}
-
-.knowledge-page .header h1 {
-  margin: 0;
-  font-size: 26px;
-}
-
-.knowledge-page .header p {
-  margin: 6px 0 0;
-  color: var(--text-muted);
-}
-
-.knowledge-page .actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.knowledge-page label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.knowledge-page input,
-.knowledge-page textarea,
-.knowledge-page select {
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface-soft);
-  font-size: 13px;
-}
-
-.knowledge-page button {
-  border: none;
-  padding: 10px 16px;
-  border-radius: var(--radius-sm);
-  background: var(--accent-gradient);
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-}
-
-.knowledge-page button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.knowledge-page button.ghost {
-  background: rgba(255, 255, 255, 0.7);
-  color: var(--accent-strong);
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  box-shadow: none;
-}
-
-.knowledge-page .notice,
-.knowledge-page .error {
-  margin-top: 8px;
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-size: 13px;
-}
-
-.knowledge-page .notice {
-  background: var(--notice-bg);
-  color: var(--notice-text);
-}
-
-.knowledge-page .error {
-  background: var(--error-bg);
-  color: var(--error-text);
-}
-
-.knowledge-page .card {
-  background: var(--surface-strong);
-  border-radius: var(--radius-lg);
-  padding: 18px;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
-  backdrop-filter: blur(10px);
-}
-
-.knowledge-page .kb-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-}
-
-.knowledge-page .kb-card {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(246, 248, 255, 0.9);
-  border-radius: 16px;
-  padding: 10px 12px;
-  border: 1px solid rgba(111, 136, 255, 0.15);
-}
-
-.knowledge-page .kb-card.active {
-  background: rgba(111, 136, 255, 0.15);
-  border-color: rgba(111, 136, 255, 0.35);
-}
-
-.knowledge-page .kb-select {
-  flex: 1;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  box-shadow: none;
-  padding: 6px 0;
-}
-
-.knowledge-page .kb-delete {
-  background: rgba(255, 219, 230, 0.7);
-  color: #b04a63;
-  padding: 6px 10px;
-  border-radius: 999px;
-  box-shadow: none;
-}
-
-.knowledge-page .doc-list {
-  display: grid;
-  gap: 10px;
-}
-
-.knowledge-page .doc-item {
-  display: flex;
   justify-content: space-between;
-  align-items: center;
-  background: #fff;
-  border-radius: 14px;
-  padding: 12px 14px;
-  box-shadow: 0 12px 24px rgba(58, 72, 125, 0.08);
+  gap: 0.75rem;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  transition: background-color 300ms ease-out;
 }
 
-.knowledge-page .doc-meta {
+.doc-row:hover {
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.doc-main {
+  min-width: 0;
   display: flex;
-  gap: 12px;
-  font-size: 12px;
-  color: #6b7390;
-  margin-top: 6px;
+  gap: 0.75rem;
+}
+
+.doc-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.knowledge-page .doc-time {
-  font-size: 12px;
-  color: #8b93ab;
+.doc-icon .material-symbols-outlined {
+  font-size: 1.25rem;
 }
 
-.knowledge-page .doc-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.doc-copy {
+  min-width: 0;
 }
 
-.knowledge-page .status-pill {
-  padding: 2px 8px;
-  border-radius: 999px;
+.doc-name {
+  margin: 0;
+  font-size: 0.875rem;
   font-weight: 600;
-  font-size: 11px;
-  background: rgba(148, 163, 184, 0.2);
-  color: #475569;
+  color: #0f172a;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
-.knowledge-page .status-pill.status-processing,
-.knowledge-page .status-pill.status-uploading {
-  background: rgba(59, 130, 246, 0.18);
-  color: #1d4ed8;
+.doc-meta {
+  margin: 0.125rem 0 0;
+  font-size: 0.625rem;
+  color: #94a3b8;
 }
 
-.knowledge-page .status-pill.status-completed {
-  background: rgba(34, 197, 94, 0.18);
-  color: #15803d;
+.doc-status {
+  margin: 0.25rem 0 0;
+  font-size: 0.6875rem;
+  color: #64748b;
 }
 
-.knowledge-page .status-pill.status-failed {
-  background: rgba(239, 68, 68, 0.18);
-  color: #b91c1c;
-}
-
-.knowledge-page .doc-progress {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-  font-size: 12px;
-  color: #6b7390;
-}
-
-.knowledge-page .progress-bar {
-  flex: 1;
-  height: 6px;
+.progress-bar {
+  margin-top: 0.25rem;
+  width: 100%;
+  height: 0.25rem;
   border-radius: 999px;
-  background: rgba(99, 102, 241, 0.18);
   overflow: hidden;
+  background: rgba(148, 163, 184, 0.3);
   position: relative;
 }
 
-.knowledge-page .progress-fill {
-  height: 100%;
+.progress-fill {
   width: 0%;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  height: 100%;
+  background: linear-gradient(90deg, #003fab 0%, #0354dd 100%);
   transition: width 0.4s ease;
 }
 
-.knowledge-page .progress-bar.indeterminate .progress-fill {
-  width: 40%;
+.progress-bar.indeterminate .progress-fill {
   position: absolute;
+  width: 40%;
   animation: progress-move 1.2s ease-in-out infinite;
 }
 
-.knowledge-page .doc-error {
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--error-text);
-  background: var(--error-bg);
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
+.doc-error {
+  margin: 0.25rem 0 0;
+  color: #ba1a1a;
+  font-size: 0.6875rem;
 }
 
-.knowledge-page .doc-retry {
-  font-size: 12px;
-  padding: 6px 10px;
+.doc-menu {
+  position: relative;
+  opacity: 0;
+  transition: opacity 300ms ease-out;
+}
+
+.doc-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.chunk-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.8rem;
+  height: 1.75rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3155a4;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.doc-row:hover .doc-menu,
+.doc-menu[open] {
+  opacity: 1;
+}
+
+.doc-menu summary {
+  list-style: none;
+  cursor: pointer;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doc-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.doc-menu summary:hover {
+  color: #003fab;
+  background: #f1f5f9;
+}
+
+.doc-menu-card {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: 5;
+  min-width: 5.5rem;
+  background: #fff;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 0.625rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  padding: 0.25rem;
+}
+
+.doc-menu-item {
+  border: none;
+  width: 100%;
+  text-align: left;
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.625rem;
+  background: transparent;
+  color: #334155;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.doc-menu-item:hover {
+  background: #f8fafc;
+}
+
+.doc-menu-item.danger {
+  color: #ba1a1a;
+}
+
+.list-head {
+  padding: 2rem 2rem 1rem;
+  margin: 0;
+}
+
+.count-chip {
+  border-radius: 999px;
+  background: #d5e3fc;
+  color: #0d1c2e;
+  padding: 0.375rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.kb-list {
+  display: grid;
+}
+
+.kb-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1.5rem 2rem;
+  transition: background-color 300ms ease-out;
+}
+
+.kb-row:hover,
+.kb-row.active {
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.kb-select {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.kb-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kb-icon .material-symbols-outlined {
+  font-size: 1.5rem;
+}
+
+.kb-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.125rem;
+}
+
+.kb-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.kb-meta {
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.kb-delete {
+  border: none;
+  background: transparent;
+  color: #ba1a1a;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  transition: background-color 300ms ease-out;
+}
+
+.kb-delete:hover {
+  background: rgba(255, 218, 214, 0.4);
+}
+
+.empty-block {
+  color: #64748b;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1.5rem 1rem;
+}
+
+.banner {
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.banner-error {
+  background: rgba(255, 218, 214, 0.6);
+  color: #ba1a1a;
+}
+
+.tone-pdf {
+  background: #fff1f2;
+  color: #dc2626;
+}
+
+.tone-doc {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.tone-text {
+  background: #eef2f7;
+  color: #475569;
+}
+
+.tone-default {
+  background: #f2f4f6;
+  color: #475569;
+}
+
+.help-fab {
+  position: fixed;
+  right: 2rem;
+  bottom: 2rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: #fff;
+  color: #003fab;
+  box-shadow: 0 16px 40px rgba(148, 163, 184, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @keyframes progress-move {
@@ -613,31 +1070,42 @@ onBeforeUnmount(() => {
   }
 }
 
-.knowledge-page .doc-delete {
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(255, 219, 230, 0.7);
-  color: #b04a63;
-  box-shadow: none;
+@media (min-width: 768px) {
+  .knowledge-shell {
+    padding: 2rem 2rem 3rem;
+  }
 }
 
-.knowledge-page .placeholder {
-  text-align: center;
-  padding: 20px 0;
-  color: #7b839e;
+@media (min-width: 1024px) {
+  .knowledge-shell {
+    padding: 3rem 3rem 3.5rem;
+  }
 }
 
 @media (max-width: 1080px) {
-  .knowledge-page {
-    width: 100%;
-    height: auto;
-    max-height: none;
-    margin: 16px auto;
+  .knowledge-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
-  .knowledge-page .header {
-    flex-direction: column;
-    align-items: flex-start;
+  .create-panel,
+  .files-panel,
+  .list-panel {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .files-panel {
+    order: 3;
+  }
+
+  .create-btn {
+    width: 100%;
+  }
+
+  .help-fab {
+    right: 1rem;
+    bottom: 1rem;
   }
 }
 </style>

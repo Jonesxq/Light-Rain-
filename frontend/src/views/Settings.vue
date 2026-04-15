@@ -9,10 +9,7 @@
         <div class="actions action-bar">
           <button class="ghost" @click="goChat">返回聊天</button>
           <button class="ghost" @click="goMy">我的</button>
-          <button class="ghost" @click="goAiNews">AI资讯</button>
           <button class="ghost" @click="goUsage">使用量看板</button>
-          <button class="ghost" @click="goKnowledge">知识库</button>
-          <button class="ghost" @click="logout">退出登录</button>
         </div>
       </div>
     </header>
@@ -71,7 +68,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { apiFetch, clearTokens } from '../api/client.js';
+import { apiFetch } from '../api/client.js';
 import CenterToast from '../components/CenterToast.vue';
 import { useCenterToast } from '../composables/useCenterToast.js';
 
@@ -108,21 +105,8 @@ const goMy = () => {
   router.push('/my');
 };
 
-const goKnowledge = () => {
-  router.push('/knowledge');
-};
-
 const goUsage = () => {
   router.push('/usage');
-};
-
-const goAiNews = () => {
-  router.push('/ai-news');
-};
-
-const logout = () => {
-  clearTokens();
-  router.push('/login');
 };
 
 const loadSettings = async () => {

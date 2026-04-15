@@ -1,115 +1,140 @@
 <template>
-  <div class="chat-layout">
-    <aside class="chat-sidebar">
-      <div class="sidebar-brand">
-        <div class="brand-icon">雨</div>
-        <div>
-          <div class="brand-title">小雨</div>
-          <div class="brand-subtitle">对话与知识库</div>
-        </div>
-      </div>
-      <div class="sidebar-section">
-        <div class="session-header">
-          <h3>你的聊天</h3>
-        </div>
-        <div class="sidebar-menu compact">
-          <button class="menu-item" @click="createSession">
-            <span class="menu-icon" data-icon="+"></span>
-            <span>新聊天</span>
-          </button>
-          <button class="menu-item" @click="focusSessionSearch">
-            <span class="menu-icon" data-icon="S"></span>
-            <span>搜索聊天</span>
-          </button>
-        </div>
-        <div class="session-panel">
-          <div class="session-filter">
-            <input
-              v-model="sessionQuery"
-              placeholder="搜索会话标题"
-              @input="scheduleSessionSearch"
-              ref="sessionSearchRef"
-            />
-          </div>
-          <div v-if="!sessions.length" class="session-empty">
-            暂无聊天历史
-          </div>
-          <ul v-else class="session-list">
-            <li v-for="session in sessions" :key="session.id" :class="{ active: session.id === activeSessionId }">
-              <button class="session-entry" @click="selectSession(session.id)">
-                <span class="session-title">{{ getSessionTitle(session) }}</span>
-                <span v-if="session.is_pinned" class="session-flag">置顶</span>
-                <span v-if="session.is_archived" class="session-flag archived">归档</span>
-                <span v-if="session.tags && session.tags.length" class="session-tags">
-                  <span
-                    v-for="tag in session.tags.slice(0, 2)"
-                    :key="tag"
-                    class="session-tag"
-                  >
-                    {{ tag }}
-                  </span>
-                </span>
-              </button>
-              <button class="session-menu-trigger" @click.stop="toggleSessionMenu(session.id)">⋯</button>
-              <button class="delete-session" @click.stop="deleteSession(session.id)">删除</button>
-              <div v-if="sessionMenuId === session.id" class="session-menu">
-                <button @click.stop="renameSession(session)">重命名</button>
-                <button @click.stop="togglePinSession(session)">{{ session.is_pinned ? '取消置顶' : '置顶' }}</button>
-                <button @click.stop="toggleArchiveSession(session)">{{ session.is_archived ? '取消归档' : '归档' }}</button>
-                <button @click.stop="editSessionTags(session)">编辑标签</button>
-                <button @click.stop="exportSession(session, 'md')">导出 Markdown</button>
-                <button @click.stop="exportSession(session, 'json')">导出 JSON</button>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div class="sidebar-extra-spacer"></div>
+  <div class="chat-page">
+    <div v-if="mobileSidebarOpen" class="sidebar-backdrop" @click="closeMobileSidebar"></div>
 
+    <aside class="workspace-sidebar" :class="{ open: mobileSidebarOpen }">
+      <div class="sidebar-top">
+        <div class="sidebar-brand">
+          <div class="brand-icon">
+            <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+          </div>
+          <div class="brand-copy">
+            <div class="brand-title">小雨</div>
+            <div class="brand-subtitle">对话与知识库</div>
+          </div>
+        </div>
+
+        <button class="new-chat-btn" @click="createSession">
+          <span class="material-symbols-outlined nav-icon" aria-hidden="true">add_comment</span>
+          <span>开启新对话</span>
+        </button>
+
+        <nav class="workspace-nav">
+          <div class="history-block">
+            <button class="workspace-nav-item history-trigger" :class="{ active: historyPanelOpen }" @click="toggleHistoryPanel">
+              <span class="material-symbols-outlined nav-icon" aria-hidden="true">history</span>
+              <span>历史记录</span>
+            </button>
+            <div class="history-panel" :class="{ open: historyPanelOpen }">
+              <div class="session-filter">
+                <input
+                  v-model="sessionQuery"
+                  placeholder="搜索会话标题"
+                  @input="scheduleSessionSearch"
+                  ref="sessionSearchRef"
+                />
+              </div>
+              <div v-if="!sessions.length" class="session-empty">暂无聊天历史</div>
+              <ul v-else class="session-list">
+                <li v-for="session in sessions" :key="session.id" :class="{ active: session.id === activeSessionId }">
+                  <button class="session-entry" @click="selectSession(session.id)">
+                    <span class="session-title">{{ getSessionTitle(session) }}</span>
+                    <span v-if="session.is_pinned" class="session-flag">置顶</span>
+                    <span v-if="session.is_archived" class="session-flag archived">归档</span>
+                    <span v-if="session.tags && session.tags.length" class="session-tags">
+                      <span v-for="tag in session.tags.slice(0, 2)" :key="tag" class="session-tag">
+                        {{ tag }}
+                      </span>
+                    </span>
+                  </button>
+                  <button class="session-menu-trigger" @click.stop="toggleSessionMenu(session.id)">⋯</button>
+                  <button class="delete-session" @click.stop="deleteSession(session.id)">删除</button>
+                  <div v-if="sessionMenuId === session.id" class="session-menu">
+                    <button @click.stop="renameSession(session)">重命名</button>
+                    <button @click.stop="togglePinSession(session)">{{ session.is_pinned ? '取消置顶' : '置顶' }}</button>
+                    <button @click.stop="toggleArchiveSession(session)">{{ session.is_archived ? '取消归档' : '归档' }}</button>
+                    <button @click.stop="editSessionTags(session)">编辑标签</button>
+                    <button @click.stop="exportSession(session, 'md')">导出 Markdown</button>
+                    <button @click.stop="exportSession(session, 'json')">导出 JSON</button>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <button class="workspace-nav-item" @click="goKnowledge(); closeMobileSidebar()">
+            <span class="material-symbols-outlined nav-icon" aria-hidden="true">folder_shared</span>
+            <span>我的知识库</span>
+          </button>
+          <button class="workspace-nav-item" @click="goAiNews(); closeMobileSidebar()">
+            <span class="material-symbols-outlined nav-icon" aria-hidden="true">newspaper</span>
+            <span>AI资讯</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="footer-links">
+          <button class="footer-link" @click="goSettings(); closeMobileSidebar()">
+            <span class="material-symbols-outlined nav-icon" aria-hidden="true">settings</span>
+            <span>设置</span>
+          </button>
+          <button class="footer-link danger" @click="logout">
+            <span class="material-symbols-outlined nav-icon" aria-hidden="true">logout</span>
+            <span>退出登录</span>
+          </button>
+        </div>
+        <button type="button" class="profile-card profile-link" @click="goMy(); closeMobileSidebar()">
+          <div
+            class="profile-avatar"
+            :class="{ 'has-image': !!profileAvatarUrl }"
+            :style="profileAvatarStyle"
+          >
+            {{ profileAvatarFallback }}
+          </div>
+          <div>
+            <p class="profile-name">{{ profileName }}</p>
+            <p class="profile-email">{{ profileEmail }}</p>
+          </div>
+        </button>
+      </div>
     </aside>
 
-    <main class="chat-main">
-    <div class="chat-main-actions">
-      <button class="ghost" @click="goKnowledge">我的知识库</button>
-      <button class="ghost" @click="goSettings">模型设置</button>
-      <button class="ghost" @click="goMy">我的</button>
-      <button class="ghost" @click="goUsage">使用量看板</button>
-      <button class="ghost" @click="goAiNews">AI资讯</button>
-      <button class="ghost" @click="openKnowledgeSelector">知识库问答</button>
-      <button v-if="knowledgeMode" class="ghost exit-kb" @click="exitKnowledgeMode">
-        退出知识库问答
-      </button>
-      <button class="ghost" @click="logout">退出登录</button>
-    </div>
+    <main class="workspace-main">
+      <header class="workspace-header">
+        <div class="header-left">
+          <button class="icon-btn mobile-only" type="button" @click="toggleMobileSidebar">☰</button>
+        </div>
+        <div v-if="knowledgeMode" class="workspace-top-actions">
+          <button type="button" class="top-chip subtle" @click="exitKnowledgeMode">
+            退出知识库
+          </button>
+        </div>
+      </header>
 
-    <div v-if="notice" class="notice">{{ notice }}</div>
-    <div v-if="error" class="error">{{ error }}</div>
+      <div v-if="notice" class="notice">{{ notice }}</div>
+      <div v-if="error" class="error">{{ error }}</div>
 
-      <div
-        class="chat-panel"
+      <section
+        class="chat-shell"
         :class="{ dragging: isDragging }"
         @dragover.prevent="handleDragOver"
         @dragleave.prevent="handleDragLeave"
         @drop.prevent="handleDrop"
       >
-        <div v-if="isDragging" class="drop-mask">
-          松开鼠标上传临时资料
-        </div>
+        <div v-if="isDragging" class="drop-mask">松开鼠标上传临时资料</div>
         <div class="chat-log" ref="chatLogRef">
           <div v-if="!chatMessages.length" class="empty-state">
-            <h2>我是小雨，我能帮助您查询天气和联网搜索，也能基于您的知识库给你解答，请问有什么能帮助您？</h2>
-            <p>选择左侧历史对话或直接输入问题开始聊天。</p>
+            <p>我是小雨，能基于知识库问答，能联网搜索也能生成你需要的图片，请问有什么能帮您。</p>
           </div>
+
           <div
             v-for="(message, index) in chatMessages"
             :key="message.id || index"
             :id="message.id ? `msg-${message.id}` : null"
             :class="['chat-message', message.role, { highlight: message.id === highlightMessageId }]"
           >
-            <div
-              class="avatar"
-              :class="message.role === 'user' ? 'user-avatar' : 'assistant-avatar'"
-            ></div>
+            <div class="avatar" :class="message.role === 'user' ? 'user-avatar' : 'assistant-avatar'"></div>
             <div class="chat-bubble">
               <div class="bubble-meta">
                 <strong>{{ message.role === 'user' ? '我' : '助手' }}</strong>
@@ -151,12 +176,8 @@
                 >
                   {{ memeGeneratingId === message.id ? '生成中...' : '表情包' }}
                 </button>
-                <button type="button" class="ghost ghost-small" @click="copyMessage(message)">
-                  复制
-                </button>
-                <button type="button" class="ghost ghost-small" @click="quoteMessage(message)">
-                  引用
-                </button>
+                <button type="button" class="ghost ghost-small" @click="copyMessage(message)">复制</button>
+                <button type="button" class="ghost ghost-small" @click="quoteMessage(message)">引用</button>
                 <button
                   v-if="message.role === 'assistant'"
                   type="button"
@@ -182,16 +203,9 @@
                     :key="sIndex"
                     :id="message.id ? `source-${message.id}-${sIndex + 1}` : null"
                   >
-                    <button
-                      v-if="source.url"
-                      class="source-link"
-                      type="button"
-                      @click="openWebSource(source)"
-                    >
+                    <button v-if="source.url" class="source-link" type="button" @click="openWebSource(source)">
                       <span class="source-name">{{ source.title || source.file_name || '网页来源' }}</span>
-                      <span v-if="getSourceLoc(source)" class="source-meta">
-                        {{ getSourceLoc(source) }}
-                      </span>
+                      <span v-if="getSourceLoc(source)" class="source-meta">{{ getSourceLoc(source) }}</span>
                       <span v-if="source.snippet" class="source-snippet">{{ truncateText(source.snippet, 120) }}</span>
                     </button>
                     <button
@@ -202,9 +216,7 @@
                       @click="openSourcePreview(source, getPreviewQuery(index))"
                     >
                       <span class="source-name">{{ source.file_name || '未知文档' }}</span>
-                      <span v-if="getSourceLoc(source)" class="source-meta">
-                        {{ getSourceLoc(source) }}
-                      </span>
+                      <span v-if="getSourceLoc(source)" class="source-meta">{{ getSourceLoc(source) }}</span>
                     </button>
                   </li>
                 </ul>
@@ -226,79 +238,91 @@
             </div>
           </div>
         </div>
-        <div v-if="attachments.length" class="attachment-strip">
-          <div v-for="att in attachments" :key="att.id" class="attachment-pill">
-            <span>{{ att.file_name }}</span>
-            <button type="button" @click="removeAttachment(att)">x</button>
+
+        <div class="composer-stack">
+          <div v-if="attachments.length" class="attachment-strip">
+            <div v-for="att in attachments" :key="att.id" class="attachment-pill">
+              <span>{{ att.file_name }}</span>
+              <button type="button" @click="removeAttachment(att)">x</button>
+            </div>
+            <button type="button" class="ghost ghost-small" @click="clearAttachments">清空</button>
           </div>
-          <button type="button" class="ghost ghost-small" @click="clearAttachments">清空</button>
+          <div v-if="suggestionLoading || suggestions.length" class="suggestion-bar">
+            <span class="suggestion-title">你可能要问</span>
+            <div class="suggestion-list">
+              <button
+                v-for="(item, idx) in suggestions"
+                :key="`${item}-${idx}`"
+                type="button"
+                class="suggestion-chip"
+                @click="applySuggestion(item)"
+              >
+                {{ item }}
+              </button>
+              <span v-if="suggestionLoading" class="suggestion-loading">正在生成提示...</span>
+            </div>
+          </div>
+          <div v-if="editingMessage" class="edit-banner">
+            <span>正在编辑：{{ truncateText(editingMessage.content, 40) }}</span>
+            <button type="button" class="ghost ghost-small" @click="cancelEdit">取消</button>
+          </div>
+          <form class="chat-input" @submit.prevent="sendMessage">
+            <div class="input-wrap">
+              <span v-if="knowledgeMode && selectedKnowledgeBase" class="mode-badge">
+                知识库：{{ selectedKnowledgeBase.name }}
+              </span>
+              <textarea
+                v-model="chatInput"
+                :placeholder="inputPlaceholder"
+                rows="1"
+                @keydown="handleInputKeydown"
+                ref="chatInputRef"
+              ></textarea>
+            </div>
+            <div class="input-actions">
+              <button type="button" class="tool-chip" @click="triggerAttachmentInput">
+                <span class="material-symbols-outlined" aria-hidden="true">attach_file</span>
+                <span>上传文件</span>
+              </button>
+              <button
+                type="button"
+                class="tool-chip"
+                :class="{ active: deepThinkEnabled }"
+                :disabled="knowledgeMode"
+                title="更强推理与结构化回答"
+                @click="deepThinkEnabled = !deepThinkEnabled"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">psychology</span>
+                <span>深度思考</span>
+              </button>
+              <button
+                type="button"
+                class="tool-chip"
+                :class="{ active: deepSearchEnabled }"
+                :disabled="knowledgeMode"
+                title="自动检索网页并附引用"
+                @click="deepSearchEnabled = !deepSearchEnabled"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">travel_explore</span>
+                <span>联网搜索</span>
+              </button>
+              <button type="button" class="tool-chip kb-chip" @click="openKnowledgeSelector">
+                <span class="material-symbols-outlined" aria-hidden="true">database</span>
+                <span>知识库问答</span>
+              </button>
+              <button type="submit" class="send-btn" :disabled="isStreaming">发送</button>
+            </div>
+            <input
+              ref="attachmentInputRef"
+              class="file-input"
+              type="file"
+              multiple
+              accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg"
+              @change="handleAttachmentSelect"
+            />
+          </form>
         </div>
-        <div v-if="suggestionLoading || suggestions.length" class="suggestion-bar">
-          <span class="suggestion-title">你可能要问</span>
-          <div class="suggestion-list">
-            <button
-              v-for="(item, idx) in suggestions"
-              :key="`${item}-${idx}`"
-              type="button"
-              class="suggestion-chip"
-              @click="applySuggestion(item)"
-            >
-              {{ item }}
-            </button>
-            <span v-if="suggestionLoading" class="suggestion-loading">正在生成提示...</span>
-          </div>
-        </div>
-        <div v-if="editingMessage" class="edit-banner">
-          <span>正在编辑：{{ truncateText(editingMessage.content, 40) }}</span>
-          <button type="button" class="ghost ghost-small" @click="cancelEdit">取消</button>
-        </div>
-        <form class="chat-input" @submit.prevent="sendMessage">
-          <div class="input-wrap">
-            <span v-if="knowledgeMode && selectedKnowledgeBase" class="mode-badge">
-              知识库：{{ selectedKnowledgeBase.name }}
-            </span>
-            <textarea
-              v-model="chatInput"
-              :placeholder="inputPlaceholder"
-              rows="2"
-              @keydown="handleInputKeydown"
-              ref="chatInputRef"
-            ></textarea>
-          </div>
-          <div class="input-actions">
-            <button type="button" class="ghost ghost-small" @click="triggerAttachmentInput">添加附件</button>
-            <button
-              type="button"
-              class="deep-chip"
-              :class="{ active: deepThinkEnabled }"
-              :disabled="knowledgeMode"
-              title="更强推理与结构化回答"
-              @click="deepThinkEnabled = !deepThinkEnabled"
-            >
-              深度思考
-            </button>
-            <button
-              type="button"
-              class="deep-chip"
-              :class="{ active: deepSearchEnabled }"
-              :disabled="knowledgeMode"
-              title="自动检索网页并附引用"
-              @click="deepSearchEnabled = !deepSearchEnabled"
-            >
-              联网搜索
-            </button>
-            <button type="submit" :disabled="isStreaming">发送</button>
-          </div>
-          <input
-            ref="attachmentInputRef"
-            class="file-input"
-            type="file"
-            multiple
-            accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg"
-            @change="handleAttachmentSelect"
-          />
-        </form>
-      </div>
+      </section>
     </main>
 
     <Modal v-if="showKnowledgeSelector" @close="closeKnowledgeSelector">
@@ -425,6 +449,12 @@ const memeGeneratingId = ref(null);
 const deepThinkEnabled = ref(false);
 const deepSearchEnabled = ref(false);
 const isSuperuser = ref(false);
+const currentUserEmail = ref(localStorage.getItem('chatUserEmail') || '');
+const currentUsername = ref(localStorage.getItem('chatUsername') || '');
+const profileAvatarUrl = ref(localStorage.getItem('chatUserAvatar') || '');
+const isMobileLayout = ref(false);
+const mobileSidebarOpen = ref(false);
+const historyPanelOpen = ref(false);
 const debugOpen = ref(false);
 const debugLoading = ref(false);
 const debugError = ref('');
@@ -435,6 +465,25 @@ const sourceLocCache = new WeakMap();
 const timeCache = new Map();
 let sessionFetchRequestId = 0;
 let suggestionFetchRequestId = 0;
+const profileName = computed(() => {
+  const username = String(currentUsername.value || '').trim();
+  if (username) return username;
+  const email = String(currentUserEmail.value || '').trim();
+  if (email.includes('@')) return email.split('@')[0];
+  return email || '用户';
+});
+const profileEmail = computed(() => String(currentUserEmail.value || '').trim() || '未获取邮箱');
+const profileAvatarFallback = computed(() => {
+  const source = profileName.value || '用户';
+  return source.charAt(0);
+});
+const profileAvatarStyle = computed(() => {
+  const avatar = String(profileAvatarUrl.value || '').trim();
+  if (!avatar) return {};
+  return {
+    backgroundImage: `url("${avatar}")`,
+  };
+});
 const inputPlaceholder = computed(() => {
   if (knowledgeMode.value && selectedKnowledgeBase.value) {
     return `向知识库「${selectedKnowledgeBase.value.name}」提问`;
@@ -493,6 +542,7 @@ const debugSections = computed(() => {
 
 const ATTACHMENT_EXTS = ['.pdf', '.docx', '.txt', '.md', '.png', '.jpg', '.jpeg'];
 const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+const MOBILE_LAYOUT_BREAKPOINT = 1080;
 
 const setNotice = (message) => {
   showSuccess(message);
@@ -503,6 +553,33 @@ const setNotice = (message) => {
 const setError = (message) => {
   error.value = message;
   notice.value = '';
+};
+
+const syncStoredProfile = () => {
+  const assistantAvatar = localStorage.getItem('chatAssistantAvatar') || '';
+  const userAvatar = localStorage.getItem('chatUserAvatar') || '';
+  profileAvatarUrl.value = userAvatar;
+
+  if (assistantAvatar) {
+    document.documentElement.style.setProperty('--chat-assistant-avatar-image', `url("${assistantAvatar}")`);
+  } else {
+    document.documentElement.style.removeProperty('--chat-assistant-avatar-image');
+  }
+
+  if (userAvatar) {
+    document.documentElement.style.setProperty('--chat-user-avatar-image', `url("${userAvatar}")`);
+  } else {
+    document.documentElement.style.removeProperty('--chat-user-avatar-image');
+  }
+};
+
+const handleProfileStorageChange = (event) => {
+  const watchKeys = new Set(['chatUserAvatar', 'chatAssistantAvatar', 'chatUserEmail', 'chatUsername']);
+  if (!event || !event.key || watchKeys.has(event.key)) {
+    currentUserEmail.value = localStorage.getItem('chatUserEmail') || currentUserEmail.value;
+    currentUsername.value = localStorage.getItem('chatUsername') || currentUsername.value;
+    syncStoredProfile();
+  }
 };
 
 
@@ -520,8 +597,22 @@ const fetchCurrentUser = async () => {
   try {
     const data = await apiFetch('/users/me');
     isSuperuser.value = !!data?.is_superuser;
+    currentUserEmail.value = String(data?.email || '').trim();
+    currentUsername.value = String(data?.username || '').trim();
+    if (currentUserEmail.value) {
+      localStorage.setItem('chatUserEmail', currentUserEmail.value);
+    } else {
+      localStorage.removeItem('chatUserEmail');
+    }
+    if (currentUsername.value) {
+      localStorage.setItem('chatUsername', currentUsername.value);
+    } else {
+      localStorage.removeItem('chatUsername');
+    }
   } catch {
     isSuperuser.value = false;
+    currentUserEmail.value = localStorage.getItem('chatUserEmail') || '';
+    currentUsername.value = localStorage.getItem('chatUsername') || '';
   }
 };
 
@@ -542,11 +633,62 @@ const scheduleSessionSearch = () => {
 };
 
 const focusSessionSearch = () => {
+  historyPanelOpen.value = true;
   nextTick(() => {
     if (sessionSearchRef.value) {
       sessionSearchRef.value.focus();
     }
   });
+};
+
+const closeHistoryPanel = () => {
+  historyPanelOpen.value = false;
+};
+
+const toggleHistoryPanel = () => {
+  historyPanelOpen.value = !historyPanelOpen.value;
+  if (historyPanelOpen.value) {
+    nextTick(() => {
+      sessionSearchRef.value?.focus();
+    });
+  }
+};
+
+const syncLayoutMode = () => {
+  const isMobile = window.innerWidth <= MOBILE_LAYOUT_BREAKPOINT;
+  isMobileLayout.value = isMobile;
+  if (!isMobile) {
+    mobileSidebarOpen.value = false;
+  }
+};
+
+const toggleMobileSidebar = () => {
+  if (!isMobileLayout.value) return;
+  mobileSidebarOpen.value = !mobileSidebarOpen.value;
+  if (!mobileSidebarOpen.value) {
+    closeHistoryPanel();
+  }
+};
+
+const closeMobileSidebar = () => {
+  mobileSidebarOpen.value = false;
+  closeHistoryPanel();
+};
+
+const syncBodyScrollLock = () => {
+  if (typeof document === 'undefined') return;
+  if (isMobileLayout.value && mobileSidebarOpen.value) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+};
+
+const resizeInput = () => {
+  const input = chatInputRef.value;
+  if (!input) return;
+  input.style.height = 'auto';
+  input.style.height = `${Math.min(input.scrollHeight, 220)}px`;
 };
 
 const toggleArchivedView = () => {
@@ -973,6 +1115,9 @@ const handleSessionMenuOutside = (event) => {
   if (target.closest('.session-menu') || target.closest('.session-menu-trigger')) {
     return;
   }
+  if (!target.closest('.history-block')) {
+    closeHistoryPanel();
+  }
   closeSessionMenu();
 };
 
@@ -1039,6 +1184,10 @@ const createSession = async () => {
     sessionTitleMap.value[data.id] = '';
     activeSessionId.value = data.id;
     await fetchMessages();
+    closeHistoryPanel();
+    if (isMobileLayout.value) {
+      closeMobileSidebar();
+    }
     setNotice('会话创建成功');
   } catch (err) {
     setError(`创建会话失败：${err.message}`);
@@ -1121,6 +1270,10 @@ const selectSession = async (sessionId) => {
   closeSessionMenu();
   activeSessionId.value = sessionId;
   await fetchMessages();
+  closeHistoryPanel();
+  if (isMobileLayout.value) {
+    closeMobileSidebar();
+  }
 };
 
 
@@ -2076,13 +2229,21 @@ const scrollToBottom = () => {
 };
 
 onMounted(() => {
+  syncStoredProfile();
   fetchCurrentUser();
   fetchSessions();
   fetchAttachments();
+  syncLayoutMode();
+  syncBodyScrollLock();
   document.addEventListener('click', handleSessionMenuOutside);
+  window.addEventListener('resize', syncLayoutMode);
+  window.addEventListener('storage', handleProfileStorageChange);
   if (chatLogRef.value) {
     chatLogRef.value.addEventListener('click', handleCodeCopy);
   }
+  nextTick(() => {
+    resizeInput();
+  });
 });
 
 watch(knowledgeMode, (value) => {
@@ -2090,6 +2251,16 @@ watch(knowledgeMode, (value) => {
     deepSearchEnabled.value = false;
     deepThinkEnabled.value = false;
   }
+});
+
+watch(chatInput, () => {
+  nextTick(() => {
+    resizeInput();
+  });
+});
+
+watch([mobileSidebarOpen, isMobileLayout], () => {
+  syncBodyScrollLock();
 });
 
 onBeforeUnmount(() => {
@@ -2108,6 +2279,9 @@ onBeforeUnmount(() => {
   if (suggestionTimer) {
     clearTimeout(suggestionTimer);
   }
+  window.removeEventListener('resize', syncLayoutMode);
+  window.removeEventListener('storage', handleProfileStorageChange);
+  document.body.style.overflow = '';
   document.removeEventListener('click', handleSessionMenuOutside);
   if (chatLogRef.value) {
     chatLogRef.value.removeEventListener('click', handleCodeCopy);
@@ -2116,6 +2290,9 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
+
 .chat-layout {
   position: fixed;
   inset: 0;
@@ -2124,10 +2301,14 @@ onBeforeUnmount(() => {
   max-width: none;
   max-height: none;
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 22px;
-  padding: clamp(12px, 2vw, 24px);
-  background: var(--page-panel);
+  grid-template-columns: 252px 1fr;
+  gap: 16px;
+  padding: clamp(10px, 1.6vw, 18px);
+  isolation: isolate;
+  background:
+    radial-gradient(1200px circle at 8% 8%, rgba(56, 189, 248, 0.15), transparent 56%),
+    radial-gradient(1000px circle at 92% 12%, rgba(99, 102, 241, 0.14), transparent 52%),
+    linear-gradient(180deg, #f7f8fb 0%, #f2f4f8 100%);
   font-family: var(--font-sans);
   color: var(--text-strong);
   margin: 0;
@@ -2138,8 +2319,14 @@ onBeforeUnmount(() => {
 }
 
 .chat-layout::before {
-  content: none;
-  display: none;
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0) 28%),
+    radial-gradient(900px circle at 88% 90%, rgba(148, 163, 184, 0.12), transparent 70%);
 }
 
 .chat-layout > .chat-sidebar,
@@ -2153,10 +2340,10 @@ onBeforeUnmount(() => {
   flex-direction: column;
   padding: 20px;
   border-radius: var(--radius-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.93) 0%, rgba(248, 250, 252, 0.92) 100%);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(203, 213, 225, 0.75);
+  backdrop-filter: blur(12px);
   height: 100%;
   min-height: 0;
   max-height: none;
@@ -2167,20 +2354,21 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(203, 213, 225, 0.75);
 }
 
 .brand-icon {
   width: 42px;
   height: 42px;
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   background: var(--accent-gradient);
   color: #fff;
   display: grid;
   place-items: center;
   font-weight: 700;
   letter-spacing: 0.5px;
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.26);
 }
 
 .brand-title {
@@ -2201,8 +2389,11 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-section h3 {
-  font-size: 14px;
-  color: var(--text-muted);
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   margin-bottom: 10px;
 }
 
@@ -2228,25 +2419,26 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
+  padding: 9px 10px;
+  border-radius: 11px;
   border: none;
-  background: transparent;
-  color: var(--text-strong);
+  background: rgba(255, 255, 255, 0.7);
+  color: #1f2937;
   font-size: 13px;
   font-weight: 600;
-  box-shadow: none;
+  box-shadow: inset 0 0 0 1px rgba(203, 213, 225, 0.8);
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .menu-item:hover {
-  background: rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.75);
+  transform: translateY(-1px);
 }
 
 .menu-item.ghost {
-  background: rgba(148, 163, 184, 0.12);
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .menu-icon {
@@ -2270,38 +2462,97 @@ onBeforeUnmount(() => {
   margin-top: auto;
 }
 
+.workspace-meta {
+  width: min(100%, 1080px);
+  margin: 0 auto 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+}
+
+.workspace-label {
+  font-weight: 700;
+  color: #64748b;
+}
+
+.workspace-sep {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.workspace-status {
+  color: #475569;
+}
+
 .chat-main-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   justify-content: flex-end;
+  width: min(100%, 1080px);
+  margin: 0 auto;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(8px);
 }
 
 .chat-main-actions .ghost {
   box-shadow: none;
-  padding: 8px 14px;
+  padding: 6px 12px;
   font-size: 12px;
+  border-radius: 999px;
+  border-color: rgba(203, 213, 225, 0.85);
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.chat-main-actions .ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.98);
 }
 
 .session-panel {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 10px;
+  padding: 10px 10px 8px;
   border-radius: 14px;
-  background: var(--surface-soft);
-  border: 1px solid var(--border);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
 
+.session-filter input {
+  width: 100%;
+  border: 1px solid rgba(203, 213, 225, 0.82);
+  background: rgba(248, 250, 252, 0.92);
+  color: #111827;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.session-filter input:focus {
+  border-color: rgba(59, 130, 246, 0.55);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+  background: #fff;
+}
+
 .session-empty {
   font-size: 12px;
-  color: var(--text-soft);
-  padding: 8px 6px;
+  color: #94a3b8;
+  padding: 10px 6px;
 }
 
 .ghost-small {
@@ -2327,15 +2578,30 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px;
+  position: relative;
+  padding: 6px;
   border-radius: 12px;
-  background: rgba(245, 246, 255, 0.9);
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  background: transparent;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .session-list li.active {
-  background: rgba(111, 136, 255, 0.15);
-  box-shadow: inset 0 0 0 1px rgba(111, 136, 255, 0.35);
+  background: rgba(59, 130, 246, 0.11);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.3);
+}
+
+.session-list li:hover {
+  background: rgba(241, 245, 249, 0.95);
+}
+
+.session-entry {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 8px;
+  align-items: center;
+  text-align: left;
+  padding: 4px 2px;
 }
 
 .session-list button {
@@ -2348,26 +2614,129 @@ onBeforeUnmount(() => {
 
 .session-list .session-title {
   display: inline-block;
-  max-width: 140px;
+  max-width: 132px;
+  font-size: 13px;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.session-flag {
+  justify-self: end;
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #1d4ed8;
+  background: rgba(191, 219, 254, 0.7);
+}
+
+.session-flag.archived {
+  color: #475569;
+  background: rgba(226, 232, 240, 0.9);
+}
+
+.session-tags {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.session-tag {
+  border-radius: 999px;
+  padding: 1px 6px;
+  font-size: 10px;
+  color: #475569;
+  background: rgba(241, 245, 249, 0.95);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+}
+
+.session-menu-trigger {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 1;
+  color: #64748b;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.session-list li:hover .session-menu-trigger,
+.session-list li.active .session-menu-trigger {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.session-menu-trigger:hover {
+  background: rgba(226, 232, 240, 0.9);
+}
+
 .delete-session {
   margin-left: auto;
   font-size: 12px;
-  color: #c24d67;
+  color: #c24164;
+  border-radius: 8px;
+  padding: 4px 7px;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.session-list li:hover .delete-session,
+.session-list li.active .delete-session {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.delete-session:hover {
+  background: rgba(254, 226, 226, 0.9);
+}
+
+.session-menu {
+  position: absolute;
+  right: 8px;
+  top: calc(100% - 2px);
+  z-index: 5;
+  display: grid;
+  gap: 4px;
+  min-width: 148px;
+  padding: 6px;
+  border-radius: 11px;
+  border: 1px solid rgba(203, 213, 225, 0.85);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
+}
+
+.session-menu button {
+  text-align: left;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: #334155;
+}
+
+.session-menu button:hover {
+  background: rgba(241, 245, 249, 0.95);
 }
 
 .ghost {
-  border: 1px solid rgba(111, 136, 255, 0.2);
-  background: rgba(255, 255, 255, 0.85);
-  color: #45507a;
+  border: 1px solid rgba(203, 213, 225, 0.82);
+  background: rgba(255, 255, 255, 0.9);
+  color: #334155;
   border-radius: 12px;
   padding: 8px 12px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.ghost:hover:not(:disabled) {
+  background: #fff;
+  border-color: rgba(148, 163, 184, 0.86);
+  transform: translateY(-1px);
 }
 
 .status-pill {
@@ -2445,10 +2814,11 @@ onBeforeUnmount(() => {
 .chat-main {
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 16px 18px 18px;
   border-radius: 26px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 26px 60px rgba(58, 72, 125, 0.18);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(250, 251, 253, 0.97) 100%);
+  box-shadow: 0 24px 54px rgba(15, 23, 42, 0.1);
+  border: 1px solid rgba(203, 213, 225, 0.76);
   min-height: 0;
   height: 100%;
   overflow: hidden;
@@ -2498,6 +2868,9 @@ onBeforeUnmount(() => {
   padding: 10px 14px;
   border-radius: 12px;
   font-size: 13px;
+  width: min(100%, 1080px);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .notice {
@@ -2511,17 +2884,18 @@ onBeforeUnmount(() => {
 }
 
 .chat-panel {
-  margin-top: 18px;
-  background: var(--surface-strong);
-  border-radius: var(--radius-lg);
-  padding: 18px;
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.84);
+  border-radius: 22px;
+  padding: 16px 18px;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 14px;
   flex: 1;
   min-height: 0;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(203, 213, 225, 0.7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
   overflow: hidden;
   max-height: none;
 }
@@ -2530,37 +2904,85 @@ onBeforeUnmount(() => {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-  padding-right: 10px;
-  padding-bottom: 10px;
+  width: min(100%, 1060px);
+  margin: 0 auto;
+  padding: 6px 4px 10px;
   scrollbar-gutter: stable;
 }
 
+.chat-log::-webkit-scrollbar,
+.session-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-log::-webkit-scrollbar-thumb,
+.session-list::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 999px;
+}
+
 .empty-state {
-  background: var(--surface-soft);
-  border-radius: 18px;
-  padding: 26px;
+  max-width: 820px;
+  margin: 28px auto 0;
+  background: rgba(248, 250, 252, 0.92);
+  border-radius: 20px;
+  padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 46px);
   text-align: center;
-  box-shadow: inset 0 0 0 1px var(--border);
+  box-shadow: inset 0 0 0 1px rgba(203, 213, 225, 0.72);
 }
 
 .empty-state h2 {
-  font-size: 18px;
-  margin-bottom: 10px;
+  font-size: clamp(24px, 3.2vw, 36px);
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0 auto 10px;
+  max-width: 720px;
+  color: #0f172a;
+  letter-spacing: -0.01em;
 }
 
 .empty-state p {
-  color: var(--text-soft);
+  color: #64748b;
+  margin: 0;
+  font-size: 14px;
+}
+
+.empty-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.empty-chip {
+  border: 1px solid rgba(203, 213, 225, 0.88);
+  background: rgba(255, 255, 255, 0.94);
+  color: #334155;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.empty-chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.12);
 }
 
 .chat-message {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-start;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+  animation: message-enter 0.22s ease both;
 }
 
 .chat-message.highlight .chat-bubble {
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.34);
 }
 
 .chat-message.user {
@@ -2568,18 +2990,18 @@ onBeforeUnmount(() => {
 }
 
 .avatar {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   flex-shrink: 0;
   position: relative;
-  box-shadow: 0 10px 20px rgba(58, 72, 125, 0.18);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.16);
 }
 
 .avatar::after {
   content: "";
   position: absolute;
-  inset: 4px;
+  inset: 3px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.7);
 }
@@ -2597,35 +3019,37 @@ onBeforeUnmount(() => {
 }
 
 .chat-bubble {
-  max-width: 70%;
-  padding: 12px 14px;
-  border-radius: var(--radius-md);
-  background: var(--chat-assistant-bubble-bg);
-  color: var(--chat-assistant-bubble-text);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
+  max-width: min(82%, 860px);
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #111827;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(226, 232, 240, 0.9);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .chat-message.user .chat-bubble {
-  background: var(--chat-user-bubble-bg);
-  color: var(--chat-user-bubble-text);
+  background: linear-gradient(135deg, #5ea8ff 0%, #5a7bff 100%);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.28);
 }
 
 .bubble-meta {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  font-size: 12px;
-  color: var(--text-soft);
+  font-size: 11px;
+  color: #94a3b8;
 }
 
 .chat-message.user .bubble-meta {
   justify-content: flex-end;
   gap: 8px;
-  color: var(--chat-user-bubble-meta);
+  color: rgba(255, 255, 255, 0.86);
 }
 
 .chat-bubble strong {
@@ -2634,7 +3058,7 @@ onBeforeUnmount(() => {
 
 .chat-bubble p {
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .message-actions {
@@ -2642,11 +3066,19 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   gap: 6px;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transform: translateY(2px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .chat-message:hover .message-actions {
   opacity: 1;
+  transform: translateY(0);
+}
+
+.message-actions .ghost-small {
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
 }
 
 .message-content {
@@ -2658,7 +3090,7 @@ onBeforeUnmount(() => {
   margin: 8px 0;
   display: flex;
   justify-content: flex-start;
-  max-width: 320px;
+  max-width: 360px;
   width: 100%;
   background: #fff;
   border-radius: 12px;
@@ -2667,12 +3099,42 @@ onBeforeUnmount(() => {
 
 .message-content :deep(.chat-image) {
   width: 100%;
-  max-width: 320px;
-  max-height: 180px;
+  max-width: 360px;
+  max-height: 190px;
   object-fit: contain;
   display: block;
   border-radius: 12px;
   background: #fff;
+}
+
+.chat-panel.dragging {
+  border-color: rgba(59, 130, 246, 0.55);
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.drop-mask {
+  position: absolute;
+  inset: 18px;
+  z-index: 4;
+  border-radius: 16px;
+  border: 2px dashed rgba(59, 130, 246, 0.55);
+  background: rgba(59, 130, 246, 0.12);
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  color: #1d4ed8;
+  pointer-events: none;
+}
+
+@keyframes message-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 900px) {
@@ -2688,11 +3150,12 @@ onBeforeUnmount(() => {
 
 .source-list {
   margin-top: 8px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(111, 136, 255, 0.08);
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: rgba(241, 245, 249, 0.92);
+  border: 1px solid rgba(203, 213, 225, 0.75);
   font-size: 12px;
-  color: #4b567a;
+  color: #475569;
 }
 
 .source-title {
@@ -2744,7 +3207,7 @@ onBeforeUnmount(() => {
   display: block;
   margin-top: 4px;
   font-size: 12px;
-  color: #6b7390;
+  color: #64748b;
   line-height: 1.4;
 }
 
@@ -2757,9 +3220,9 @@ onBeforeUnmount(() => {
 
 .disclaimer-card {
   padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(251, 191, 36, 0.35);
-  background: rgba(254, 243, 199, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(251, 191, 36, 0.32);
+  background: rgba(254, 243, 199, 0.45);
   color: #7a4b00;
   font-size: 12px;
   line-height: 1.4;
@@ -3063,12 +3526,24 @@ onBeforeUnmount(() => {
 
 .chat-input {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-items: center;
-  background: var(--surface-strong);
-  border-radius: var(--radius-lg);
-  padding: 12px;
-  box-shadow: inset 0 0 0 1px var(--border);
+  align-items: stretch;
+  width: min(100%, 1060px);
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(203, 213, 225, 0.82);
+  border-radius: 20px;
+  padding: 12px 14px;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-input:focus-within {
+  border-color: rgba(59, 130, 246, 0.55);
+  box-shadow:
+    0 14px 36px rgba(15, 23, 42, 0.1),
+    0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .input-actions {
@@ -3080,38 +3555,67 @@ onBeforeUnmount(() => {
 
 .deep-chip {
   position: relative;
-  border: 1px solid rgba(111, 136, 255, 0.2);
-  background: rgba(255, 255, 255, 0.85);
-  color: #45507a;
+  border: 1px solid rgba(203, 213, 225, 0.84);
+  background: rgba(248, 250, 252, 0.95);
+  color: #334155;
   border-radius: 999px;
-  padding: 6px 12px;
+  padding: 7px 12px;
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .deep-chip.active {
-  background: rgba(59, 130, 246, 0.16);
+  background: rgba(59, 130, 246, 0.14);
   border-color: rgba(59, 130, 246, 0.45);
-  color: var(--accent-strong);
+  color: #1d4ed8;
 }
 
 .deep-chip.active::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  bottom: 4px;
-  width: 6px;
-  height: 10px;
-  border-right: 2px solid #16a34a;
-  border-bottom: 2px solid #16a34a;
-  transform: rotate(45deg);
+  content: none;
+}
+
+.deep-chip:hover:not(:disabled) {
+  transform: translateY(-1px);
 }
 
 .deep-chip:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.attachment-strip {
+  width: min(100%, 1060px);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px dashed rgba(148, 163, 184, 0.55);
+  background: rgba(248, 250, 252, 0.88);
+}
+
+.attachment-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(226, 232, 240, 0.88);
+  color: #334155;
+  font-size: 12px;
+}
+
+.attachment-pill button {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  padding: 0;
+  font-size: 12px;
+  cursor: pointer;
 }
 
 .file-input {
@@ -3128,6 +3632,8 @@ onBeforeUnmount(() => {
   background: rgba(99, 102, 241, 0.12);
   color: #2b3563;
   font-size: 12px;
+  width: min(100%, 1060px);
+  margin: 0 auto;
 }
 
 .suggestion-bar {
@@ -3139,6 +3645,8 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   background: rgba(59, 130, 246, 0.08);
   border: 1px solid rgba(59, 130, 246, 0.15);
+  width: min(100%, 1060px);
+  margin: 0 auto;
 }
 
 .suggestion-title {
@@ -3225,7 +3733,7 @@ onBeforeUnmount(() => {
 .input-wrap {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
 }
 
@@ -3241,32 +3749,52 @@ onBeforeUnmount(() => {
 .chat-input textarea {
   border: none;
   outline: none;
-  font-size: 14px;
-  padding: 6px 8px;
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 68px;
+  padding: 6px 4px;
   resize: none;
   background: transparent;
   font-family: inherit;
+  color: #0f172a;
 }
 
-.chat-input button {
+.chat-input textarea::placeholder {
+  color: #94a3b8;
+}
+
+.input-actions > .send-btn {
+  margin-left: auto;
   border: none;
-  padding: 10px 18px;
-  border-radius: var(--radius-sm);
-  background: var(--accent-gradient);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: #fff;
   font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.24);
 }
 
-.chat-input button:disabled {
+.input-actions > .send-btn::after {
+  content: "↗";
+  font-size: 13px;
+  line-height: 1;
+}
+
+.input-actions > .send-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 @media (max-width: 1080px) {
   .chat-layout {
     grid-template-columns: 1fr;
-    padding: 12px;
+    padding: 10px;
   }
 
   .chat-sidebar {
@@ -3275,6 +3803,11 @@ onBeforeUnmount(() => {
 
   .chat-main {
     order: 1;
+    padding: 12px;
+  }
+
+  .chat-panel {
+    padding: 12px;
   }
 
   .header-actions {
@@ -3285,12 +3818,999 @@ onBeforeUnmount(() => {
     width: 100%;
   }
 
+  .chat-main-actions {
+    justify-content: flex-start;
+  }
+
+  .workspace-meta,
+  .chat-main-actions,
+  .notice,
+  .error,
+  .chat-log,
+  .attachment-strip,
+  .suggestion-bar,
+  .edit-banner,
+  .chat-input {
+    width: 100%;
+  }
+
   .chat-bubble {
-    max-width: 85%;
+    max-width: 94%;
+  }
+
+  .empty-actions {
+    justify-content: flex-start;
   }
 
   .message-actions {
     opacity: 1;
+    transform: none;
+  }
+
+  .session-menu-trigger,
+  .delete-session {
+    opacity: 1;
+    transform: none;
+  }
+
+  .input-actions > .send-btn {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* --- Editorial workspace override --- */
+.chat-page {
+  --bg: #f8f9fb;
+  --surface-low: #f1f4f7;
+  --surface-high: #ebeef1;
+  --surface: #ffffff;
+  --text: #2d3337;
+  --text-soft: #5a6064;
+  --text-dim: #7f8790;
+  --blue: #005bc4;
+  --blue-soft: #4388fd;
+  --ghost-border: rgba(173, 179, 183, 0.15);
+  --soft-shadow: 0 20px 40px rgba(0, 91, 196, 0.06);
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 288px 1fr;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Plus Jakarta Sans", "Noto Sans SC", sans-serif;
+}
+
+.chat-page *,
+.chat-page *::before,
+.chat-page *::after {
+  box-sizing: border-box;
+}
+
+.chat-page .sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(45, 51, 55, 0.2);
+  backdrop-filter: blur(3px);
+}
+
+.chat-page .material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+.chat-page .workspace-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 26px 24px 14px;
+  background: var(--surface-low);
+}
+
+.chat-page .sidebar-top {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.chat-page .sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 0 0 2px;
+  margin-bottom: 34px;
+  border-bottom: none;
+}
+
+.chat-page .brand-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.chat-page .brand-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-soft) 100%);
+  box-shadow: 0 10px 24px rgba(0, 91, 196, 0.18);
+}
+
+.chat-page .brand-icon .material-symbols-outlined {
+  font-size: 20px;
+  font-variation-settings: "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 24;
+}
+
+.chat-page .brand-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: #1f2937;
+}
+
+.chat-page .brand-subtitle {
+  margin: 0;
+  font-size: 11px;
+  color: #93a0ad;
+  font-weight: 600;
+}
+
+.chat-page .new-chat-btn {
+  border: none;
+  width: 100%;
+  border-radius: 14px;
+  background: transparent;
+  color: #1560cc;
+  padding: 11px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 300ms ease-out, color 300ms ease-out, transform 300ms ease-out;
+  transform: scale(0.98);
+}
+
+.chat-page .new-chat-btn:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.chat-page .workspace-nav {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 3px;
+}
+
+.chat-page .workspace-nav-item {
+  border: none;
+  width: 100%;
+  border-radius: 14px;
+  background: transparent;
+  color: #667487;
+  padding: 11px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 300ms ease-out, color 300ms ease-out, transform 300ms ease-out;
+}
+
+.chat-page .workspace-nav-item:hover {
+  background: rgba(255, 255, 255, 0.52);
+  color: #334155;
+}
+
+.chat-page .workspace-nav-item.active {
+  color: #334155;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.chat-page .history-block {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: auto;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.chat-page .history-trigger {
+  flex: 0 0 auto;
+}
+
+.chat-page .history-trigger.active {
+  background: rgba(255, 255, 255, 0.52);
+  color: #334155;
+}
+
+.chat-page .history-panel {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 25;
+  max-height: min(46vh, 380px);
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid var(--ghost-border);
+  box-shadow: 0 22px 44px rgba(45, 51, 55, 0.12);
+  backdrop-filter: blur(12px);
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-page .history-panel.open {
+  display: flex;
+}
+
+.chat-page .nav-icon {
+  width: 22px;
+  font-size: 19px;
+  color: #738097;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.chat-page .session-filter input {
+  width: 100%;
+  border: 1px solid rgba(173, 179, 183, 0.22);
+  background: var(--bg);
+  border-radius: 13px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #2d3337;
+  outline: none;
+  transition: all 300ms ease-out;
+}
+
+.chat-page .session-filter input::placeholder {
+  color: #98a1ab;
+}
+
+.chat-page .session-filter input:focus {
+  border-color: rgba(67, 136, 253, 0.45);
+  box-shadow: 0 0 0 4px rgba(67, 136, 253, 0.12);
+}
+
+.chat-page .session-empty {
+  font-size: 12px;
+  color: var(--text-dim);
+  padding: 10px 6px;
+}
+
+.chat-page .session-list {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 3px 0 0;
+}
+
+.chat-page .session-list li {
+  border-radius: 12px;
+  padding: 5px;
+}
+
+.chat-page .session-list li:hover {
+  background: #edf2f7;
+}
+
+.chat-page .session-list li.active {
+  background: #e6eef9;
+}
+
+.chat-page .session-title {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.chat-page .session-tag {
+  border: none;
+  background: #eef3f8;
+  color: #617080;
+}
+
+.chat-page .session-menu {
+  border: 1px solid var(--ghost-border);
+  border-radius: 14px;
+  box-shadow: var(--soft-shadow);
+  backdrop-filter: blur(16px);
+}
+
+.chat-page .sidebar-footer {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.chat-page .footer-links {
+  display: grid;
+  gap: 3px;
+}
+
+.chat-page .footer-link {
+  border: none;
+  background: transparent;
+  border-radius: 14px;
+  padding: 11px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  color: #667487;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 300ms ease-out, color 300ms ease-out, transform 300ms ease-out;
+}
+
+.chat-page .footer-link:hover {
+  background: rgba(255, 255, 255, 0.52);
+  color: #334155;
+}
+
+.chat-page .footer-link.danger {
+  color: #667487;
+}
+
+.chat-page .profile-card {
+  width: 100%;
+  border: none;
+  border-top: 1px solid rgba(173, 179, 183, 0.2);
+  border-radius: 0;
+  margin-top: 8px;
+  padding: 16px 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: transparent;
+  color: inherit;
+}
+
+.chat-page .profile-link {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background 300ms ease-out, box-shadow 300ms ease-out;
+}
+
+.chat-page .profile-link:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.chat-page .profile-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(90, 155, 253, 0.2);
+}
+
+.chat-page .profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #f4d58d;
+  font-size: 15px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #121212 0%, #242424 100%);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.chat-page .profile-avatar.has-image {
+  color: transparent;
+  font-size: 0;
+}
+
+.chat-page .profile-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #202a36;
+}
+
+.chat-page .profile-email {
+  margin: 1px 0 0;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.chat-page .workspace-main {
+  min-width: 0;
+  min-height: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.chat-page .workspace-header {
+  width: 100%;
+  margin: 0;
+  padding: 28px 36px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 0;
+}
+
+.chat-page .header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.chat-page .icon-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #5f6772;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 300ms ease-out;
+}
+
+.chat-page .icon-btn:hover {
+  background: #e1e8f1;
+}
+
+.chat-page .workspace-meta {
+  width: auto;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.chat-page .workspace-label {
+  font-weight: 700;
+  color: #111827;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.chat-page .spark-icon {
+  color: #635983;
+  font-size: 20px;
+}
+
+.chat-page .workspace-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-page .top-chip {
+  border: 1px solid rgba(67, 136, 253, 0.2);
+  background: rgba(67, 136, 253, 0.08);
+  color: #2c6dc9;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 300ms ease-out;
+}
+
+.chat-page .top-chip:hover {
+  background: rgba(67, 136, 253, 0.14);
+}
+
+.chat-page .top-chip.subtle {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.22);
+  color: #5f6873;
+}
+
+.chat-page .notice,
+.chat-page .error {
+  width: min(100%, 980px);
+  margin: 8px auto 0;
+  border-radius: 14px;
+  padding: 11px 14px;
+  font-size: 13px;
+}
+
+.chat-page .notice {
+  background: rgba(67, 136, 253, 0.1);
+  color: #2f67b8;
+}
+
+.chat-page .error {
+  background: rgba(216, 87, 103, 0.12);
+  color: #b24656;
+}
+
+.chat-page .chat-shell {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  padding: 0 36px 18px;
+  overflow: hidden;
+}
+
+.chat-page .chat-shell.dragging {
+  box-shadow: inset 0 0 0 2px rgba(90, 155, 253, 0.3);
+}
+
+.chat-page .drop-mask {
+  position: absolute;
+  inset: 12px 36px 24px;
+  border-radius: 28px;
+  border: 1px dashed rgba(67, 136, 253, 0.45);
+  background: rgba(67, 136, 253, 0.12);
+  display: grid;
+  place-items: center;
+  color: #2c69c3;
+  font-weight: 700;
+  z-index: 6;
+}
+
+.chat-page .chat-log {
+  width: 100%;
+  max-width: 1024px;
+  margin: 0 auto;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 50px 6px 16px;
+}
+
+.chat-page .empty-state {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.chat-page .empty-state p {
+  margin: 0;
+  max-width: 860px;
+  color: #596069;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.chat-page .empty-cards {
+  margin-top: 74px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.chat-page .empty-card {
+  border: none;
+  background: var(--surface);
+  border-radius: 32px;
+  padding: 28px 24px;
+  text-align: left;
+  display: grid;
+  gap: 18px;
+  cursor: pointer;
+  min-height: 176px;
+  transition: transform 300ms ease-out, box-shadow 300ms ease-out;
+}
+
+.chat-page .empty-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(0, 91, 196, 0.06);
+}
+
+.chat-page .empty-card-copy {
+  color: #2d3337;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.38;
+}
+
+.chat-page .empty-card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.chat-page .empty-card-icon.tone-blue {
+  color: #005bc4;
+  background: #d8e3f8;
+}
+
+.chat-page .empty-card-icon.tone-purple {
+  color: #635983;
+  background: #d8cafc;
+}
+
+.chat-page .empty-card-icon.tone-cobalt {
+  color: #ffffff;
+  background: #4388fd;
+}
+
+.chat-page .chat-message {
+  margin-bottom: 18px;
+}
+
+.chat-page .avatar {
+  width: 30px;
+  height: 30px;
+  margin-top: 4px;
+  box-shadow: none;
+}
+
+.chat-page .avatar::after {
+  content: none;
+}
+
+.chat-page .assistant-avatar {
+  background-image: none;
+  background: linear-gradient(135deg, #d9e8fb, #c8ddf7);
+}
+
+.chat-page .user-avatar {
+  background-image: none;
+  background: linear-gradient(135deg, #6395e3, #5c87d6);
+}
+
+.chat-page .chat-bubble {
+  max-width: min(86%, 860px);
+  border-radius: 28px;
+  padding: 18px 20px;
+  border: none;
+  background: var(--surface);
+  box-shadow: 0 16px 30px rgba(45, 51, 55, 0.045);
+  color: var(--text);
+}
+
+.chat-page .chat-message.user .chat-bubble {
+  background: #dce9fb;
+  color: var(--text);
+  box-shadow: 0 14px 28px rgba(45, 51, 55, 0.04);
+}
+
+.chat-page .bubble-meta {
+  font-size: 11px;
+  color: #8a949e;
+}
+
+.chat-page .bubble-meta strong {
+  font-size: 12px;
+  color: #6c7680;
+}
+
+.chat-page .message-actions {
+  transition: opacity 300ms ease-out;
+}
+
+.chat-page .source-list {
+  border: none;
+  border-radius: 18px;
+  background: rgba(235, 241, 247, 0.8);
+}
+
+.chat-page .disclaimer-card {
+  border: none;
+  border-radius: 16px;
+}
+
+.chat-page .composer-stack {
+  width: min(100%, 896px);
+  margin: 0 auto;
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+  padding-bottom: 12px;
+}
+
+.chat-page .attachment-strip,
+.chat-page .suggestion-bar,
+.chat-page .edit-banner {
+  width: 100%;
+  margin: 0;
+}
+
+.chat-page .attachment-strip {
+  border: none;
+  border-radius: 18px;
+  background: rgba(236, 242, 248, 0.92);
+}
+
+.chat-page .attachment-pill {
+  background: #dde8f4;
+}
+
+.chat-page .suggestion-bar {
+  border: none;
+  border-radius: 16px;
+  background: rgba(226, 236, 248, 0.85);
+}
+
+.chat-page .suggestion-title {
+  color: #556172;
+  font-weight: 700;
+}
+
+.chat-page .suggestion-chip {
+  background: rgba(67, 136, 253, 0.14);
+  color: #2f69bc;
+}
+
+.chat-page .edit-banner {
+  border-radius: 16px;
+  background: rgba(217, 228, 244, 0.86);
+  color: #4f5d6d;
+}
+
+.chat-page .chat-input {
+  width: 100%;
+  margin: 0;
+  border: none;
+  border-radius: 42px;
+  background: var(--surface);
+  box-shadow: var(--soft-shadow);
+  padding: 12px 14px;
+  transition: box-shadow 300ms ease-out;
+}
+
+.chat-page .chat-input:focus-within {
+  box-shadow:
+    0 20px 40px rgba(45, 51, 55, 0.1),
+    0 0 0 4px rgba(67, 136, 253, 0.14);
+}
+
+.chat-page .input-wrap {
+  gap: 6px;
+}
+
+.chat-page .mode-badge {
+  background: rgba(67, 136, 253, 0.12);
+  color: #336ec2;
+  font-weight: 700;
+}
+
+.chat-page .chat-input textarea {
+  min-height: 34px;
+  max-height: 220px;
+  padding: 2px 4px;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.chat-page .chat-input textarea::placeholder {
+  color: #9aa4ae;
+}
+
+.chat-page .input-actions {
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-page .tool-chip {
+  border: none;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: #ebeef1;
+  color: #5d6670;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 300ms ease-out;
+}
+
+.chat-page .tool-chip .material-symbols-outlined {
+  font-size: 15px;
+}
+
+.chat-page .tool-chip:hover:not(:disabled) {
+  background: #e4e9ec;
+}
+
+.chat-page .tool-chip.active {
+  background: rgba(67, 136, 253, 0.18);
+  color: #2f67b8;
+}
+
+.chat-page .tool-chip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.chat-page .kb-chip {
+  background: rgba(67, 136, 253, 0.15);
+  color: #2f67b8;
+}
+
+.chat-page .send-btn,
+.chat-page .input-actions > .send-btn {
+  margin-left: auto;
+  border: none;
+  border-radius: 999px;
+  min-width: 104px;
+  padding: 11px 22px;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-soft) 100%);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 14px 28px rgba(0, 94, 184, 0.23);
+}
+
+.chat-page .send-btn::after,
+.chat-page .input-actions > .send-btn::after {
+  content: " >";
+  margin-left: 4px;
+  font-size: 14px;
+}
+
+.chat-page .mobile-only {
+  display: none;
+}
+
+@media (max-width: 1080px) {
+  .chat-page {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-page .workspace-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: min(86vw, 320px);
+    z-index: 30;
+    transform: translateX(-105%);
+    transition: transform 300ms ease-out;
+    box-shadow: var(--soft-shadow);
+  }
+
+  .chat-page .workspace-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .chat-page .workspace-header {
+    padding: 16px 14px 0;
+  }
+
+  .chat-page .workspace-top-actions {
+    display: none;
+  }
+
+  .chat-page .history-block {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .chat-page .history-panel {
+    position: static;
+    max-height: none;
+    box-shadow: none;
+    border: none;
+    padding: 8px 0 0;
+    border-radius: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .chat-page .chat-shell {
+    padding: 0 14px 12px;
+  }
+
+  .chat-page .mobile-only {
+    display: inline-grid;
+    place-items: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .chat-page .workspace-label {
+    font-size: 20px;
+  }
+
+  .chat-page .chat-log {
+    padding-top: 24px;
+  }
+
+  .chat-page .empty-state p {
+    font-size: 14px;
+  }
+
+  .chat-page .empty-cards {
+    margin-top: 32px;
+    grid-template-columns: 1fr;
+  }
+
+  .chat-page .empty-card {
+    min-height: 146px;
+    border-radius: 24px;
+  }
+
+  .chat-page .empty-card-copy {
+    font-size: 16px;
+  }
+
+  .chat-page .chat-bubble {
+    max-width: 94%;
+    border-radius: 22px;
+    padding: 14px;
+  }
+
+  .chat-page .avatar {
+    display: none;
+  }
+
+  .chat-page .chat-input {
+    border-radius: 24px;
+    padding: 10px;
+  }
+
+  .chat-page .chat-input textarea {
+    font-size: 15px;
+  }
+
+  .chat-page .tool-chip {
+    font-size: 11px;
+    padding: 7px 10px;
+  }
+
+  .chat-page .composer-stack {
+    width: 100%;
+  }
+
+  .chat-page .send-btn,
+  .chat-page .input-actions > .send-btn {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>
