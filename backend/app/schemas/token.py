@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 
 
-# ========== Refresh Token Schemas ==========
+# ========== 刷新令牌模型 ==========
 
 class RefreshTokenBase(BaseModel):
     """刷新令牌基础模型 - 包含设备信息"""
@@ -68,7 +68,7 @@ class RefreshTokenRevoke(BaseModel):
     token: Optional[str] = Field(None, description="要撤销的刷新令牌，如果为空则撤销当前会话的令牌")
 
 
-# ========== Verification Code Schemas ==========
+# ========== 验证码模型 ==========
 
 class VerificationCodeBase(BaseModel):
     """验证码基础模型 - 包含验证码类型"""

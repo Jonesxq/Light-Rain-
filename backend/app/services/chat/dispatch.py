@@ -1,4 +1,4 @@
-"""Public chat entrypoint dispatchers."""
+"""聊天入口分发组件：负责将请求路由到对应对话流程。"""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from app.utils.chat_intent import is_time_query, is_weather_query
 
 
 class ChatDispatch:
-    """Routes chat requests into tool, reasoning, or RAG flows."""
+    """将聊天请求分发到工具流、推理流或 RAG 流。"""
 
     def __init__(self, service):
         self.service = service

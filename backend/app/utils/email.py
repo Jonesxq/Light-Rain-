@@ -61,7 +61,7 @@ class EmailTemplateLoader:
             self.template_dir = path if path.is_absolute() else BASE_DIR / path
         self._template_cache: Dict[str, Any] = {}
         
-        # Create directory if not exists
+        # 目录不存在时自动创建
         self.template_dir.mkdir(parents=True, exist_ok=True)
         
         self.env = Environment(
@@ -207,7 +207,7 @@ class SMTPEmailBackend(EmailBackend):
             ssl_context = self._create_ssl_context()
             server = self._create_smtp_server(ssl_context)
             
-            # Enable debug mode in development
+            # 开发环境启用调试模式
             if hasattr(settings, "debug") and settings.debug:
                 server.set_debuglevel(1)
             
@@ -357,7 +357,7 @@ class EmailMessage:
         if self.html_content:
             msg.attach(MIMEText(self.html_content, "html"))
         
-        # Add attachments if any
+        # 如有附件则添加
         for attachment in self.attachments:
             from email.mime.base import MIMEBase
             from email import encoders
@@ -367,7 +367,7 @@ class EmailMessage:
             part.set_payload(attachment["content"])
             encoders.encode_base64(part)
             
-            # Properly encode filename to handle non-ASCII characters
+            # 正确编码文件名，兼容非 ASCII 字符
             filename = attachment["filename"]
             encoded_filename = Header(filename, "utf-8").encode()
             part.add_header(
@@ -429,7 +429,7 @@ class EmailService:
             "app_name": getattr(self.settings.app, "APP_NAME", "Our App"),
         }
         
-        # Merge with any extra variables provided
+        # 合并额外传入的模板变量
         base_vars.update(extra_vars)
         return base_vars
     
@@ -455,7 +455,7 @@ class EmailService:
             HTTPException: 当模板不存在或渲染失败时
         """
         try:
-            # Check if template exists
+            # 检查模板是否存在
             if not self.template_loader.template_exists(template_name):
                 raise HTTPException(
                     status_code=404,
@@ -511,14 +511,14 @@ class EmailService:
         if timeout is None:
             timeout = getattr(self.settings.email, "EMAIL_TIMEOUT", 30)
         
-        # Validate inputs
+        # 校验输入参数
         if not recipient or "@" not in recipient:
             raise ValueError("Invalid email address")
         
         if not subject.strip():
             raise ValueError("Email subject cannot be empty")
         
-        # Prepare email variables
+        # 准备邮件模板变量
         template_variables = self._prepare_template_variables(
             recipient,
             code,
@@ -532,7 +532,7 @@ class EmailService:
             template_variables
         )
         
-        # Add attachments if provided
+        # 若提供附件则添加
         if attachments:
             for attachment in attachments:
                 email_message.add_attachment(
@@ -546,7 +546,7 @@ class EmailService:
         
         mime_message = email_message.build()
         
-        # Retry mechanism with exponential backoff
+        # 带指数退避的重试机制
         last_exception = None
         for attempt in range(retries):
             try:
@@ -566,7 +566,7 @@ class EmailService:
                     f"attempt {attempt + 1}/{retries}"
                 )
             except HTTPException as e:
-                # Re-raise HTTP exceptions immediately
+                # HTTP 异常立即抛出
                 raise e
             except Exception as e:
                 last_exception = e
@@ -576,7 +576,7 @@ class EmailService:
                 )
             
             if attempt < retries - 1:
-                # Exponential backoff
+                # 指数退避等待
                 delay = retry_delay * (2 ** attempt)
                 await asyncio.sleep(delay)
         
@@ -630,7 +630,7 @@ class EmailService:
                 )
                 tasks.append(task)
             
-            # Execute batch
+            # 执行当前批次发送
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
             
             for recipient, result in zip(batch, batch_results):
@@ -665,7 +665,7 @@ class EmailService:
         self.template_loader.clear_cache()
 
 
-# Global email service instance
+# 全局邮件服务实例
 _email_service_instance = None
 
 
@@ -689,7 +689,7 @@ def get_email_service() -> EmailService:
     return _email_service_instance
 
 
-# For backward compatibility - create a property that accesses the service lazily
+# 为向后兼容保留：通过属性延迟获取服务实例
 class EmailServiceProxy:
     """邮件服务代理类：提供延迟加载的邮件服务访问"""
     

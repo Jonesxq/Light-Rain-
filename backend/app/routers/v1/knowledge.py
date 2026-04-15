@@ -28,7 +28,7 @@ ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
 # 文件保存路径
 UPLOAD_DIR = "static/uploads/kb"
 # 单个文件最大大小（字节），避免一次性占用过多内存
-MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB 上限
 
 
 async def _get_owned_completed_doc_or_404(

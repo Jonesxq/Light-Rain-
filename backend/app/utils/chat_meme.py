@@ -19,15 +19,15 @@ def build_meme_caption(content: str) -> str:
     text = (content or "").strip()
     if not text:
         return "今天的我"
-    # Remove fenced code blocks
+    # 移除代码块
     text = re.sub(r"```[\s\S]*?```", "", text)
-    # Remove markdown images
+    # 移除 Markdown 图片
     text = re.sub(r"!\[[^\]]*\]\([^)]+\)", "", text)
-    # Remove blockquote prefix
+    # 移除引用前缀
     text = re.sub(r"^\s*>\s?", "", text, flags=re.MULTILINE)
-    # Remove list prefixes
+    # 移除列表前缀
     text = re.sub(r"^\s*[-*•·]\s+", "", text, flags=re.MULTILINE)
-    # Collapse whitespace
+    # 压缩多余空白
     text = re.sub(r"\s+", " ", text).strip()
     if not text:
         return "今天的我"

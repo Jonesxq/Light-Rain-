@@ -1,4 +1,4 @@
-"""Knowledge-backed chat flows."""
+"""知识库增强聊天流程：处理 RAG 同步与流式会话。"""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from app.utils.chat_history import history_to_payload
 
 
 class ChatRagFlow:
-    """RAG chat sync and streaming flows."""
+    """封装 RAG 聊天的同步与流式执行逻辑。"""
 
     def __init__(self, service):
         self.service = service

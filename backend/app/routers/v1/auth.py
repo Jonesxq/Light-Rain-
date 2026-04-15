@@ -76,11 +76,11 @@ async def login(
     Raises:
         HTTPException: 凭据错误或邮箱未验证时返回401错误
     """
-    # Get device information
+    # 获取设备信息
     user_agent = request.headers.get("User-Agent", "Unknown")
     ip_address = request.client.host if request.client else None
     
-    # Prefer to use email, otherwise use username
+    # 优先使用邮箱，其次使用用户名
     login_identifier = user_login.email or user_login.username
     
     token = await auth_service.login_user(
@@ -207,7 +207,7 @@ async def verify_email(
     Raises:
         HTTPException: 用户不存在或验证码无效时返回相应错误
     """
-    # finduser
+    # 查询用户
     user = await user_crud.get_by_email(db, verification.email)
     if not user:
         raise HTTPException(
@@ -215,7 +215,7 @@ async def verify_email(
             detail="User not found"
         )
     
-    # Verify Email
+    # 校验邮箱验证码
     success = await auth_service.verify_email(db, user.id, verification.code)
     
     if not success:
@@ -246,20 +246,20 @@ async def resend_verification(
     Raises:
         HTTPException: 邮箱已验证时返回400错误
     """
-    # finduser
+    # 查询用户
     user = await user_crud.get_by_email(db, request.email)
     if not user:
-        # For security, return success even if user does not exist
+        # 出于安全考虑，即使用户不存在也返回成功提示
         return {"message": "If the email exists, a verification code has been sent"}
     
-    # CheckwhetheralreadyValidate
+    # 检查是否已完成验证
     if user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already verified"
         )
     
-    # sendValidateemail
+    # 发送验证邮件
     await auth_service.send_verification_email(db, user)
     
     return {"message": "Verification email sent"}
@@ -285,7 +285,7 @@ async def forgot_password(
     """
     await auth_service.request_password_reset(db, request.email)
     
-    # For security, always return success message
+    # 出于安全考虑，始终返回成功提示
     return {"message": "If the email exists, a password reset code has been sent"}
 
 
@@ -345,7 +345,7 @@ async def change_password(
     Raises:
         HTTPException: 旧密码错误时返回400错误
     """
-    # ValidateoldPassword
+    # 校验旧密码
     user = await user_crud.authenticate(db, current_user.username, password_data.old_password)
     if not user:
         raise HTTPException(
@@ -353,10 +353,10 @@ async def change_password(
             detail="Incorrect old password"
         )
     
-    # Change password
+    # 修改密码
     await user_crud.change_password(db, current_user.id, password_data.new_password)
     
-    # Revoke all refresh tokens (force re-login)
+    # 撤销全部刷新令牌（强制重新登录）
     await refresh_token_crud.revoke_user_tokens(db, current_user.id)
     
     return {"message": "Password changed successfully. Please login again."}

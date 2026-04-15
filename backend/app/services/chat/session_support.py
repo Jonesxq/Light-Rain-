@@ -1,4 +1,4 @@
-"""Session and context helpers for chat services."""
+"""聊天会话与上下文辅助组件。"""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ logger = logger_manager.get_logger(__name__)
 
 
 class ChatSessionSupport:
-    """Shared chat-session helpers used by multiple chat flows."""
+    """供多个聊天流程复用的会话辅助能力。"""
 
     def __init__(self, service):
         self.service = service
@@ -102,4 +102,3 @@ class ChatSessionSupport:
             )
         except Exception as exc:
             logger.warning(f"Prompt snapshot save failed: {exc}")
-

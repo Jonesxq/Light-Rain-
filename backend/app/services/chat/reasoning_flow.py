@@ -1,4 +1,4 @@
-"""Deep-think and deep-search chat flows."""
+"""深度思考与深度检索聊天流程。"""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ logger = logger_manager.get_logger(__name__)
 
 
 class ChatReasoningFlow:
-    """Owns deep-think planning and deep-search execution."""
+    """负责 deep think 规划与 deep search 执行。"""
 
     def __init__(self, service):
         self.service = service

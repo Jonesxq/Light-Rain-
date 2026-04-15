@@ -1,4 +1,4 @@
-"""Tool-chat execution helpers."""
+"""工具聊天执行组件。"""
 
 from __future__ import annotations
 
@@ -28,13 +28,13 @@ class _StreamingTokenCallback(AsyncCallbackHandler):
     def __init__(self, queue: asyncio.Queue):
         self.queue = queue
 
-    async def on_llm_new_token(self, token: str, **kwargs):  # type: ignore[override]
+    async def on_llm_new_token(self, token: str, **kwargs):
         if token:
             await self.queue.put(token)
 
 
 class ChatToolFlow:
-    """Runs standard tool-enabled chat in sync or streaming mode."""
+    """执行普通工具聊天，支持同步与流式输出。"""
 
     def __init__(self, service):
         self.service = service

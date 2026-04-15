@@ -23,7 +23,7 @@ def rough_token_count(text: str) -> int:
     """
     if not text:
         return 0
-    # If CJK is present, count characters; otherwise approximate 4 chars per token.
+    # 若包含中日韩字符按字符估算，否则按每 4 个字符约 1 个 token 估算。
     if re.search(r"[\u4e00-\u9fff]", text):
         return len(text)
     return max(1, math.ceil(len(text) / 4))
@@ -52,7 +52,7 @@ def estimate_usage(
     try:
         prompt_tokens = llm.get_num_tokens_from_messages(messages)
     except Exception:
-        # Fallback to rough count of concatenated prompt text.
+        # 回退到拼接后提示词文本的粗略估算。
         prompt_text = "".join([getattr(m, "content", "") or "" for m in messages])
         prompt_tokens = rough_token_count(prompt_text)
 

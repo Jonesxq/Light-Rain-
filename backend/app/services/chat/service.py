@@ -1,4 +1,4 @@
-"""Facade service for chat features."""
+"""聊天领域门面服务：统一编排会话、工具、推理与 RAG 能力。"""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ logger = logger_manager.get_logger(__name__)
 
 
 class ChatService:
-    """Package-level facade that delegates to focused chat components."""
+    """聊天包级门面：对外提供统一接口并委托给分域组件。"""
 
     def __init__(self):
         self._session_support = ChatSessionSupport(self)
@@ -246,4 +246,3 @@ class ChatService:
         )
         suggestions = parse_suggestions(getattr(response, "content", "") or "")
         return suggestions[:limit] if suggestions else []
-
