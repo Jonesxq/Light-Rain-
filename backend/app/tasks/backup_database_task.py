@@ -1,5 +1,5 @@
 ﻿
-"""tasks/backup_database_task.py."""
+"""数据库备份任务：导出 MySQL/PostgreSQL/SQLite 并压缩归档。"""
 import gzip
 import os
 import subprocess
@@ -16,7 +16,7 @@ logger = logger_manager.get_logger(__name__)
 
 
 def _parse_database_url(database_url: str) -> dict:
-    """_parse_database_url ???"""
+    """解析数据库连接串并返回统一配置字典。"""
     try:
         parsed = urlparse(database_url)
         
@@ -62,7 +62,7 @@ def _parse_database_url(database_url: str) -> dict:
 
 
 def _dump_database(db_config: dict, output_file: Path) -> bool:
-    """_dump_database ???"""
+    """根据数据库类型分发到对应导出实现。"""
     try:
         db_type = db_config['db_type']
         
@@ -82,7 +82,7 @@ def _dump_database(db_config: dict, output_file: Path) -> bool:
 
 
 def _dump_mysql(db_config: dict, output_file: Path) -> bool:
-    """_dump_mysql ???"""
+    """调用 `mysqldump` 导出 MySQL 数据库。"""
     try:
         # Build mysqldump command
         cmd = [
@@ -136,7 +136,7 @@ def _dump_mysql(db_config: dict, output_file: Path) -> bool:
 
 
 def _dump_postgresql(db_config: dict, output_file: Path) -> bool:
-    """_dump_postgresql ???"""
+    """调用 `pg_dump` 导出 PostgreSQL 数据库。"""
     try:
         # Build pg_dump command
         cmd = [
@@ -189,7 +189,7 @@ def _dump_postgresql(db_config: dict, output_file: Path) -> bool:
 
 
 def _dump_sqlite(db_config: dict, output_file: Path) -> bool:
-    """_dump_sqlite ???"""
+    """调用 `sqlite3 .dump` 导出 SQLite 数据库。"""
     try:
         database_path = Path(db_config['database_path'])
         
@@ -234,7 +234,7 @@ def _dump_sqlite(db_config: dict, output_file: Path) -> bool:
 
 
 def _compress_file(input_file: Path, output_file: Path) -> bool:
-    """_compress_file ???"""
+    """将 SQL 文件压缩为 gzip 归档文件。"""
     try:
         logger.info(f"Starting file compression: {input_file.name}")
         
@@ -257,7 +257,7 @@ def _compress_file(input_file: Path, output_file: Path) -> bool:
 
 
 def _cleanup_old_backups(backup_dir: Path, database_name: str, retention_days: int) -> None:
-    """_cleanup_old_backups ???"""
+    """按保留天数清理过期备份文件。"""
     if retention_days <= 0:
         logger.info("Retention days <= 0, skipping cleanup")
         return
@@ -319,7 +319,7 @@ def backup_database_task(
     retention_days: int = 30,
     backup_dir: Optional[str] = None
 ) -> dict:
-    """backup_database_task ???"""
+    """执行数据库备份任务并返回结果摘要。"""
     sql_file = None
     gz_file = None
     

@@ -1,11 +1,20 @@
 """Tests for Milvus alias bridge ordering and retry behavior."""
 
-from app.services import knowledge_core_mixin as core_module
 from app.services.knowledge import KnowledgeService
+from app.services.knowledge.ingest import KnowledgeIngest
+from app.services.knowledge.retrieval import KnowledgeRetrieval
+from app.services.knowledge.runtime import KnowledgeRuntime
+from app.services.knowledge.storage import KnowledgeStorage
+from app.services.knowledge import runtime as core_module
 
 
 def _new_service() -> KnowledgeService:
     service = KnowledgeService.__new__(KnowledgeService)
+    service._runtime = KnowledgeRuntime(service)
+    service._storage = KnowledgeStorage(service)
+    service._retrieval = KnowledgeRetrieval(service)
+    service._ingest = KnowledgeIngest(service)
+    service._ops = (service._runtime, service._storage, service._retrieval, service._ingest)
     service.embeddings = object()
     return service
 

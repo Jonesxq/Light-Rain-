@@ -28,7 +28,7 @@ from app.crud.chat import chat_crud
 from app.crud.chat_prompt_snapshot import chat_prompt_snapshot_crud
 from app.services.chat import chat_service
 from app.services.knowledge import kb_service
-from app.services.temp_context import temp_context_service
+from app.services.chat.attachments import temp_context_service
 
 
 

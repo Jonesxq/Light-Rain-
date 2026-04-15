@@ -6,8 +6,22 @@ import pytest
 from langchain_core.documents import Document as LangChainDocument
 
 from app.models.knowledge import DocStatus, Document
-from app.services import knowledge as knowledge_module
 from app.services.knowledge import ChunkCandidate, KnowledgeService
+from app.services.knowledge.ingest import KnowledgeIngest
+from app.services.knowledge.retrieval import KnowledgeRetrieval
+from app.services.knowledge.runtime import KnowledgeRuntime
+from app.services.knowledge.storage import KnowledgeStorage
+from app.services.knowledge import ingest as ingest_module
+
+
+def _new_service() -> KnowledgeService:
+    service = KnowledgeService.__new__(KnowledgeService)
+    service._runtime = KnowledgeRuntime(service)
+    service._storage = KnowledgeStorage(service)
+    service._retrieval = KnowledgeRetrieval(service)
+    service._ingest = KnowledgeIngest(service)
+    service._ops = (service._runtime, service._storage, service._retrieval, service._ingest)
+    return service
 
 
 class _FakeLLMError:
@@ -26,20 +40,20 @@ class _FakeLLMOk:
 
 @pytest.mark.asyncio
 async def test_summarize_chunk_fallback_to_raw_text():
-    service = KnowledgeService.__new__(KnowledgeService)
-    summary = await service._summarize_chunk(_FakeLLMError(), "raw chunk", 10)
+    service = _new_service()
+    summary, _usage = await service._summarize_chunk(_FakeLLMError(), "raw chunk", 10)
     assert summary == "raw chunk"
 
 
 @pytest.mark.asyncio
 async def test_summarize_chunk_truncates_to_max_chars():
-    service = KnowledgeService.__new__(KnowledgeService)
-    summary = await service._summarize_chunk(_FakeLLMOk(), "raw chunk", 8)
+    service = _new_service()
+    summary, _usage = await service._summarize_chunk(_FakeLLMOk(), "raw chunk", 8)
     assert summary == "x" * 8
 
 
 def test_sidecar_roundtrip_with_bad_lines(tmp_path: Path):
-    service = KnowledgeService.__new__(KnowledgeService)
+    service = _new_service()
     sidecar = tmp_path / "doc.txt.chunks.jsonl"
     rows = [
         {
@@ -67,7 +81,7 @@ def test_sidecar_roundtrip_with_bad_lines(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_items_from_documents_replace_summary_with_raw_chunk(monkeypatch):
-    service = KnowledgeService.__new__(KnowledgeService)
+    service = _new_service()
 
     async def _fake_load_meta(_vector_ids):
         return {"77": {"parent_id": "1:0", "doc": {"doc_id": 1}, "chunk": {"index": 0}}}
@@ -90,7 +104,7 @@ async def test_items_from_documents_replace_summary_with_raw_chunk(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_items_from_documents_fallback_to_summary_when_raw_missing(monkeypatch):
-    service = KnowledgeService.__new__(KnowledgeService)
+    service = _new_service()
 
     async def _fake_load_meta(_vector_ids):
         return {"88": {"parent_id": "1:9", "doc": {"doc_id": 1}, "chunk": {"index": 9}}}
@@ -106,7 +120,7 @@ async def test_items_from_documents_fallback_to_summary_when_raw_missing(monkeyp
 
 @pytest.mark.asyncio
 async def test_ingest_document_store_summary_in_db_and_raw_in_sidecar(tmp_path: Path, monkeypatch):
-    service = KnowledgeService.__new__(KnowledgeService)
+    service = _new_service()
     service._bm25_cache = {}
 
     raw_file = tmp_path / "doc.txt"
@@ -190,15 +204,19 @@ async def test_ingest_document_store_summary_in_db_and_raw_in_sidecar(tmp_path: 
 
     async def _fake_summaries(raw_chunks):
         assert raw_chunks == ["raw chunk A", "raw chunk B"]
-        return ["sum A", "sum B"]
+        return ["sum A", "sum B"], {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "token_missing": 0}
 
-    monkeypatch.setattr(service, "chunker", _DummyChunker())
+    async def _fake_get_kb(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(service, "chunker", _DummyChunker(), raising=False)
     monkeypatch.setattr(service, "_summarize_chunks", _fake_summaries)
     monkeypatch.setattr(service, "_get_vector_store", lambda _kb_id: _FakeVectorStore())
     monkeypatch.setattr(service, "_invalidate_bm25_cache", lambda _kb_id: None)
-    monkeypatch.setattr(knowledge_module.mysql_manager, "async_session_maker", lambda: _FakeSessionCtx(doc))
-    monkeypatch.setattr(knowledge_module.kb_crud, "create_chunk", _fake_create_chunk)
-    monkeypatch.setattr(knowledge_module.kb_crud, "update_document_status", _fake_update_status)
+    monkeypatch.setattr(ingest_module.mysql_manager, "async_session_maker", lambda: _FakeSessionCtx(doc))
+    monkeypatch.setattr(ingest_module.kb_crud, "create_chunk", _fake_create_chunk)
+    monkeypatch.setattr(ingest_module.kb_crud, "update_document_status", _fake_update_status)
+    monkeypatch.setattr(ingest_module.kb_crud, "get_kb", _fake_get_kb)
 
     await service.ingest_document(1)
 

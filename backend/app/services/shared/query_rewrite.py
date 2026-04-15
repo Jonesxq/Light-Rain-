@@ -9,7 +9,8 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from app.core.config.settings import settings
 from app.core.logger import logger_manager
 from app.constant.prompts import QUERY_REWRITE_SYSTEM_PROMPT
-from app.services.usage import usage_service, UsageTimer
+from app.services.shared.llm_runtime import llm_runtime_service
+from app.services.shared.usage import UsageTimer
 from app.utils.llm_factory import build_chat_llm
 
 logger = logger_manager.get_logger(__name__)
@@ -114,27 +115,21 @@ class QueryRewriteService:
             timer = UsageTimer()
             response = await llm.ainvoke(messages)
             latency_ms = timer.stop_ms()
-            usage = usage_service.extract_usage(response)
-            if user_id is not None:
-                cost_usd = usage_service.compute_cost(
-                    llm.model_name,
-                    usage.get("prompt_tokens"),
-                    usage.get("completion_tokens"),
-                )
-                await usage_service.record_event(
-                    db=db,
-                    user_id=user_id,
-                    event_type="query_rewrite",
-                    model_name=llm.model_name,
-                    prompt_tokens=usage.get("prompt_tokens"),
-                    completion_tokens=usage.get("completion_tokens"),
-                    total_tokens=usage.get("total_tokens"),
-                    token_missing=bool(usage.get("token_missing")),
-                    latency_ms=latency_ms,
-                    cost_usd=cost_usd,
-                    success=True,
-                    metadata={"kb_id": kb_id} if kb_id is not None else None,
-                )
+            usage = llm_runtime_service.finalize_usage(
+                llm=llm,
+                messages=messages,
+                output_text=getattr(response, "content", "") or "",
+                payload=response,
+            )
+            await llm_runtime_service.record_success(
+                db=db,
+                user_id=user_id,
+                event_type="query_rewrite",
+                model_name=llm.model_name,
+                usage=usage,
+                latency_ms=latency_ms,
+                metadata={"kb_id": kb_id} if kb_id is not None else None,
+            )
             rewritten = self._clean_rewrite(getattr(response, "content", "") or "")
             # 如果模型输出"无需改写"之类的提示，则回退原问题
             if self._is_non_rewrite_signal(rewritten):
@@ -144,19 +139,13 @@ class QueryRewriteService:
         except Exception as e:
             if user_id is not None:
                 try:
-                    await usage_service.record_event(
+                    await llm_runtime_service.record_failure(
                         db=db,
                         user_id=user_id,
                         event_type="query_rewrite",
                         model_name=None,
-                        prompt_tokens=None,
-                        completion_tokens=None,
-                        total_tokens=None,
-                        token_missing=True,
+                        error=e,
                         latency_ms=None,
-                        cost_usd=0.0,
-                        success=False,
-                        error_message=str(e),
                         metadata={"kb_id": kb_id} if kb_id is not None else None,
                     )
                 except Exception:

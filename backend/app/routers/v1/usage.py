@@ -11,7 +11,7 @@ from app.schemas.usage import (
     UserUsageSettingsResponse,
     UserUsageSettingsUpdate,
 )
-from app.services.usage import usage_service
+from app.services.shared.usage import usage_service
 
 router = APIRouter(prefix="/usage", tags=["Usage"])
 

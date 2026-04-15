@@ -1,4 +1,6 @@
-"""知识库导入/重建/删除流程模块"""
+"""知识库入库组件：负责切块摘要、向量入库与文档清理流程。"""
+
+from __future__ import annotations
 
 import asyncio
 import os
@@ -15,23 +17,20 @@ from app.core.database import mysql_manager
 from app.core.logger import logger_manager
 from app.crud.knowledge import kb_crud
 from app.models.knowledge import DocStatus, Document
-from app.services.usage import usage_service, UsageTimer
+from app.services.shared.usage import UsageTimer, usage_service
 
 logger = logger_manager.get_logger(__name__)
 
 
-class KnowledgeIngestMixin:
-    """知识库文档处理与清理Mixin：提供文档导入、重建索引和删除功能"""
+class KnowledgeIngest:
+    """封装知识库文档入库、重建索引与删除相关逻辑。"""
+
+    def __init__(self, service):
+        """保存门面服务引用，复用运行时与存储能力。"""
+        self.service = service
 
     def _normalize_milvus_delete_ids(self, vector_ids: List[str]) -> Tuple[List[int], int]:
-        """规范化Milvus删除ID，返回有效ID与跳过数量
-        
-        Args:
-            vector_ids: 向量ID字符串列表
-            
-        Returns:
-            元组(规范化后的整数ID列表, 跳过的数量)
-        """
+        """将向量 ID 规范为整数列表，并统计被跳过的无效值。"""
         normalized_ids: List[int] = []
         seen: set[int] = set()
         skipped = 0
@@ -52,16 +51,7 @@ class KnowledgeIngestMixin:
         return normalized_ids, skipped
 
     async def _summarize_chunk(self, llm: ChatOpenAI, raw_text: str, max_chars: int) -> tuple[str, dict]:
-        """单个分片摘要（失败回退原文）
-        
-        Args:
-            llm: LLM实例
-            raw_text: 原始文本
-            max_chars: 最大字符数
-            
-        Returns:
-            元组(摘要文本, 使用统计字典)
-        """
+        """对单个原始分块生成摘要，失败时回退到原文。"""
         if not raw_text:
             return "", {"prompt_tokens": None, "completion_tokens": None, "total_tokens": None, "token_missing": True}
         try:
@@ -77,60 +67,49 @@ class KnowledgeIngestMixin:
             if len(summary) > max_chars:
                 return summary[:max_chars], usage
             return summary, usage
-        except Exception as e:
-            logger.warning(f"Chunk summary failed, fallback to raw chunk: {e}")
+        except Exception as exc:
+            logger.warning(f"Chunk summary failed, fallback to raw chunk: {exc}")
             return raw_text, {"prompt_tokens": None, "completion_tokens": None, "total_tokens": None, "token_missing": True}
 
     async def _summarize_chunks(self, raw_chunks: List[str]) -> tuple[List[str], dict]:
-        """并发摘要多个分片并聚合token统计
-        
-        Args:
-            raw_chunks: 原始分片文本列表
-            
-        Returns:
-            元组(摘要列表, 汇总使用统计字典)
-        """
+        """并发摘要多个分块并汇总使用量统计。"""
         if not raw_chunks:
             return [], {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "token_missing": 0}
 
-        llm = self._get_summary_llm()
+        llm = self.service._get_summary_llm()
         max_chars = max(50, int(settings.llm.RAG_SUMMARY_MAX_CHARS))
         concurrency = max(1, int(settings.llm.RAG_SUMMARY_CONCURRENCY))
         semaphore = asyncio.Semaphore(concurrency)
         summaries = [""] * len(raw_chunks)
         usage_rows: list[dict] = [{} for _ in raw_chunks]
 
-        async def worker(idx: int, text: str) -> None:
-            """摘要并发任务（受信号量控制）"""
+        async def worker(index: int, text: str) -> None:
             async with semaphore:
-                summary, usage = await self._summarize_chunk(llm, text, max_chars)
-                summaries[idx] = summary
-                usage_rows[idx] = usage
+                summary, usage = await self.service._summarize_chunk(llm, text, max_chars)
+                summaries[index] = summary
+                usage_rows[index] = usage
 
-        await asyncio.gather(*(worker(i, text) for i, text in enumerate(raw_chunks)))
+        await asyncio.gather(*(worker(index, text) for index, text in enumerate(raw_chunks)))
 
-        agg = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "token_missing": 0}
+        aggregate = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "token_missing": 0}
         for usage in usage_rows:
             if not usage or usage.get("token_missing"):
-                agg["token_missing"] += 1
+                aggregate["token_missing"] += 1
                 continue
             prompt_tokens = usage.get("prompt_tokens") or 0
             completion_tokens = usage.get("completion_tokens") or 0
             total_tokens = usage.get("total_tokens")
             if total_tokens is None:
                 total_tokens = prompt_tokens + completion_tokens
-            agg["prompt_tokens"] += prompt_tokens
-            agg["completion_tokens"] += completion_tokens
-            agg["total_tokens"] += total_tokens or 0
+            aggregate["prompt_tokens"] += prompt_tokens
+            aggregate["completion_tokens"] += completion_tokens
+            aggregate["total_tokens"] += total_tokens or 0
 
-        return summaries, agg
+        return summaries, aggregate
 
     async def ingest_document(self, doc_id: int):
-        """导入文档：分块 -> 摘要 -> sidecar -> 向量入库
-        
-        Args:
-            doc_id: 文档ID
-        """
+        """执行文档入库主流程：切块、摘要、写 sidecar、写向量库与状态更新。"""
+        prepared_rows: List[dict] = []
         async with mysql_manager.async_session_maker() as db:
             doc = await db.get(Document, doc_id)
             if not doc:
@@ -159,15 +138,10 @@ class KnowledgeIngestMixin:
                         "file_size": doc.file_size,
                     }
                 }
-                chunks = self.chunker.load_and_split(
-                    doc.file_path,
-                    doc.file_type,
-                    base_meta=base_meta,
-                )
+                chunks = self.service.chunker.load_and_split(doc.file_path, doc.file_type, base_meta=base_meta)
                 if not chunks:
                     raise ValueError("Document chunking produced empty result.")
 
-                prepared_rows: List[dict] = []
                 for chunk in chunks:
                     raw_content = (chunk.page_content or "").strip()
                     if not raw_content:
@@ -180,10 +154,7 @@ class KnowledgeIngestMixin:
                     if isinstance(chunk_meta, dict):
                         chunk_meta["index"] = chunk_index
                     else:
-                        structured_meta["chunk"] = {
-                            "index": chunk_index,
-                            "char_len": len(raw_content),
-                        }
+                        structured_meta["chunk"] = {"index": chunk_index, "char_len": len(raw_content)}
                     structured_meta["parent_id"] = parent_id
 
                     prepared_rows.append(
@@ -207,11 +178,9 @@ class KnowledgeIngestMixin:
                 )
 
                 raw_contents = [row["raw_content"] for row in prepared_rows]
-                logger.info(f"开始对 {len(prepared_rows)} 个 Chunk 进行并发大模型摘要提炼...")
                 summary_timer = UsageTimer()
-                summaries, summary_usage = await self._summarize_chunks(raw_contents)
+                summaries, summary_usage = await self.service._summarize_chunks(raw_contents)
                 summary_latency_ms = summary_timer.stop_ms()
-                logger.info(f"摘要提炼完毕，总耗时 {summary_latency_ms} ms。")
 
                 if kb_owner_id is not None:
                     cost_usd = usage_service.compute_cost(
@@ -231,16 +200,12 @@ class KnowledgeIngestMixin:
                         latency_ms=summary_latency_ms,
                         cost_usd=cost_usd,
                         success=True,
-                        metadata={
-                            "kb_id": doc.kb_id,
-                            "doc_id": doc.id,
-                            "chunk_count": len(prepared_rows),
-                        },
+                        metadata={"kb_id": doc.kb_id, "doc_id": doc.id, "chunk_count": len(prepared_rows)},
                     )
                 if len(summaries) != len(prepared_rows):
                     raise ValueError("Chunk summary count mismatch.")
 
-                sidecar_path = self._get_sidecar_path(doc.file_path)
+                sidecar_path = self.service._get_sidecar_path(doc.file_path)
                 sidecar_rows = [
                     {
                         "parent_id": row["parent_id"],
@@ -250,31 +215,27 @@ class KnowledgeIngestMixin:
                     }
                     for row in prepared_rows
                 ]
-                await asyncio.to_thread(self._write_sidecar_atomic, sidecar_path, sidecar_rows)
+                await asyncio.to_thread(self.service._write_sidecar_atomic, sidecar_path, sidecar_rows)
 
                 milvus_docs = [
                     LangChainDocument(
                         page_content=summary,
-                        metadata={
-                            "source": str(doc.file_name or doc.file_path or "")
-                        },
+                        metadata={"source": str(doc.file_name or doc.file_path or "")},
                     )
                     for summary in summaries
                 ]
-                logger.info(f"开始将 {len(milvus_docs)} 个文档向量插入到 Milvus (kb_id={doc.kb_id})...")
-                vector_db = self._get_vector_store(doc.kb_id)
+                vector_db = self.service._get_vector_store(doc.kb_id)
                 ids = vector_db.add_documents(milvus_docs)
                 if not ids or len(ids) != len(prepared_rows):
                     raise ValueError("Milvus returned invalid ids for summary chunks.")
-                logger.info("Milvus 向量插入成功。")
 
-                for row, summary, v_id in zip(prepared_rows, summaries, ids):
+                for row, summary, vector_id in zip(prepared_rows, summaries, ids):
                     await kb_crud.create_chunk(
                         db,
                         doc_id=doc.id,
                         parent_id=row["parent_id"],
                         content=summary,
-                        vector_id=str(v_id),
+                        vector_id=str(vector_id),
                         chunk_index=row["chunk_index"],
                         token_count=0,
                         structured_meta=row["structured_meta"],
@@ -286,12 +247,9 @@ class KnowledgeIngestMixin:
                     status=DocStatus.COMPLETED,
                     chunk_count=len(prepared_rows),
                 )
-                self._invalidate_bm25_cache(doc.kb_id)
-                logger.info(
-                    f"Successfully processed: {doc.file_name}, created {len(prepared_rows)} summary chunks."
-                )
+                self.service._invalidate_bm25_cache(doc.kb_id)
 
-            except Exception as e:
+            except Exception as exc:
                 if kb_owner_id is not None:
                     try:
                         await usage_service.record_event(
@@ -306,14 +264,14 @@ class KnowledgeIngestMixin:
                             latency_ms=None,
                             cost_usd=0.0,
                             success=False,
-                            error_message=str(e),
+                            error_message=str(exc),
                             metadata={"kb_id": doc.kb_id, "doc_id": doc.id, "chunk_count": len(prepared_rows)},
                         )
                     except Exception:
                         pass
-                logger.error(f"Failed to ingest document {doc.id}: {str(e)}")
-                self._remove_sidecar_file(doc.file_path)
-                error_msg_raw = str(e)
+                logger.error(f"Failed to ingest document {doc.id}: {exc}")
+                self.service._remove_sidecar_file(doc.file_path)
+                error_msg_raw = str(exc)
                 error_msg_truncated = (error_msg_raw[:4997] + "...") if len(error_msg_raw) > 5000 else error_msg_raw
                 await kb_crud.update_document_status(
                     db,
@@ -323,34 +281,26 @@ class KnowledgeIngestMixin:
                 )
 
     async def reindex_document(self, doc_id: int) -> bool:
-        """重建文档索引（删除旧向量与分片后再导入）
-        
-        Args:
-            doc_id: 文档ID
-            
-        Returns:
-            是否成功
-        """
+        """重建单文档索引：先删旧向量与分块，再重新入库。"""
         async with mysql_manager.async_session_maker() as db:
             doc = await db.get(Document, doc_id)
             if not doc:
                 return False
 
             chunks = await kb_crud.get_document_chunks(db, doc_id)
-            vector_ids = [c.vector_id for c in chunks if c.vector_id]
+            vector_ids = [chunk.vector_id for chunk in chunks if chunk.vector_id]
             if vector_ids:
-                delete_ids, skipped = self._normalize_milvus_delete_ids(vector_ids)
+                delete_ids, skipped = self.service._normalize_milvus_delete_ids(vector_ids)
                 if skipped:
                     logger.warning(f"Skip {skipped} non-numeric Milvus ids for doc {doc_id}.")
                 try:
                     if delete_ids:
-                        self._get_vector_store(doc.kb_id).delete(ids=delete_ids)
-                except Exception as e:
-                    logger.warning(f"Milvus delete failed for doc {doc_id}: {e}")
+                        self.service._get_vector_store(doc.kb_id).delete(ids=delete_ids)
+                except Exception as exc:
+                    logger.warning(f"Milvus delete failed for doc {doc_id}: {exc}")
 
             await kb_crud.delete_document_chunks(db, doc_id)
-            self._remove_sidecar_file(doc.file_path)
-
+            self.service._remove_sidecar_file(doc.file_path)
             await kb_crud.update_document_status(
                 db,
                 doc_id=doc_id,
@@ -359,57 +309,42 @@ class KnowledgeIngestMixin:
                 error_msg="",
             )
 
-        await self.ingest_document(doc_id)
+        await self.service.ingest_document(doc_id)
         return True
 
     async def delete_document(self, kb_id: int, doc_id: int) -> bool:
-        """删除单个文档（包含向量与文件清理）
-        
-        Args:
-            kb_id: 知识库ID
-            doc_id: 文档ID
-            
-        Returns:
-            是否成功
-        """
+        """删除单文档及其向量、sidecar 与本地文件。"""
         async with mysql_manager.async_session_maker() as db:
             doc = await kb_crud.get_document(db, doc_id)
             if not doc or doc.kb_id != kb_id:
                 return False
 
             chunks = await kb_crud.get_document_chunks(db, doc_id)
-            vector_ids = [c.vector_id for c in chunks if c.vector_id]
+            vector_ids = [chunk.vector_id for chunk in chunks if chunk.vector_id]
             if vector_ids:
-                delete_ids, skipped = self._normalize_milvus_delete_ids(vector_ids)
+                delete_ids, skipped = self.service._normalize_milvus_delete_ids(vector_ids)
                 if skipped:
                     logger.warning(f"Skip {skipped} non-numeric Milvus ids for doc {doc_id}.")
                 try:
                     if delete_ids:
-                        self._get_vector_store(kb_id).delete(ids=delete_ids)
-                except Exception as e:
-                    logger.warning(f"Milvus delete failed for doc {doc_id}: {e}")
+                        self.service._get_vector_store(kb_id).delete(ids=delete_ids)
+                except Exception as exc:
+                    logger.warning(f"Milvus delete failed for doc {doc_id}: {exc}")
 
-            self._remove_sidecar_file(doc.file_path)
+            self.service._remove_sidecar_file(doc.file_path)
             if doc.file_path and os.path.exists(doc.file_path):
                 try:
                     os.remove(doc.file_path)
-                except Exception as e:
-                    logger.warning(f"Remove file failed for doc {doc_id}: {e}")
+                except Exception as exc:
+                    logger.warning(f"Remove file failed for doc {doc_id}: {exc}")
 
             success = await kb_crud.delete_document(db, doc_id)
             if success:
-                self._invalidate_bm25_cache(kb_id)
+                self.service._invalidate_bm25_cache(kb_id)
             return success
 
     async def delete_kb(self, kb_id: int) -> bool:
-        """删除知识库（包含所有文档/向量/sidecar）
-        
-        Args:
-            kb_id: 知识库ID
-            
-        Returns:
-            是否成功
-        """
+        """删除整个知识库及其文档、向量与缓存。"""
         async with mysql_manager.async_session_maker() as db:
             kb = await kb_crud.get_kb(db, kb_id)
             if not kb:
@@ -419,25 +354,25 @@ class KnowledgeIngestMixin:
             vector_ids: List[str] = []
             for doc in docs:
                 chunks = await kb_crud.get_document_chunks(db, doc.id)
-                vector_ids.extend([c.vector_id for c in chunks if c.vector_id])
-                self._remove_sidecar_file(doc.file_path)
+                vector_ids.extend([chunk.vector_id for chunk in chunks if chunk.vector_id])
+                self.service._remove_sidecar_file(doc.file_path)
                 if doc.file_path and os.path.exists(doc.file_path):
                     try:
                         os.remove(doc.file_path)
-                    except Exception as e:
-                        logger.warning(f"Remove file failed for doc {doc.id}: {e}")
+                    except Exception as exc:
+                        logger.warning(f"Remove file failed for doc {doc.id}: {exc}")
 
             if vector_ids:
-                delete_ids, skipped = self._normalize_milvus_delete_ids(vector_ids)
+                delete_ids, skipped = self.service._normalize_milvus_delete_ids(vector_ids)
                 if skipped:
                     logger.warning(f"Skip {skipped} non-numeric Milvus ids for kb {kb_id}.")
                 try:
                     if delete_ids:
-                        self._get_vector_store(kb_id).delete(ids=delete_ids)
-                except Exception as e:
-                    logger.warning(f"Milvus delete failed for kb {kb_id}: {e}")
+                        self.service._get_vector_store(kb_id).delete(ids=delete_ids)
+                except Exception as exc:
+                    logger.warning(f"Milvus delete failed for kb {kb_id}: {exc}")
 
             success = await kb_crud.delete_kb(db, kb_id)
             if success:
-                self._invalidate_bm25_cache(kb_id)
+                self.service._invalidate_bm25_cache(kb_id)
             return success
