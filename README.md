@@ -19,13 +19,13 @@ Light Rain 是一个完整的智能对话与知识库系统，包含 FastAPI 后
 登录界面
 <img width="1865" height="906" alt="image" src="https://github.com/user-attachments/assets/4bc4a217-12f9-4765-bd66-9444b90b6516" />
 聊天主界面
-<img width="1836" height="896" alt="image" src="https://github.com/user-attachments/assets/2fe417b8-3e2c-4ec4-9d1b-1a8bf5d56a67" />
+<img width="1916" height="932" alt="image" src="https://github.com/user-attachments/assets/b2dcef15-f37f-47d4-9093-280c5b3c8b2a" />
 点击知识库问答后，会让用户选择使用哪个知识库。
-<img width="1533" height="856" alt="image" src="https://github.com/user-attachments/assets/91fe5de5-5bd3-4cdf-a978-d9f91fbdb654" />
+<img width="956" height="733" alt="image" src="https://github.com/user-attachments/assets/0d174b4c-8941-49d9-b1d8-53cb36210d39" />
 知识库问答时助手回复，会带引用来源。
-<img width="1219" height="803" alt="image" src="https://github.com/user-attachments/assets/db04cd4e-47eb-49d0-932c-534a50831d24" />
+<img width="1168" height="833" alt="image" src="https://github.com/user-attachments/assets/18600018-5874-4ff2-af8e-4d10b9ce2a1f" />
 知识库界面，可以上传文件。
-<img width="1503" height="854" alt="image" src="https://github.com/user-attachments/assets/38b87b42-9eb1-463b-848a-f6b20e49847d" />
+<img width="1585" height="950" alt="image" src="https://github.com/user-attachments/assets/8d545afc-1080-42c2-a700-3f7c449d906f" />
 AI最新资讯
 <img width="1822" height="901" alt="image" src="https://github.com/user-attachments/assets/d438b4bb-20eb-484c-b868-6079d6e563c2" />
 模型的用量
@@ -33,7 +33,7 @@ AI最新资讯
 可以使用自己的模型
 <img width="1498" height="861" alt="image" src="https://github.com/user-attachments/assets/ae7d383c-d106-4dfe-8b7e-355d463eb627" />
 具有文生图的功能
-<img width="1336" height="554" alt="image" src="https://github.com/user-attachments/assets/713230d5-3439-4c5c-8381-545c750a072b" />
+<img width="1780" height="899" alt="image" src="https://github.com/user-attachments/assets/7681a77e-3f1d-4dec-be0c-63fc11ed8447" />
 
 
 
