@@ -11,7 +11,12 @@ from app.models.user import User
 from app.models.knowledge import DocStatus, Document, DocumentChunk
 from app.crud.knowledge import kb_crud
 from app.services.knowledge import kb_service
-from app.services.rag_evaluation import rag_evaluation_service
+try:
+    from app.services.rag_evaluation import rag_evaluation_service
+except ModuleNotFoundError as exc:
+    if exc.name != "app.services.rag_evaluation":
+        raise
+    rag_evaluation_service = None
 from app.schemas.knowledge import (
     DocumentResponse,
     KnowledgeBaseResponse,
@@ -424,6 +429,12 @@ async def evaluate_kb(
     Raises:
         HTTPException: 知识库不存在或无权限时返回404
     """
+    if rag_evaluation_service is None:
+        raise HTTPException(
+            status_code=503,
+            detail="RAG evaluation service is temporarily unavailable while application startup compatibility is restored",
+        )
+
     kb = await kb_crud.get_kb(db, kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")
