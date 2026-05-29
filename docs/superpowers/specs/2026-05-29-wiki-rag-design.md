@@ -34,6 +34,8 @@ This keeps the system reliable while making it progressively more useful.
 - Preserve the existing raw RAG path as a reliable fallback.
 - Write high-quality raw RAG answers back into the wiki through reviewable patches.
 - Make all wiki content traceable to raw source chunks, chat messages, or explicit user confirmation.
+- Make `schema.md`, `index.md`, and `log.md` first-class wiki control files, not incidental generated pages.
+- Use cross-links, frontmatter, and parseable log entries so the wiki remains useful outside the app as plain Markdown.
 - Provide a basic frontend workspace for browsing wiki pages, reviewing patches, and running lint checks.
 - Keep the first implementation incremental and reversible.
 
@@ -78,6 +80,18 @@ The first version uses manual patch review by default. Low-risk automatic writes
 
 Auto-generated source pages should be rebuildable from raw source chunks. The wiki can contain user-curated knowledge, but generated source summaries must not be the only copy of factual information.
 
+### Markdown Portability
+
+The wiki must remain a usable directory of Markdown files even without the web app. Database rows index and audit the wiki, but the Markdown files carry enough frontmatter, links, provenance, and log history to be inspected in tools such as Obsidian or a normal code editor.
+
+### Index-First Navigation
+
+Following the LLM Wiki pattern, query-time wiki retrieval starts from `index.md`. The index is the content map of the wiki, and the retriever uses it as the first navigation spine before scanning all pages.
+
+### Parseable History
+
+`log.md` is append-only and uses a consistent heading format so both humans and simple tools can inspect wiki history.
+
 ## Architecture
 
 The system has three layers.
@@ -98,6 +112,7 @@ Wiki Layer
   lint reports
 
 Operations Layer
+  schema.md rules
   compile_document
   wiki_answer
   raw_rag_fallback
@@ -106,9 +121,12 @@ Operations Layer
   reject_patch
   rebuild
   lint
+  maintenance commands
 ```
 
 Existing knowledge ingestion continues to populate the Raw Sources Layer. New wiki services compile, query, lint, and patch the Wiki Layer.
+
+`schema.md` is part of the Operations Layer. It is the operational contract for LLM maintainers, compilers, retrievers, lint jobs, and writeback patch generation.
 
 ## Main Data Flows
 
@@ -130,16 +148,29 @@ New wiki flow starts after completion:
 
 ```text
 Document completed
+-> load schema.md maintenance rules
 -> WikiCompiler reads raw chunks, chunk summaries, and structured metadata
 -> create or update sources/{doc_id}-{slug}.md
 -> update index.md
 -> append log.md
+-> create pending cross-reference patches for candidate topics/entities/links
 -> record wiki_pages rows
 -> record wiki_page_revisions rows
+-> extract wiki links for graph and lint
 -> run lightweight lint
 ```
 
-The first version only guarantees source pages, index, and log. Topic/entity pages are introduced through patches and later enhanced by additional compilers.
+The first version guarantees source pages, index, and log. It also generates pending cross-reference patches for topic pages, entity pages, and related-page links when the source clearly suggests them. This keeps initial automation safe while still following the LLM Wiki pattern that a single source can affect multiple wiki pages.
+
+Ingest can run in three modes:
+
+```text
+auto
+pending_review
+assisted
+```
+
+`auto` compiles source pages immediately. `pending_review` stores generated source pages as patches. `assisted` lets the user review the generated source summary, important terms, and proposed cross-links before applying them. The default is `auto` for compatibility, but `assisted` is the closest mode to the original LLM Wiki workflow.
 
 ### Question Answering
 
@@ -147,7 +178,8 @@ The first version only guarantees source pages, index, and log. Topic/entity pag
 User question
 -> save user message
 -> rewrite / normalize query as needed
--> WikiRetriever finds relevant wiki pages
+-> WikiRetriever reads index.md to identify candidate wiki paths
+-> WikiRetriever ranks index candidates plus all active pages
 -> WikiAnswerer attempts wiki-only answer
 -> if answer is good enough: return wiki answer
 -> otherwise: run existing raw RAG retrieval and answer
@@ -186,6 +218,8 @@ backend/app/services/wiki/
   writeback.py
   patcher.py
   lint.py
+  links.py
+  maintenance.py
   prompts.py
   types.py
 ```
@@ -212,6 +246,7 @@ async def get_page(db, user_id: int, kb_id: int, page_id: int) -> WikiPageDetail
 async def list_patches(db, user_id: int, kb_id: int) -> list[WikiPatchSummary]: ...
 async def apply_patch(db, user_id: int, kb_id: int, patch_id: int) -> WikiPatchResult: ...
 async def reject_patch(db, user_id: int, kb_id: int, patch_id: int) -> WikiPatchResult: ...
+async def search_pages(db, user_id: int, kb_id: int, query: str) -> WikiSearchResult: ...
 ```
 
 ### `WikiStorage`
@@ -246,6 +281,7 @@ Responsibilities:
 - Generate source page Markdown.
 - Update `index.md`.
 - Append `log.md`.
+- Generate candidate cross-reference patches for topics, entities, and related pages.
 - Create or update `wiki_pages` rows.
 - Record `wiki_page_revisions`.
 
@@ -257,21 +293,75 @@ First-version compiler outputs:
 - `sources/{doc_id}-{slug}.md`
 - updates to `open_questions.md` only when the compiler finds obvious missing or ambiguous source metadata
 
+Cross-reference patch outputs:
+
+- candidate `topics/{slug}.md` pages
+- candidate `entities/{slug}.md` pages
+- candidate links from source pages to topics/entities
+- candidate additions to `open_questions.md`
+
+These are pending patches unless the ingest mode explicitly allows low-risk automatic application.
+
 ### `WikiRetriever`
 
 Finds relevant wiki pages for a user question.
 
 First-version retrieval:
 
-- Load active wiki pages from `wiki_pages`.
-- Read page content from disk.
-- Run BM25 over page title, path, page type, and Markdown content.
-- Return top pages with snippets.
+1. Read `index.md`.
+2. Extract linked page paths and section headings from the index.
+3. Rank index-linked candidates against the user query.
+4. Load active wiki pages from `wiki_pages`.
+5. Run BM25 over page title, path, page type, frontmatter, and Markdown content.
+6. Merge index candidates and BM25 candidates.
+7. Return top pages with snippets.
+
+The retriever should prefer pages reachable from `index.md` when scores are similar. This keeps the wiki navigational rather than just a pile of Markdown chunks.
 
 Future optional retrieval:
 
 - Embed wiki pages into a separate Milvus collection or namespace.
 - Fuse wiki BM25 and wiki semantic retrieval.
+
+### `WikiLinks`
+
+Extracts and indexes links between wiki pages.
+
+Responsibilities:
+
+- Parse Markdown links and wiki-style links.
+- Extract provenance links such as `[source:doc=12 chunk=34]`.
+- Store page-to-page links in `wiki_links`.
+- Provide backlink information for page detail views.
+- Support lint checks for missing, orphan, stale, or suspicious links.
+
+Link types:
+
+```text
+related_to
+cites
+defines
+answers
+contradicts
+supersedes
+mentions
+```
+
+### `WikiMaintenance`
+
+Optional scriptable command layer for local maintenance and debugging.
+
+Commands:
+
+```text
+wiki rebuild {kb_id}
+wiki lint {kb_id}
+wiki search {kb_id} "{query}"
+wiki apply-patch {kb_id} {patch_id}
+wiki reject-patch {kb_id} {patch_id}
+```
+
+These commands can be implemented as internal Python scripts first. A public CLI or MCP server is a later extension.
 
 ### `WikiAnswerer`
 
@@ -389,6 +479,9 @@ First-version checks:
 - Pending patches point to valid target paths.
 - Pages without inbound links are reported as possible orphan pages.
 - Pages with automatic content but no source references are reported.
+- `index.md` links point to existing pages.
+- Required frontmatter is present and parseable.
+- `log.md` entries use the required heading format.
 
 Future checks:
 
@@ -397,6 +490,8 @@ Future checks:
 - Broken cross-links.
 - Contradictory claims.
 - Stale pages after document reindex.
+- Weakly connected topic/entity pages.
+- Missing backlinks from source pages to derived topic/entity pages.
 
 ## Database Models
 
@@ -525,6 +620,36 @@ rejected
 failed
 ```
 
+### `wiki_links`
+
+Indexes links and backlinks between wiki pages.
+
+Fields:
+
+```text
+id
+kb_id
+from_page_id
+from_path
+to_page_id nullable
+to_path
+link_type
+anchor_text nullable
+provenance JSON
+created_at
+```
+
+Indexes:
+
+```text
+kb_id
+(kb_id, from_path)
+(kb_id, to_path)
+(kb_id, link_type)
+```
+
+The link table is derived from Markdown files and can be rebuilt. It exists to support graph views, backlinks, lint, and index-first retrieval.
+
 ### `wiki_runs`
 
 Tracks compile, rebuild, lint, and writeback jobs.
@@ -573,6 +698,7 @@ backend/storage/wiki/kb_{kb_id}/
   open_questions.md
   contradictions.md
   faq.md
+  assets/
   sources/
     12-product-spec.md
     13-api-doc.md
@@ -584,6 +710,40 @@ backend/storage/wiki/kb_{kb_id}/
     qwen.md
   patches/
     2026-05-29-message-456.patch.md
+```
+
+All content pages should include YAML frontmatter. Frontmatter keeps Markdown portable and gives non-app tools enough structure to query or inspect pages.
+
+Common frontmatter:
+
+```yaml
+---
+title: API Doc
+page_type: source
+status: active
+created_at: 2026-05-29T14:20:00
+updated_at: 2026-05-29T14:40:00
+tags: [source, api]
+source_count: 8
+---
+```
+
+Source pages merge source-specific metadata into the same frontmatter block:
+
+```yaml
+---
+title: API Doc
+page_type: source
+status: active
+doc_id: 12
+file_name: api-doc.md
+file_type: .md
+chunk_count: 18
+created_at: 2026-05-29T14:20:00
+updated_at: 2026-05-29T14:40:00
+tags: [source, api]
+source_count: 8
+---
 ```
 
 ### `schema.md`
@@ -599,10 +759,55 @@ It describes:
 - Rules against unsupported claims.
 - Section names used by generated pages.
 - Manual review policy.
+- Required frontmatter keys.
+- Required log entry format.
+- Ingest workflow.
+- Query workflow.
+- Lint workflow.
+- Writeback workflow.
+- Patch review workflow.
+- Do-not-overwrite rules for human-authored sections.
+
+Required operations in `schema.md`:
+
+```text
+ingest(source)
+  read raw source metadata and chunks
+  summarize source
+  update source page
+  update index.md
+  append log.md
+  propose topic/entity/link patches
+  run lint
+
+query(question)
+  read index.md
+  retrieve candidate wiki pages
+  answer only if wiki support is sufficient
+  otherwise declare wiki miss
+
+writeback(question, answer, raw_sources)
+  decide whether the answer is reusable
+  choose target page
+  create pending patch with provenance
+  append log.md
+
+lint()
+  check provenance
+  check frontmatter
+  check index links
+  check backlinks
+  check stale pages
+  check contradictions
+```
+
+This file is the operational contract for every LLM call that writes or interprets wiki content.
 
 ### `index.md`
 
 Knowledge-base landing page.
+
+`index.md` is the first file read by wiki query. It must remain concise, navigable, and link-rich. The index should not become a full summary of every page; it should help the retriever choose which pages to read next.
 
 Sections:
 
@@ -622,9 +827,26 @@ Sections:
 ## Open Questions
 ```
 
+Index entries should use normal Markdown links:
+
+```md
+- [API Doc](sources/12-api-doc.md) - REST endpoint details and auth behavior.
+- [Retrieval](topics/retrieval.md) - BM25, vector search, rerank, and source handling.
+```
+
 ### `log.md`
 
 Chronological wiki activity.
+
+Log entries use a parseable heading:
+
+```md
+## [2026-05-29 14:20] ingest | doc_id=12 | API Doc
+## [2026-05-29 14:31] query | message_id=456 | wiki_miss -> raw_rag
+## [2026-05-29 14:33] patch_created | patch_id=123 | target=faq.md
+## [2026-05-29 14:37] patch_applied | patch_id=123 | target=faq.md
+## [2026-05-29 14:40] lint | warnings=3
+```
 
 Entries include:
 
@@ -635,6 +857,8 @@ Entries include:
 - patch applied
 - lint warning
 - rebuild completed
+
+`log.md` is append-only except for explicit repair operations that preserve the old content in a page revision.
 
 ### `sources/*.md`
 
@@ -668,6 +892,21 @@ Suggested structure:
 
 ## Related Pages
 ```
+
+Related pages should be explicit links to topics, entities, FAQ entries, or open questions. These links feed `wiki_links` and graph/lint views.
+
+### `assets/`
+
+Stores extracted or uploaded non-text assets related to wiki pages.
+
+Examples:
+
+```text
+assets/doc-12-diagram-1.png
+assets/doc-20-table-export.csv
+```
+
+Asset references must include provenance in the referencing page. First-version support can be limited to storing and linking assets; image understanding and chart generation are later extensions.
 
 ### `faq.md`
 
@@ -927,6 +1166,7 @@ Add wiki config module:
 ```text
 WIKI_RAG_ENABLED=true
 WIKI_WRITEBACK_MODE=manual
+WIKI_INGEST_MODE=auto
 WIKI_ANSWER_CONFIDENCE_THRESHOLD=0.72
 WIKI_RETRIEVER_TOP_K=5
 WIKI_STORAGE_DIR=storage/wiki
@@ -943,11 +1183,27 @@ auto_low_risk
 disabled
 ```
 
+`WIKI_INGEST_MODE` values:
+
+```text
+auto
+pending_review
+assisted
+```
+
 First version default:
 
 ```text
 manual
 ```
+
+The default ingest mode is:
+
+```text
+auto
+```
+
+Operators who want the closest LLM Wiki workflow can switch to `assisted`.
 
 ## Error Handling
 
@@ -1009,6 +1265,8 @@ If applying a patch fails:
 - Raw sources remain unchanged.
 - Automatically generated wiki content must include provenance.
 - Pending patches are not applied until approved in manual mode.
+- Human-authored sections marked by schema rules must not be overwritten by automatic rebuilds.
+- Derived tables such as `wiki_links` can be rebuilt from Markdown and must not be treated as the only source of truth.
 
 ## Testing Strategy
 
@@ -1017,7 +1275,9 @@ If applying a patch fails:
 - `WikiStorage` rejects path traversal.
 - `WikiStorage` writes pages atomically.
 - `WikiCompiler` creates source page, index, log, and page rows from fake chunks.
+- `WikiCompiler` creates pending cross-reference patches for clear topic/entity candidates.
 - `WikiRetriever` ranks relevant pages above unrelated pages.
+- `WikiRetriever` prefers index-linked pages when scores are close.
 - `WikiAnswerer` rejects low-confidence answers.
 - `WikiAnswerer` rejects answers with no used pages.
 - `WikiFallback` calls raw RAG when wiki answer fails validation.
@@ -1025,6 +1285,8 @@ If applying a patch fails:
 - `WikiWriteback` creates pending patch for source-backed reusable answer.
 - `WikiPatcher` applies append patch and records revision.
 - `WikiLint` reports missing provenance and stale page files.
+- `WikiLint` reports invalid frontmatter, broken index links, and malformed log headings.
+- `WikiLinks` extracts Markdown links, provenance links, and backlinks.
 
 ### Integration Tests
 
@@ -1035,6 +1297,8 @@ If applying a patch fails:
 - Chat wiki-first returns wiki answer when confidence passes.
 - Chat fallback returns raw RAG answer when wiki misses.
 - Chat fallback creates pending patch when eligible.
+- Assisted ingest can hold source-page changes for review.
+- `wiki_links` can be rebuilt from Markdown pages.
 
 ### Frontend Checks
 
@@ -1051,8 +1315,18 @@ If applying a patch fails:
 - Add wiki models and migration.
 - Add `WikiStorage`.
 - Add `WikiCompiler` for `schema.md`, `index.md`, `log.md`, and source pages.
+- Add frontmatter generation.
+- Add parseable `log.md` entries.
 - Trigger compile after successful document ingestion.
 - Add page list/get APIs.
+
+### Phase 1.5: Index, Links, and Assisted Ingest
+
+- Add index-first retrieval support.
+- Add `wiki_links` extraction.
+- Add pending cross-reference patches for topics/entities/related pages.
+- Add `WIKI_INGEST_MODE`.
+- Add assisted ingest review flow.
 
 ### Phase 2: Wiki-First Answer and Raw RAG Fallback
 
@@ -1084,10 +1358,17 @@ If applying a patch fails:
 - Add orphan page detection improvements.
 - Add optional wiki semantic retrieval.
 - Add low-risk auto-apply mode for FAQ append operations.
+- Add assets/image support.
+- Add answer artifact types for tables, charts, reports, and slide outlines.
+- Add internal maintenance commands or CLI wrappers.
 
 ## Acceptance Criteria
 
 - A completed document can produce a source wiki page, index update, and log entry.
+- Generated pages include required frontmatter.
+- `log.md` entries use the required parseable heading format.
+- `index.md` participates in wiki retrieval before full-page BM25.
+- Ingest creates pending cross-reference patches when topic/entity candidates are found.
 - A user can browse wiki pages from the frontend.
 - A wiki-only answer can return directly when confidence and citations pass.
 - A wiki miss falls back to the existing raw RAG behavior.
@@ -1096,4 +1377,3 @@ If applying a patch fails:
 - Rejecting a patch preserves audit history and does not modify Markdown.
 - Wiki failures do not break existing RAG.
 - All automatic wiki additions include provenance.
-
