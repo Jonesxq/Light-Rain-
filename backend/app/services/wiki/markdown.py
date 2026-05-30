@@ -11,12 +11,14 @@ from typing import Any, Iterable, Mapping, Sequence
 _NON_ALNUM_RE = re.compile(r"[^a-zA-Z0-9]+")
 _SAFE_EVENT_RE = re.compile(r"[^a-zA-Z0-9_-]+")
 _INT_FRONTMATTER_KEYS = {
+    "chunk_count",
     "created_by_message_id",
     "doc_id",
     "from_page_id",
     "kb_id",
     "page_id",
     "patches_created",
+    "source_count",
     "source_doc_id",
     "to_page_id",
 }

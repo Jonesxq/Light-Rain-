@@ -163,6 +163,8 @@ def test_frontmatter_parses_numeric_strings_by_key():
             "title": "2026",
             "content_hash": "123456",
             "doc_id": 12,
+            "chunk_count": 18,
+            "source_count": 8,
             "confidence": 0.72,
         }
     )
@@ -172,6 +174,8 @@ def test_frontmatter_parses_numeric_strings_by_key():
     assert frontmatter["title"] == "2026"
     assert frontmatter["content_hash"] == "123456"
     assert frontmatter["doc_id"] == 12
+    assert frontmatter["chunk_count"] == 18
+    assert frontmatter["source_count"] == 8
     assert frontmatter["confidence"] == 0.72
 
 
