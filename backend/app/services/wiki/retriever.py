@@ -84,10 +84,10 @@ class WikiRetriever:
         for doc, base_score in zip(documents, base_scores, strict=True):
             page = doc["page"]
             score = float(base_score)
-            if page.path in index_linked_paths:
-                score += _INDEX_LINK_BOOST
             if score <= 0:
                 continue
+            if page.path in index_linked_paths:
+                score += _INDEX_LINK_BOOST
 
             hits.append(
                 WikiSearchHit(

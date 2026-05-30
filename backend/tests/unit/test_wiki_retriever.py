@@ -169,6 +169,43 @@ async def test_search_boosts_index_linked_page_when_relevance_is_close(
 
 
 @pytest.mark.asyncio
+async def test_search_does_not_boost_linked_page_without_matching_score(
+    db_session,
+    test_user_verified,
+    tmp_path,
+):
+    kb = await _create_kb(db_session, test_user_verified)
+    storage = WikiStorage(root_dir=tmp_path)
+    await _upsert_page(
+        db_session,
+        storage,
+        kb_id=kb.id,
+        path="index.md",
+        title="Index",
+        page_type="index",
+        content="# Index\n- [Primary](topics/primary.md)\n",
+    )
+    await _upsert_page(
+        db_session,
+        storage,
+        kb_id=kb.id,
+        path="topics/primary.md",
+        title="Primary",
+        page_type="topic",
+        content=_page_markdown("Primary", "topic", "Shared term appears here."),
+    )
+
+    hits = await WikiRetriever(storage=storage).search(
+        db_session,
+        kb_id=kb.id,
+        query="unrelatedquery",
+        top_k=5,
+    )
+
+    assert hits == []
+
+
+@pytest.mark.asyncio
 async def test_search_skips_missing_files(db_session, test_user_verified, tmp_path):
     kb = await _create_kb(db_session, test_user_verified)
     storage = WikiStorage(root_dir=tmp_path)
