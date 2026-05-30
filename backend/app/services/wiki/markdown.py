@@ -139,32 +139,35 @@ def _format_value(value: Any) -> str:
             [_clean_list_item(item) for item in value],
             ensure_ascii=False,
         )
-    return str(value).strip()
+    return json.dumps(str(value).strip(), ensure_ascii=False)
 
 
 def _parse_scalar(key: str, value: str) -> Any:
     if key in _LIST_FRONTMATTER_KEYS:
         return _parse_list(value)
 
+    parsed_json_string = _parse_json_string(value)
+    scalar_value = parsed_json_string if parsed_json_string is not None else value
+
     if key in _BOOL_FRONTMATTER_KEYS:
-        if value.lower() == "true":
+        if scalar_value.lower() == "true":
             return True
-        if value.lower() == "false":
+        if scalar_value.lower() == "false":
             return False
 
     if key in _INT_FRONTMATTER_KEYS:
         try:
-            return int(value)
+            return int(scalar_value)
         except ValueError:
-            return _clean_string(value)
+            return _clean_string(scalar_value)
 
     if key in _FLOAT_FRONTMATTER_KEYS:
         try:
-            return float(value)
+            return float(scalar_value)
         except ValueError:
-            return _clean_string(value)
+            return _clean_string(scalar_value)
 
-    return _clean_string(value)
+    return _clean_string(scalar_value)
 
 
 def _parse_list(value: str) -> list[str]:
@@ -184,6 +187,21 @@ def _parse_list(value: str) -> list[str]:
 
 def _clean_list_item(item: Any) -> str:
     return str(item).strip()
+
+
+def _parse_json_string(value: str) -> str | None:
+    if not value.startswith('"'):
+        return None
+
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return None
+
+    if isinstance(parsed, str):
+        return parsed
+
+    return None
 
 
 def _clean_string(value: str) -> str:

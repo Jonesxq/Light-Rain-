@@ -102,6 +102,38 @@ def test_frontmatter_bracketed_scalar_strings_do_not_parse_as_lists():
     assert frontmatter["content_hash"] == "[abc]"
 
 
+def test_frontmatter_multiline_scalar_cannot_truncate_metadata():
+    markdown = build_frontmatter(
+        {
+            "title": "Good\n---\n# moved",
+            "page_type": "source",
+        }
+    ) + "\nBody"
+
+    frontmatter, body = extract_frontmatter(markdown)
+
+    assert frontmatter["title"] == "Good\n---\n# moved"
+    assert frontmatter["page_type"] == "source"
+    assert body == "Body"
+
+
+def test_frontmatter_scalar_with_colon_does_not_create_extra_key():
+    markdown = build_frontmatter(
+        {
+            "title": "Name: Value",
+            "page_type": "source",
+        }
+    ) + "\nBody"
+
+    frontmatter, body = extract_frontmatter(markdown)
+
+    assert frontmatter == {
+        "title": "Name: Value",
+        "page_type": "source",
+    }
+    assert body == "Body"
+
+
 def test_frontmatter_known_list_keys_roundtrip_as_lists():
     markdown = build_frontmatter(
         {
@@ -179,8 +211,8 @@ def test_build_markdown_page_combines_frontmatter_heading_and_sections():
 
     assert markdown == (
         "---\n"
-        "title: API Doc\n"
-        "page_type: source\n"
+        'title: "API Doc"\n'
+        'page_type: "source"\n'
         "---\n\n"
         "# API Doc\n\n"
         "## Summary\n\n"
