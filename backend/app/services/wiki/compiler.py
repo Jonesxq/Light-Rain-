@@ -17,6 +17,7 @@ from app.services.wiki.markdown import (
     build_frontmatter,
     build_log_heading,
     build_markdown_page,
+    extract_frontmatter,
     slugify_title,
 )
 from app.services.wiki.storage import WikiStorage
@@ -195,13 +196,25 @@ class WikiCompiler:
         )
 
     def _build_log_page(self, kb_id: int, now: datetime, doc: Document) -> WikiPageInput:
+        frontmatter = {
+            "title": "Log",
+            "page_type": "log",
+            "status": "active",
+            "updated_at": now.isoformat(),
+            "tags": ["log"],
+            "source_doc_id": doc.id,
+        }
         heading = build_log_heading(now, "ingest", [f"doc_id={doc.id}", doc.file_name])
         entry = f"{heading}\n\nCompiled `{doc.file_name}` into wiki pages.\n"
         if self.storage.page_exists(kb_id, PAGE_LOG):
             existing = self.storage.read_page(kb_id, PAGE_LOG).rstrip()
-            content = f"{existing}\n\n{entry}"
+            existing_frontmatter, _body = extract_frontmatter(existing)
+            if existing_frontmatter:
+                content = f"{existing}\n\n{entry}"
+            else:
+                content = f"{build_frontmatter(frontmatter)}\n\n{existing}\n\n{entry}"
         else:
-            content = f"# Log\n\n{entry}"
+            content = build_markdown_page(frontmatter, "Log", [("Entries", entry)])
 
         return WikiPageInput(
             path=PAGE_LOG,

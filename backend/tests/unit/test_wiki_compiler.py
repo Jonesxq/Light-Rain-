@@ -7,7 +7,7 @@ from sqlmodel import select
 from app.models.knowledge import DocStatus, Document, KnowledgeBase
 from app.models.wiki import WikiPage, WikiPageRevision, WikiPatch, WikiRun
 from app.services.wiki.compiler import WikiCompiler
-from app.services.wiki.markdown import extract_frontmatter
+from app.services.wiki.markdown import build_markdown_page, extract_frontmatter
 from app.services.wiki.service import WikiService
 from app.services.wiki.storage import WikiStorage
 
@@ -103,6 +103,9 @@ async def test_compile_document_writes_wiki_pages_and_syncs_database(
     index_markdown = storage.read_page(kb.id, "index.md")
     assert f"]({source_path})" in index_markdown
     log_markdown = storage.read_page(kb.id, "log.md")
+    log_frontmatter, _log_body = extract_frontmatter(log_markdown)
+    assert log_frontmatter["page_type"] == "log"
+    assert log_frontmatter["title"] == "Log"
     assert f"ingest | doc_id={doc.id} | {doc.file_name}" in log_markdown
 
     page_rows = (
@@ -174,12 +177,23 @@ async def test_compile_document_appends_existing_log(
     _write_chunks(source_file)
     doc = await _create_document(db_session, kb_id=kb.id, file_path=source_file)
     storage = WikiStorage(root_dir=tmp_path / "wiki")
-    storage.write_page(kb.id, "log.md", "# Log\n\nExisting entry\n")
+    storage.write_page(
+        kb.id,
+        "log.md",
+        build_markdown_page(
+            {"title": "Log", "page_type": "log", "status": "active"},
+            "Log",
+            [("Entries", "Existing entry")],
+        ),
+    )
     compiler = WikiCompiler(storage=storage)
 
     await compiler.compile_document(db_session, kb_id=kb.id, doc_id=doc.id)
 
     log_markdown = storage.read_page(kb.id, "log.md")
+    log_frontmatter, _log_body = extract_frontmatter(log_markdown)
+    assert log_frontmatter["page_type"] == "log"
+    assert log_frontmatter["title"] == "Log"
     assert "Existing entry" in log_markdown
     assert f"ingest | doc_id={doc.id} | {doc.file_name}" in log_markdown
 
