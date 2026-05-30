@@ -18,7 +18,11 @@ class WikiPage(SQLModel, table=True):
     )
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    kb_id: int = Field(foreign_key="knowledge_bases.id")
+    kb_id: int = Field(
+        sa_column=Column(
+            ForeignKey("knowledge_bases.id", ondelete="CASCADE"), nullable=False
+        )
+    )
     path: str = Field(max_length=512)
     title: str = Field(max_length=255)
     page_type: str = Field(max_length=50)
@@ -49,11 +53,15 @@ class WikiPageRevision(SQLModel, table=True):
         default=None,
         sa_column=Column(ForeignKey("wiki_pages.id", ondelete="SET NULL"), nullable=True),
     )
-    kb_id: int = Field(foreign_key="knowledge_bases.id")
+    kb_id: int = Field(
+        sa_column=Column(
+            ForeignKey("knowledge_bases.id", ondelete="CASCADE"), nullable=False
+        )
+    )
     path: str = Field(max_length=512)
     content_hash: str = Field(max_length=128)
     content_snapshot: str = Field(sa_column=Column(Text, nullable=False))
-    change_reason: Optional[str] = Field(default=None, max_length=255)
+    change_reason: str = Field(max_length=255)
     provenance: dict = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
 
@@ -68,7 +76,11 @@ class WikiPatch(SQLModel, table=True):
     )
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    kb_id: int = Field(foreign_key="knowledge_bases.id")
+    kb_id: int = Field(
+        sa_column=Column(
+            ForeignKey("knowledge_bases.id", ondelete="CASCADE"), nullable=False
+        )
+    )
     page_id: Optional[int] = Field(
         default=None,
         sa_column=Column(ForeignKey("wiki_pages.id", ondelete="SET NULL"), nullable=True),
@@ -104,7 +116,11 @@ class WikiLink(SQLModel, table=True):
     )
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    kb_id: int = Field(foreign_key="knowledge_bases.id")
+    kb_id: int = Field(
+        sa_column=Column(
+            ForeignKey("knowledge_bases.id", ondelete="CASCADE"), nullable=False
+        )
+    )
     from_page_id: Optional[int] = Field(
         default=None,
         sa_column=Column(ForeignKey("wiki_pages.id", ondelete="CASCADE"), nullable=True),
@@ -131,7 +147,11 @@ class WikiRun(SQLModel, table=True):
     )
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    kb_id: int = Field(foreign_key="knowledge_bases.id")
+    kb_id: int = Field(
+        sa_column=Column(
+            ForeignKey("knowledge_bases.id", ondelete="CASCADE"), nullable=False
+        )
+    )
     doc_id: Optional[int] = Field(
         default=None,
         sa_column=Column(

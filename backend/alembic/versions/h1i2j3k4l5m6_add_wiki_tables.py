@@ -29,7 +29,7 @@ def upgrade() -> None:
         sa.Column("provenance", sa.JSON(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(["kb_id"], ["knowledge_bases.id"]),
+        sa.ForeignKeyConstraint(["kb_id"], ["knowledge_bases.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(
             ["source_doc_id"], ["kb_documents.id"], ondelete="SET NULL"
         ),
@@ -60,10 +60,10 @@ def upgrade() -> None:
         sa.Column("path", sa.String(length=512), nullable=False),
         sa.Column("content_hash", sa.String(length=128), nullable=False),
         sa.Column("content_snapshot", sa.Text(), nullable=False),
-        sa.Column("change_reason", sa.String(length=255), nullable=True),
+        sa.Column("change_reason", sa.String(length=255), nullable=False),
         sa.Column("provenance", sa.JSON(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(["kb_id"], ["knowledge_bases.id"]),
+        sa.ForeignKeyConstraint(["kb_id"], ["knowledge_bases.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["page_id"], ["wiki_pages.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -104,7 +104,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("applied_at", sa.DateTime(), nullable=True),
         sa.Column("rejected_at", sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(["kb_id"], ["knowledge_bases.id"]),
+        sa.ForeignKeyConstraint(["kb_id"], ["knowledge_bases.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["page_id"], ["wiki_pages.id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(
             ["created_by_message_id"], ["chat_messages.id"], ondelete="SET NULL"
@@ -139,7 +139,7 @@ def upgrade() -> None:
         sa.Column("anchor_text", sa.String(length=255), nullable=True),
         sa.Column("provenance", sa.JSON(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(["kb_id"], ["knowledge_bases.id"]),
+        sa.ForeignKeyConstraint(["kb_id"], ["knowledge_bases.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["from_page_id"], ["wiki_pages.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["to_page_id"], ["wiki_pages.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
@@ -168,7 +168,7 @@ def upgrade() -> None:
         sa.Column("error_msg", sa.Text(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("finished_at", sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(["kb_id"], ["knowledge_bases.id"]),
+        sa.ForeignKeyConstraint(["kb_id"], ["knowledge_bases.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["doc_id"], ["kb_documents.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
