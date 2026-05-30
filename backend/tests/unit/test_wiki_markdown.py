@@ -238,3 +238,39 @@ def test_build_markdown_page_combines_frontmatter_heading_and_sections():
         "## Details\n\n"
         "More\n"
     )
+
+
+def test_build_markdown_page_preserves_final_section_body_whitespace():
+    markdown = build_markdown_page(
+        {"title": "Code"},
+        "Code",
+        [("Snippet", "    indented\n\n")],
+    )
+
+    assert markdown == (
+        "---\n"
+        'title: "Code"\n'
+        "---\n\n"
+        "# Code\n\n"
+        "## Snippet\n\n"
+        "    indented\n\n"
+    )
+
+
+def test_build_markdown_page_preserves_section_trailing_blank_lines_before_next_section():
+    markdown = build_markdown_page(
+        {"title": "Code"},
+        "Code",
+        [("First", "    code\n\n"), ("Second", "next")],
+    )
+
+    assert markdown == (
+        "---\n"
+        'title: "Code"\n'
+        "---\n\n"
+        "# Code\n\n"
+        "## First\n\n"
+        "    code\n\n"
+        "## Second\n\n"
+        "next\n"
+    )

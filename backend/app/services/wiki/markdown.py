@@ -115,15 +115,22 @@ def build_log_heading(
 def build_markdown_page(
     frontmatter: Mapping[str, Any],
     title: str,
-    sections: Iterable[tuple[str, str]],
+    sections: Iterable[tuple[str, str | None]],
 ) -> str:
     """Build a complete wiki markdown page with H1 and H2 sections."""
 
-    blocks = [build_frontmatter(frontmatter), f"# {title.strip()}"]
+    markdown = f"{build_frontmatter(frontmatter)}\n\n# {title.strip()}"
     for section_title, section_body in sections:
-        blocks.append(f"## {section_title.strip()}\n\n{(section_body or '').strip()}")
+        body = "" if section_body is None else section_body
+        markdown = (
+            f"{markdown}{_markdown_block_separator(markdown)}"
+            f"## {section_title.strip()}\n\n{body}"
+        )
 
-    return "\n\n".join(blocks).rstrip() + "\n"
+    if not markdown.endswith("\n"):
+        markdown = f"{markdown}\n"
+
+    return markdown
 
 
 def _format_value(value: Any) -> str:
@@ -137,6 +144,14 @@ def _format_value(value: Any) -> str:
             ensure_ascii=False,
         )
     return json.dumps(str(value).strip(), ensure_ascii=False)
+
+
+def _markdown_block_separator(markdown: str) -> str:
+    if markdown.endswith("\n\n"):
+        return ""
+    if markdown.endswith("\n"):
+        return "\n"
+    return "\n\n"
 
 
 def _parse_scalar(key: str, value: str) -> Any:
