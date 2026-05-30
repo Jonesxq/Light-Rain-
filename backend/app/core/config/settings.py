@@ -12,6 +12,7 @@ from app.core.config.modules.celery import CelerySettings
 from app.core.config.modules.llm import LLMSettings
 from app.core.config.modules.usage import UsageSettings
 from app.core.config.modules.news import NewsSettings
+from app.core.config.modules.wiki import WikiSettings
 
 class Settings:
     """全局设置容器类
@@ -72,6 +73,11 @@ class Settings:
     def news(self) -> NewsSettings:
         """新闻设置"""
         return NewsSettings()
+
+    @cached_property
+    def wiki(self) -> WikiSettings:
+        """Wiki-RAG settings."""
+        return WikiSettings()
 
 
 # 创建全局设置实例
