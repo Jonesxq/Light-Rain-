@@ -1,10 +1,14 @@
 import importlib.util
 from pathlib import Path
 
+import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import Column, Integer, MetaData, Table, create_engine, inspect
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, select
+
+from app.models.knowledge import KnowledgeBase
+from app.models.wiki import WikiLink
 
 WIKI_TABLE_NAMES = {
     "wiki_pages",
@@ -151,9 +155,10 @@ def test_wiki_migration_creates_and_drops_expected_schema():
         assert kb_path_index["column_names"] == ["kb_id", "path"]
 
         for table_name in WIKI_TABLE_NAMES:
-            assert _migration_foreign_key_ondelete(
-                inspector, table_name, "kb_id"
-            ) == "CASCADE"
+            assert (
+                _migration_foreign_key_ondelete(inspector, table_name, "kb_id")
+                == "CASCADE"
+            )
 
         revision_columns = {
             column["name"]: column
@@ -183,3 +188,151 @@ def test_wiki_migration_creates_and_drops_expected_schema():
         assert WIKI_TABLE_NAMES.isdisjoint(inspector.get_table_names())
 
     engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_wiki_crud_roundtrip(db_session, test_user_verified):
+    from app.crud.wiki import wiki_crud
+
+    kb = KnowledgeBase(
+        user_id=test_user_verified.id,
+        name="Wiki CRUD KB",
+        description="Exercises wiki CRUD helpers",
+    )
+    db_session.add(kb)
+    await db_session.commit()
+    await db_session.refresh(kb)
+
+    page = await wiki_crud.upsert_page(
+        db_session,
+        kb_id=kb.id,
+        path="index.md",
+        title="Index",
+        page_type="overview",
+        content_hash="hash-1",
+        provenance={"source": "test"},
+    )
+    assert page.id is not None
+    assert page.path == "index.md"
+
+    updated_page = await wiki_crud.upsert_page(
+        db_session,
+        kb_id=kb.id,
+        path="index.md",
+        title="Index Updated",
+        page_type="overview",
+        content_hash="hash-2",
+        status="active",
+    )
+    assert updated_page.id == page.id
+    assert updated_page.title == "Index Updated"
+    assert updated_page.content_hash == "hash-2"
+
+    deleted_page = await wiki_crud.upsert_page(
+        db_session,
+        kb_id=kb.id,
+        path="deleted.md",
+        title="Deleted",
+        page_type="note",
+        content_hash="hash-deleted",
+        status="deleted",
+    )
+    assert deleted_page.status == "deleted"
+
+    revision = await wiki_crud.create_revision(
+        db_session,
+        page_id=page.id,
+        kb_id=kb.id,
+        path="index.md",
+        content_hash="hash-2",
+        content_snapshot="# Index",
+        change_reason="initial snapshot",
+        provenance={"source": "test"},
+    )
+    assert revision.id is not None
+
+    found_by_path = await wiki_crud.get_page_by_path(db_session, kb.id, "index.md")
+    found_by_id = await wiki_crud.get_page(db_session, kb.id, page.id)
+    assert found_by_path.id == page.id
+    assert found_by_id.id == page.id
+
+    active_pages = await wiki_crud.list_pages(db_session, kb.id)
+    assert [item.path for item in active_pages] == ["index.md"]
+
+    revisions = await wiki_crud.list_revisions(db_session, page.id)
+    assert [item.content_snapshot for item in revisions] == ["# Index"]
+
+    patch = await wiki_crud.create_patch(
+        db_session,
+        kb_id=kb.id,
+        page_id=page.id,
+        target_path="index.md",
+        operation="append",
+        question="What changed?",
+        answer="A snapshot was added.",
+        patch_markdown="## Update",
+        rationale="test coverage",
+        confidence=0.75,
+        provenance={"source": "test"},
+    )
+    assert patch.status == "pending"
+
+    patches = await wiki_crud.list_patches(db_session, kb.id, status="pending")
+    assert [item.id for item in patches] == [patch.id]
+
+    await wiki_crud.replace_links(
+        db_session,
+        kb_id=kb.id,
+        from_path="index.md",
+        links=[
+            WikiLink(
+                kb_id=kb.id,
+                from_page_id=page.id,
+                from_path="index.md",
+                to_page_id=None,
+                to_path="guide.md",
+                link_type="related_to",
+                anchor_text="Guide",
+                provenance={"source": "test"},
+            )
+        ],
+    )
+    await wiki_crud.replace_links(
+        db_session,
+        kb_id=kb.id,
+        from_path="index.md",
+        links=[
+            WikiLink(
+                kb_id=kb.id,
+                from_page_id=page.id,
+                from_path="index.md",
+                to_page_id=None,
+                to_path="faq.md",
+                link_type="related_to",
+                anchor_text="FAQ",
+            )
+        ],
+    )
+    link_rows = (
+        (
+            await db_session.execute(
+                select(WikiLink).where(
+                    WikiLink.kb_id == kb.id,
+                    WikiLink.from_path == "index.md",
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert [item.to_path for item in link_rows] == ["faq.md"]
+
+    run = await wiki_crud.create_run(
+        db_session,
+        kb_id=kb.id,
+        run_type="compile",
+        status="succeeded",
+        metrics={"pages": 1},
+    )
+    assert run.finished_at is not None
+    assert run.metrics == {"pages": 1}
