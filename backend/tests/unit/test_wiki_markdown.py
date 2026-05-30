@@ -46,7 +46,7 @@ def test_frontmatter_roundtrip_for_bool_float_and_clean_list_items():
             "enabled": True,
             "confidence": 0.72,
             "empty": None,
-            "tags": [" source ", '"api"'],
+            "tags": [" source ", "api"],
         }
     )
 
@@ -58,6 +58,22 @@ def test_frontmatter_roundtrip_for_bool_float_and_clean_list_items():
         "tags": ["source", "api"],
     }
     assert body == ""
+
+
+def test_frontmatter_bool_literals_only_parse_for_bool_keys():
+    markdown = build_frontmatter(
+        {
+            "title": "true",
+            "content_hash": "false",
+            "enabled": True,
+        }
+    )
+
+    frontmatter, _body = extract_frontmatter(markdown)
+
+    assert frontmatter["title"] == "true"
+    assert frontmatter["content_hash"] == "false"
+    assert frontmatter["enabled"] is True
 
 
 def test_frontmatter_list_roundtrip_preserves_commas_inside_items():
@@ -100,6 +116,15 @@ def test_frontmatter_known_list_keys_roundtrip_as_lists():
     assert frontmatter["wiki_links"] == ["[[Foo, Bar]]"]
 
 
+def test_frontmatter_handwritten_wiki_link_list_does_not_split_commas():
+    markdown = "---\nwiki_links: [[Foo, Bar]]\n---\nBody"
+
+    frontmatter, body = extract_frontmatter(markdown)
+
+    assert frontmatter["wiki_links"] == ["[[Foo, Bar]]"]
+    assert body == "Body"
+
+
 def test_frontmatter_parses_numeric_strings_by_key():
     markdown = build_frontmatter(
         {
@@ -116,6 +141,14 @@ def test_frontmatter_parses_numeric_strings_by_key():
     assert frontmatter["content_hash"] == "123456"
     assert frontmatter["doc_id"] == 12
     assert frontmatter["confidence"] == 0.72
+
+
+def test_frontmatter_scalar_strings_preserve_literal_quotes():
+    markdown = build_frontmatter({"title": '"Quoted"'})
+
+    frontmatter, _body = extract_frontmatter(markdown)
+
+    assert frontmatter["title"] == '"Quoted"'
 
 
 def test_extract_frontmatter_without_frontmatter_preserves_body():

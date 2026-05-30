@@ -22,6 +22,7 @@ _INT_FRONTMATTER_KEYS = {
 }
 _FLOAT_FRONTMATTER_KEYS = {"confidence", "score"}
 _LIST_FRONTMATTER_KEYS = {"tags", "wiki_links"}
+_BOOL_FRONTMATTER_KEYS = {"archived", "draft", "enabled"}
 
 
 def slugify_title(
@@ -142,20 +143,14 @@ def _format_value(value: Any) -> str:
 
 
 def _parse_scalar(key: str, value: str) -> Any:
-    if value.lower() == "true":
-        return True
-    if value.lower() == "false":
-        return False
-    if key in _LIST_FRONTMATTER_KEYS and value.startswith("[") and value.endswith("]"):
-        try:
-            parsed = json.loads(value)
-        except json.JSONDecodeError:
-            inner = value[1:-1].strip()
-            if not inner:
-                return []
-            return [_clean_list_item(item) for item in inner.split(",")]
-        if isinstance(parsed, list):
-            return [_clean_list_item(item) for item in parsed]
+    if key in _LIST_FRONTMATTER_KEYS:
+        return _parse_list(value)
+
+    if key in _BOOL_FRONTMATTER_KEYS:
+        if value.lower() == "true":
+            return True
+        if value.lower() == "false":
+            return False
 
     if key in _INT_FRONTMATTER_KEYS:
         try:
@@ -172,9 +167,24 @@ def _parse_scalar(key: str, value: str) -> Any:
     return _clean_string(value)
 
 
+def _parse_list(value: str) -> list[str]:
+    if value.startswith("[") and value.endswith("]"):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return [value]
+        if isinstance(parsed, list):
+            return [_clean_list_item(item) for item in parsed]
+
+    if not value:
+        return []
+
+    return [_clean_list_item(value)]
+
+
 def _clean_list_item(item: Any) -> str:
-    return _clean_string(str(item))
+    return str(item).strip()
 
 
 def _clean_string(value: str) -> str:
-    return value.strip().strip("\"'")
+    return value.strip()
