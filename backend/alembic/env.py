@@ -19,6 +19,9 @@ from sqlmodel import SQLModel
 # Import all models so Alembic can detect them
 from app.models.user import User
 from app.models.token import RefreshToken, VerificationCode
+from app.models.knowledge import KnowledgeBase, Document, DocumentChunk
+from app.models.chat import ChatMessage, ChatSession, ChatAttachment, ChatPromptSnapshot
+from app.models.wiki import WikiLink, WikiPage, WikiPageRevision, WikiPatch, WikiRun
 
 # Alembic Config object
 config = context.config
