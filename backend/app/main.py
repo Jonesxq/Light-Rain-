@@ -20,7 +20,8 @@ from app.routers.v1 import (
     knowledge_router,
     llm_settings_router,
     usage_router,
-    news_router
+    news_router,
+    wiki_router,
 )
 
 # 初始化 LoggerManager
@@ -168,6 +169,7 @@ app.include_router(knowledge_router, prefix="/api/v1")
 app.include_router(llm_settings_router, prefix="/api/v1")
 app.include_router(usage_router, prefix="/api/v1")
 app.include_router(news_router, prefix="/api/v1")
+app.include_router(wiki_router, prefix="/api/v1")
 
 
 # 健康检查接口
