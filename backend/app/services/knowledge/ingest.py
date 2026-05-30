@@ -18,6 +18,7 @@ from app.core.logger import logger_manager
 from app.crud.knowledge import kb_crud
 from app.models.knowledge import DocStatus, Document
 from app.services.shared.usage import UsageTimer, usage_service
+from app.services.wiki import wiki_service
 
 logger = logger_manager.get_logger(__name__)
 
@@ -28,6 +29,15 @@ class KnowledgeIngest:
     def __init__(self, service):
         """保存门面服务引用，复用运行时与存储能力。"""
         self.service = service
+
+    async def _maybe_compile_wiki(self, db, kb_id: int, doc_id: int) -> None:
+        """Optionally compile Wiki pages after a document finishes ingesting."""
+        if not settings.wiki.WIKI_AUTO_COMPILE_ON_INGEST:
+            return
+        try:
+            await wiki_service.compile_document(db, kb_id=kb_id, doc_id=doc_id)
+        except Exception as exc:
+            logger.warning(f"Wiki compile failed after ingest for doc {doc_id}: {exc}")
 
     def _normalize_milvus_delete_ids(self, vector_ids: List[str]) -> Tuple[List[int], int]:
         """将向量 ID 规范为整数列表，并统计被跳过的无效值。"""
@@ -248,6 +258,7 @@ class KnowledgeIngest:
                     chunk_count=len(prepared_rows),
                 )
                 self.service._invalidate_bm25_cache(doc.kb_id)
+                await self._maybe_compile_wiki(db, kb_id=doc.kb_id, doc_id=doc.id)
 
             except Exception as exc:
                 if kb_owner_id is not None:
