@@ -23,6 +23,7 @@ _INT_FRONTMATTER_KEYS = {
 _FLOAT_FRONTMATTER_KEYS = {"confidence", "score"}
 _LIST_FRONTMATTER_KEYS = {"tags", "wiki_links"}
 _BOOL_FRONTMATTER_KEYS = {"archived", "draft", "enabled"}
+_FRONTMATTER_DELIMITER_RE = re.compile(r"^---[ \t]*(?:\r\n|\n|\r|$)", re.MULTILINE)
 
 
 def slugify_title(
@@ -65,33 +66,29 @@ def build_frontmatter(values: Mapping[str, Any]) -> str:
 
 
 def extract_frontmatter(markdown: str) -> tuple[dict[str, Any], str]:
-    """Extract frontmatter created by build_frontmatter and stripped body text."""
+    """Extract frontmatter created by build_frontmatter and preserve body text."""
 
     if not markdown.startswith("---"):
         return {}, markdown
 
-    lines = markdown.splitlines()
-    if not lines or lines[0].strip() != "---":
+    opening_match = _FRONTMATTER_DELIMITER_RE.match(markdown)
+    if opening_match is None:
         return {}, markdown
 
-    end_index = None
-    for index, line in enumerate(lines[1:], start=1):
-        if line.strip() == "---":
-            end_index = index
-            break
-
-    if end_index is None:
+    closing_match = _FRONTMATTER_DELIMITER_RE.search(markdown, opening_match.end())
+    if closing_match is None:
         return {}, markdown
 
     frontmatter: dict[str, Any] = {}
-    for line in lines[1:end_index]:
+    frontmatter_text = markdown[opening_match.end() : closing_match.start()]
+    for line in frontmatter_text.splitlines():
         if not line.strip() or ":" not in line:
             continue
         key, raw_value = line.split(":", 1)
         normalized_key = key.strip()
         frontmatter[normalized_key] = _parse_scalar(normalized_key, raw_value.strip())
 
-    body = "\n".join(lines[end_index + 1 :]).strip()
+    body = markdown[closing_match.end() :]
     return frontmatter, body
 
 

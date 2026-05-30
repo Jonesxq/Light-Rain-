@@ -192,6 +192,24 @@ def test_extract_frontmatter_without_frontmatter_preserves_body():
     assert body == markdown
 
 
+def test_extract_frontmatter_preserves_indented_code_body():
+    markdown = '---\ntitle: "Code"\n---\n    indented\n'
+
+    frontmatter, body = extract_frontmatter(markdown)
+
+    assert frontmatter["title"] == "Code"
+    assert body == "    indented\n"
+
+
+def test_extract_frontmatter_preserves_trailing_body_blank_lines():
+    markdown = '---\ntitle: "Body"\n---\nBody\n\n'
+
+    frontmatter, body = extract_frontmatter(markdown)
+
+    assert frontmatter["title"] == "Body"
+    assert body == "Body\n\n"
+
+
 def test_log_heading_is_parseable_shape():
     heading = build_log_heading(
         event_time=datetime(2026, 5, 30, 9, 15),
