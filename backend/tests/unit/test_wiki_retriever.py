@@ -210,6 +210,66 @@ async def test_search_skips_missing_files(db_session, test_user_verified, tmp_pa
 
 
 @pytest.mark.asyncio
+async def test_search_only_uses_active_pages(db_session, test_user_verified, tmp_path):
+    kb = await _create_kb(db_session, test_user_verified)
+    storage = WikiStorage(root_dir=tmp_path)
+    active = await _upsert_page(
+        db_session,
+        storage,
+        kb_id=kb.id,
+        path="topics/active.md",
+        title="Active",
+        page_type="topic",
+        content=_page_markdown(
+            "Active",
+            "topic",
+            "The retrieval query mentions quartzleaf once.",
+        ),
+    )
+    stale = await _upsert_page(
+        db_session,
+        storage,
+        kb_id=kb.id,
+        path="topics/stale.md",
+        title="Stale",
+        page_type="topic",
+        content=_page_markdown(
+            "Stale",
+            "topic",
+            "quartzleaf quartzleaf quartzleaf stale content should not be searched.",
+        ),
+        status="stale",
+    )
+    failed = await _upsert_page(
+        db_session,
+        storage,
+        kb_id=kb.id,
+        path="topics/failed.md",
+        title="Failed",
+        page_type="topic",
+        content=_page_markdown(
+            "Failed",
+            "topic",
+            "quartzleaf quartzleaf failed content should not be searched.",
+        ),
+        status="failed",
+    )
+
+    hits = await WikiRetriever(storage=storage).search(
+        db_session,
+        kb_id=kb.id,
+        query="quartzleaf",
+        top_k=10,
+    )
+
+    assert [hit.page_id for hit in hits] == [active.id]
+    hit_paths = {hit.path for hit in hits}
+    assert "topics/active.md" in hit_paths
+    assert stale.path not in hit_paths
+    assert failed.path not in hit_paths
+
+
+@pytest.mark.asyncio
 async def test_service_search_pages_delegates(db_session, tmp_path, monkeypatch):
     storage = WikiStorage(root_dir=tmp_path)
     service = WikiService(storage=storage)

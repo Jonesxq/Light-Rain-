@@ -38,6 +38,7 @@ class WikiRetriever:
             return []
 
         pages = await wiki_crud.list_pages(db, kb_id)
+        pages = [page for page in pages if page.status == "active"]
         if not pages:
             return []
 
