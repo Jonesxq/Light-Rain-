@@ -14,6 +14,12 @@ def test_slugify_title_keeps_ascii_and_doc_id_prefix():
     assert slugify_title("   ", fallback="Document Name", prefix="7") == "7-document-name"
 
 
+def test_slugify_title_accepts_none_and_ascii_empty_values():
+    assert slugify_title(None, fallback="Doc Name", prefix="3") == "3-doc-name"
+    assert slugify_title("文档", fallback="资料", prefix="3") == "3-page"
+    assert slugify_title("资料", fallback=None) == "page"
+
+
 def test_frontmatter_roundtrip_for_simple_values():
     markdown = build_frontmatter(
         {
@@ -52,6 +58,45 @@ def test_frontmatter_roundtrip_for_bool_float_and_clean_list_items():
         "tags": ["source", "api"],
     }
     assert body == ""
+
+
+def test_frontmatter_list_roundtrip_preserves_commas_inside_items():
+    markdown = build_frontmatter(
+        {
+            "wiki_links": ["[[Foo, Bar]]", "[[Baz]]"],
+        }
+    )
+
+    frontmatter, _body = extract_frontmatter(markdown)
+
+    assert frontmatter["wiki_links"] == ["[[Foo, Bar]]", "[[Baz]]"]
+
+
+def test_frontmatter_parses_numeric_strings_by_key():
+    markdown = build_frontmatter(
+        {
+            "title": "2026",
+            "content_hash": "123456",
+            "doc_id": 12,
+            "confidence": 0.72,
+        }
+    )
+
+    frontmatter, _body = extract_frontmatter(markdown)
+
+    assert frontmatter["title"] == "2026"
+    assert frontmatter["content_hash"] == "123456"
+    assert frontmatter["doc_id"] == 12
+    assert frontmatter["confidence"] == 0.72
+
+
+def test_extract_frontmatter_without_frontmatter_preserves_body():
+    markdown = "  # Title\nBody\n  "
+
+    frontmatter, body = extract_frontmatter(markdown)
+
+    assert frontmatter == {}
+    assert body == markdown
 
 
 def test_log_heading_is_parseable_shape():

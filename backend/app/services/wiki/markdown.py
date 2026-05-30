@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime
 from typing import Any, Iterable, Mapping, Sequence
@@ -9,17 +10,32 @@ from typing import Any, Iterable, Mapping, Sequence
 
 _NON_ALNUM_RE = re.compile(r"[^a-zA-Z0-9]+")
 _SAFE_EVENT_RE = re.compile(r"[^a-zA-Z0-9_-]+")
+_INT_FRONTMATTER_KEYS = {
+    "created_by_message_id",
+    "doc_id",
+    "from_page_id",
+    "kb_id",
+    "page_id",
+    "patches_created",
+    "source_doc_id",
+    "to_page_id",
+}
+_FLOAT_FRONTMATTER_KEYS = {"confidence", "score"}
 
 
-def slugify_title(title: str, fallback: str = "page", prefix: str | None = None) -> str:
+def slugify_title(
+    title: str | None,
+    fallback: str | None = "page",
+    prefix: str | None = None,
+) -> str:
     """Build a filesystem-friendly ASCII slug from a title."""
 
-    raw = title if title.strip() else fallback
+    raw = (title or "").strip() or (fallback or "")
     ascii_title = raw.encode("ascii", "ignore").decode("ascii")
     slug = _NON_ALNUM_RE.sub("-", ascii_title).strip("-").lower()
 
     if not slug:
-        ascii_fallback = fallback.encode("ascii", "ignore").decode("ascii")
+        ascii_fallback = (fallback or "").encode("ascii", "ignore").decode("ascii")
         slug = _NON_ALNUM_RE.sub("-", ascii_fallback).strip("-").lower()
 
     if not slug:
@@ -50,11 +66,11 @@ def extract_frontmatter(markdown: str) -> tuple[dict[str, Any], str]:
     """Extract frontmatter created by build_frontmatter and stripped body text."""
 
     if not markdown.startswith("---"):
-        return {}, markdown.strip()
+        return {}, markdown
 
     lines = markdown.splitlines()
     if not lines or lines[0].strip() != "---":
-        return {}, markdown.strip()
+        return {}, markdown
 
     end_index = None
     for index, line in enumerate(lines[1:], start=1):
@@ -63,14 +79,15 @@ def extract_frontmatter(markdown: str) -> tuple[dict[str, Any], str]:
             break
 
     if end_index is None:
-        return {}, markdown.strip()
+        return {}, markdown
 
     frontmatter: dict[str, Any] = {}
     for line in lines[1:end_index]:
         if not line.strip() or ":" not in line:
             continue
         key, raw_value = line.split(":", 1)
-        frontmatter[key.strip()] = _parse_scalar(raw_value.strip())
+        normalized_key = key.strip()
+        frontmatter[normalized_key] = _parse_scalar(normalized_key, raw_value.strip())
 
     body = "\n".join(lines[end_index + 1 :]).strip()
     return frontmatter, body
@@ -116,30 +133,42 @@ def _format_value(value: Any) -> str:
     if isinstance(value, (int, float)):
         return str(value)
     if isinstance(value, list | tuple):
-        return "[" + ", ".join(_clean_list_item(item) for item in value) + "]"
+        return json.dumps(
+            [_clean_list_item(item) for item in value],
+            ensure_ascii=False,
+        )
     return str(value).strip()
 
 
-def _parse_scalar(value: str) -> Any:
+def _parse_scalar(key: str, value: str) -> Any:
     if value.lower() == "true":
         return True
     if value.lower() == "false":
         return False
     if value.startswith("[") and value.endswith("]"):
-        inner = value[1:-1].strip()
-        if not inner:
-            return []
-        return [_clean_list_item(item) for item in inner.split(",")]
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            inner = value[1:-1].strip()
+            if not inner:
+                return []
+            return [_clean_list_item(item) for item in inner.split(",")]
+        if isinstance(parsed, list):
+            return [_clean_list_item(item) for item in parsed]
 
-    try:
-        return int(value)
-    except ValueError:
-        pass
+    if key in _INT_FRONTMATTER_KEYS:
+        try:
+            return int(value)
+        except ValueError:
+            return _clean_string(value)
 
-    try:
-        return float(value)
-    except ValueError:
-        return _clean_string(value)
+    if key in _FLOAT_FRONTMATTER_KEYS:
+        try:
+            return float(value)
+        except ValueError:
+            return _clean_string(value)
+
+    return _clean_string(value)
 
 
 def _clean_list_item(item: Any) -> str:
