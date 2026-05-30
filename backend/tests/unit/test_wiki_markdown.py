@@ -72,6 +72,34 @@ def test_frontmatter_list_roundtrip_preserves_commas_inside_items():
     assert frontmatter["wiki_links"] == ["[[Foo, Bar]]", "[[Baz]]"]
 
 
+def test_frontmatter_bracketed_scalar_strings_do_not_parse_as_lists():
+    markdown = build_frontmatter(
+        {
+            "title": "[Draft]",
+            "content_hash": "[abc]",
+        }
+    )
+
+    frontmatter, _body = extract_frontmatter(markdown)
+
+    assert frontmatter["title"] == "[Draft]"
+    assert frontmatter["content_hash"] == "[abc]"
+
+
+def test_frontmatter_known_list_keys_roundtrip_as_lists():
+    markdown = build_frontmatter(
+        {
+            "tags": ["source", "api"],
+            "wiki_links": ["[[Foo, Bar]]"],
+        }
+    )
+
+    frontmatter, _body = extract_frontmatter(markdown)
+
+    assert frontmatter["tags"] == ["source", "api"]
+    assert frontmatter["wiki_links"] == ["[[Foo, Bar]]"]
+
+
 def test_frontmatter_parses_numeric_strings_by_key():
     markdown = build_frontmatter(
         {

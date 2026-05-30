@@ -21,6 +21,7 @@ _INT_FRONTMATTER_KEYS = {
     "to_page_id",
 }
 _FLOAT_FRONTMATTER_KEYS = {"confidence", "score"}
+_LIST_FRONTMATTER_KEYS = {"tags", "wiki_links"}
 
 
 def slugify_title(
@@ -145,7 +146,7 @@ def _parse_scalar(key: str, value: str) -> Any:
         return True
     if value.lower() == "false":
         return False
-    if value.startswith("[") and value.endswith("]"):
+    if key in _LIST_FRONTMATTER_KEYS and value.startswith("[") and value.endswith("]"):
         try:
             parsed = json.loads(value)
         except json.JSONDecodeError:
