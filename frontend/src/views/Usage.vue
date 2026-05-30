@@ -7,12 +7,7 @@
       </div>
       <div class="header-actions">
         <div class="actions action-bar">
-          <button class="ghost" @click="goChat">聊天</button>
-          <button class="ghost" @click="goMy">我的</button>
-          <button class="ghost" @click="goKnowledge">知识库</button>
-          <button class="ghost" @click="goAiNews">AI资讯</button>
-          <button class="ghost" @click="goSettings">模型设置</button>
-          <button class="ghost" @click="logout">退出登录</button>
+          <button class="ghost" @click="goChat">返回聊天</button>
         </div>
       </div>
     </header>
@@ -179,7 +174,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { apiFetch, clearTokens } from '../api/client.js';
+import { apiFetch } from '../api/client.js';
 import CenterToast from '../components/CenterToast.vue';
 import { useCenterToast } from '../composables/useCenterToast.js';
 
@@ -209,15 +204,6 @@ const setError = (message) => {
 };
 
 const goChat = () => router.push('/chat');
-const goMy = () => router.push('/my');
-const goKnowledge = () => router.push('/knowledge');
-const goSettings = () => router.push('/settings');
-const goAiNews = () => router.push('/ai-news');
-
-const logout = () => {
-  clearTokens();
-  router.push('/login');
-};
 
 const loadOverview = async () => {
   const data = await apiFetch(`/usage/overview?range_days=${rangeDays}`);

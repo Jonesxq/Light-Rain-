@@ -26,6 +26,23 @@ async def test_engine():
     """Create test database engine"""
     # Import models to register them with SQLModel metadata
     from app.models.user import User  # noqa: F401
+    from app.models.token import RefreshToken, VerificationCode  # noqa: F401
+    from app.models.knowledge import KnowledgeBase, Document, DocumentChunk  # noqa: F401
+    from app.models.llm_settings import UserLLMSettings  # noqa: F401
+    from app.models.usage import UsageEvent, UserUsageSettings  # noqa: F401
+    from app.models.chat import (  # noqa: F401
+        ChatMessage,
+        ChatSession,
+        ChatAttachment,
+        ChatPromptSnapshot,
+    )
+    from app.models.wiki import (  # noqa: F401
+        WikiLink,
+        WikiPage,
+        WikiPageRevision,
+        WikiPatch,
+        WikiRun,
+    )
     
     # Use file-based SQLite for testing (more reliable than in-memory with async)
     engine = create_async_engine(

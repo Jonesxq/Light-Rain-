@@ -90,13 +90,13 @@ class PasswordHasher:
     def __init__(self):
         """初始化密码哈希器，配置Argon2参数"""
         self.logger = logger_manager.get_logger(__name__)
-        # useArgon2 - highperformanceconfiguration
+        # 使用 Argon2，并采用较高性能配置
         self.ph = argon2.PasswordHasher(
-            time_cost=2,  # Time cost (iteration count) - optimize performance
-            memory_cost=65536,  # Memory cost (64MB)
-            parallelism=1,  # Parallelism
-            hash_len=32,  # Hash length
-            salt_len=16,  # Salt length
+            time_cost=2,  # 时间成本（迭代次数），平衡安全与性能
+            memory_cost=65536,  # 内存成本（64MB）
+            parallelism=1,  # 并行度
+            hash_len=32,  # 哈希长度
+            salt_len=16,  # 盐值长度
         )
         self.logger.info("Using Argon2 for password hashing")
     
@@ -218,7 +218,7 @@ class JWTManager:
             tuple: (令牌字符串, 过期时间datetime对象)
         """
         exp_time = datetime.now(timezone.utc) + timedelta(seconds=expires_in_seconds)
-        # Convert to UTC timestamp
+        # 转换为 UTC 时间戳
         payload = {
             **data,
             "exp": int(exp_time.timestamp()),
@@ -364,7 +364,7 @@ class SecurityManager:
 security_manager = SecurityManager(settings)
 
 
-# Convenience functions (backward compatible)
+# 便捷函数（向后兼容）
 def get_password_hash(password: str) -> str:
     """获取密码哈希（向后兼容函数）
     

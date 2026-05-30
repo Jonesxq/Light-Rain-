@@ -28,7 +28,7 @@ from app.crud.chat import chat_crud
 from app.crud.chat_prompt_snapshot import chat_prompt_snapshot_crud
 from app.services.chat import chat_service
 from app.services.knowledge import kb_service
-from app.services.temp_context import temp_context_service
+from app.services.chat.attachments import temp_context_service
 
 
 
@@ -37,7 +37,7 @@ router = APIRouter(prefix="/chat", tags=["Chat"])
 
 ATTACHMENT_ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md", ".png", ".jpg", ".jpeg"}
 ATTACHMENT_UPLOAD_DIR = "static/uploads/temp_context"
-ATTACHMENT_MAX_SIZE = 10 * 1024 * 1024  # 10MB
+ATTACHMENT_MAX_SIZE = 10 * 1024 * 1024  # 10MB 上限
 
 def _build_attachment_preview(text: Optional[str], max_len: int = 200) -> str:
     """构建附件预览文本

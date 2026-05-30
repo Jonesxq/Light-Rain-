@@ -110,7 +110,7 @@ class ChatCRUD:
             created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else None,
         )
 
-    # ========== Session Operations ==========
+    # ========== 会话操作 ==========
 
     async def create_session(self, db: AsyncSession, user_id: int, title: str = "New Chat") -> ChatSession:
         """创建新的聊天会话
@@ -286,7 +286,7 @@ class ChatCRUD:
         await redis_manager.delete_pattern_async(f"chat:sessions:{user_id}:*")
         return True
 
-    # ========== Message Operations ==========
+    # ========== 消息操作 ==========
 
     async def create_message(
             self,

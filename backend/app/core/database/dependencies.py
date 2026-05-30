@@ -75,7 +75,7 @@ class Dependencies:
                 detail="Unauthorized access",
             )
         
-        # Validate access token
+        # 校验访问令牌
         try:
             self.logger.info("Attempting to decode access token")
             token_data = security_manager.decode_token(access_token)
@@ -89,7 +89,7 @@ class Dependencies:
                 if user_id:
                     self.logger.info(f"Validating token in database for user_id: {user_id}")
                     
-                    # Validate access token validity in database
+                    # 在数据库中校验访问令牌有效性
                     valid_access_token = await db.execute(
                         select(Token).where(
                             Token.user_id == user_id,
@@ -103,7 +103,7 @@ class Dependencies:
                     if valid_token:
                         self.logger.info(f"Valid token found in database: {valid_token.id}")
                         
-                        # Get user information from database
+                        # 从数据库获取用户信息
                         user = await self.auth_crud.get_user_by_id(user_id)
                         
                         if (
@@ -130,7 +130,7 @@ class Dependencies:
         except Exception as e:
             self.logger.warning(f"Access token validation failed: {str(e)}")
         
-        # If all tokens are invalid, raise unauthorized error
+        # 若所有令牌校验均失败，则抛出未授权错误
         self.logger.warning("All token validation attempts failed")
         raise HTTPException(
             status_code=401,

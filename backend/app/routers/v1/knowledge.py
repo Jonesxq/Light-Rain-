@@ -11,7 +11,12 @@ from app.models.user import User
 from app.models.knowledge import DocStatus, Document, DocumentChunk
 from app.crud.knowledge import kb_crud
 from app.services.knowledge import kb_service
-from app.services.rag_evaluation import rag_evaluation_service
+try:
+    from app.services.rag_evaluation import rag_evaluation_service
+except ModuleNotFoundError as exc:
+    if exc.name != "app.services.rag_evaluation":
+        raise
+    rag_evaluation_service = None
 from app.schemas.knowledge import (
     DocumentResponse,
     KnowledgeBaseResponse,
@@ -28,7 +33,7 @@ ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
 # 文件保存路径
 UPLOAD_DIR = "static/uploads/kb"
 # 单个文件最大大小（字节），避免一次性占用过多内存
-MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB 上限
 
 
 async def _get_owned_completed_doc_or_404(
@@ -137,7 +142,7 @@ async def list_kbs(
     Returns:
         list[KnowledgeBaseResponse]: 知识库列表
     """
-    return await kb_crud.get_user_kbs(db, user_id=current_user.id)
+    return await kb_crud.get_user_kbs_with_doc_count(db, user_id=current_user.id)
 
 
 @router.delete("/{kb_id}")
@@ -204,11 +209,27 @@ async def list_kb_documents(
     rows = result.all()
 
     payload = []
+    has_backfilled_size = False
     for doc, processed_chunks in rows:
+        file_size = int(doc.file_size or 0)
+        # 兼容历史数据：如果旧文档 file_size 为空或 0，则尝试按磁盘文件回填真实大小。
+        if file_size <= 0 and doc.file_path:
+            try:
+                if os.path.exists(doc.file_path):
+                    file_size = os.path.getsize(doc.file_path)
+                    if file_size > 0 and (doc.file_size or 0) != file_size:
+                        doc.file_size = file_size
+                        has_backfilled_size = True
+            except OSError:
+                # 文件不存在或路径不可读时保持原值，避免影响列表接口可用性。
+                file_size = int(doc.file_size or 0)
+
         payload.append(
             {
                 "id": doc.id,
                 "file_name": doc.file_name,
+                "file_type": doc.file_type,
+                "file_size": file_size,
                 "status": doc.status,
                 "chunk_count": doc.chunk_count,
                 "processed_chunks": processed_chunks or 0,
@@ -216,6 +237,9 @@ async def list_kb_documents(
                 "created_at": doc.created_at,
             }
         )
+
+    if has_backfilled_size:
+        await db.commit()
 
     return payload
 
@@ -405,6 +429,12 @@ async def evaluate_kb(
     Raises:
         HTTPException: 知识库不存在或无权限时返回404
     """
+    if rag_evaluation_service is None:
+        raise HTTPException(
+            status_code=503,
+            detail="RAG evaluation service is temporarily unavailable while application startup compatibility is restored",
+        )
+
     kb = await kb_crud.get_kb(db, kb_id)
     if not kb or kb.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Knowledge base not found")

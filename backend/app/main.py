@@ -20,17 +20,18 @@ from app.routers.v1 import (
     knowledge_router,
     llm_settings_router,
     usage_router,
-    news_router
+    news_router,
+    wiki_router,
 )
 
-# Create LoggerManager instance
+# 初始化 LoggerManager
 logger_manager.setup()
 
-# Create Logger instance
+# 获取当前模块日志器
 logger = logger_manager.get_logger(__name__)
 
 
-# Create lifespan
+# 应用生命周期钩子
 async def lifespan(_app: FastAPI):
     """应用生命周期管理：启动时初始化数据库和Redis，关闭时清理资源
     
@@ -41,7 +42,7 @@ async def lifespan(_app: FastAPI):
     logger.info(f"🚧 You are working in {os.getenv('ENV', 'development')} environment")
     
     try:
-        # Initialize database connection
+        # 初始化数据库连接
         await db_manager.initialize()
         logger.info("🎉 Database connections initialized successfully")
         await db_manager.test_connections()
@@ -51,7 +52,7 @@ async def lifespan(_app: FastAPI):
         logger.warning("⚠️ Application will start without database connections")
     
     try:
-        # Initialize Redis connection
+        # 初始化 Redis 连接
         await redis_manager.initialize_async()
         logger.info("🎉 Redis connections initialized successfully")
         await redis_manager.async_test_connection()
@@ -62,7 +63,7 @@ async def lifespan(_app: FastAPI):
     
     yield
     
-    # Close database connection
+    # 关闭数据库连接
     try:
         await db_manager.close()
         logger.info("🎉 Database connections closed successfully")
@@ -70,7 +71,7 @@ async def lifespan(_app: FastAPI):
         logger.error(f"❌ Database connection closed failed: {e}")
         logger.warning("⚠️ Database connection closed failed")
     
-    # Close Redis connections
+    # 关闭 Redis 连接
     try:
         await redis_manager.close()
         logger.info("🎉 Redis connections closed successfully")
@@ -78,7 +79,7 @@ async def lifespan(_app: FastAPI):
         logger.error(f"❌ Redis connection closed failed: {e}")
         logger.warning("⚠️ Redis connection closed failed")
 
-# Create FastAPI instance
+# 创建 FastAPI 应用实例
 app = FastAPI(
     lifespan=lifespan,
     title=settings.app.APP_NAME,
@@ -87,7 +88,7 @@ app = FastAPI(
 )
 
 
-# Global exception handlers
+# 全局异常处理器
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_request: Request, exc: HTTPException):
     """HTTP异常处理器：统一处理HTTPException并返回JSON格式错误
@@ -154,30 +155,13 @@ app.add_middleware(
     allow_methods=["*"],             # 允许所有方法
     allow_headers=["*"],             # 允许所有请求头
 )
-# # CORS middleware
-# allow_origins = [x.strip() for x in settings.cors.CORS_ALLOWED_ORIGINS.split(',') if x.strip()]
-# allow_methods = [x.strip() for x in settings.cors.CORS_ALLOW_METHODS.split(',') if x.strip()]
-# allow_headers = [x.strip() for x in settings.cors.CORS_ALLOW_HEADERS.split(',') if x.strip()]
-# allow_credentials = settings.cors.CORS_ALLOW_CREDENTIALS
-# expose_headers = [x.strip() for x in settings.cors.CORS_EXPOSE_HEADERS.split(',') if x.strip()]
-#
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=allow_origins,
-#     allow_methods=allow_methods,
-#     allow_headers=allow_headers,
-#     allow_credentials=allow_credentials,
-#     expose_headers=expose_headers,
-# )
-
-
-# Static files
+# 静态文件挂载
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
-# Include routers
+# 注册路由
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(user_router, prefix="/api/v1")
 app.include_router(chat_router, prefix="/api/v1")
@@ -185,9 +169,10 @@ app.include_router(knowledge_router, prefix="/api/v1")
 app.include_router(llm_settings_router, prefix="/api/v1")
 app.include_router(usage_router, prefix="/api/v1")
 app.include_router(news_router, prefix="/api/v1")
+app.include_router(wiki_router, prefix="/api/v1")
 
 
-# Health check endpoint
+# 健康检查接口
 @app.get("/health", tags=["Health"])
 async def health_check():
     """健康检查接口：用于监控服务健康状态
@@ -198,7 +183,7 @@ async def health_check():
     return {"status": "healthy"}
 
 
-# OpenAPI documentation
+# OpenAPI 文档定制
 def custom_openapi():
     """自定义OpenAPI文档生成
     
@@ -222,7 +207,7 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 
-# Start application
+# 本地开发启动入口
 if __name__ == "__main__":
     if os.getenv("ENV") == "development":
         logger.info("🚩 Starting the application in development mode...")

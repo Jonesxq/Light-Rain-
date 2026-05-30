@@ -29,9 +29,9 @@ class RefreshToken(SQLModel, table=True):
     # 设备名称，例如 iPhone 13
     device_name: Optional[str] = Field(default=None, max_length=100)
     # 设备类型，例如 web / mobile / desktop
-    device_type: Optional[str] = Field(default=None, max_length=50)  # web, mobile, desktop
+    device_type: Optional[str] = Field(default=None, max_length=50)  # 设备类型：网页/移动端/桌面端
     # IP 地址（IPv6 最大长度 45）
-    ip_address: Optional[str] = Field(default=None, max_length=45)  # IPv6 max length 45 characters
+    ip_address: Optional[str] = Field(default=None, max_length=45)  # IPv6 最长 45 个字符
     # User-Agent 信息
     user_agent: Optional[str] = Field(default=None, max_length=500)
     
@@ -99,7 +99,7 @@ class VerificationCode(SQLModel, table=True):
     # 验证码内容
     code: str = Field(max_length=10, index=True)
     # 验证码类型（例如邮箱验证、密码重置）
-    code_type: str = Field(max_length=20, index=True)  # email_verification, password_reset
+    code_type: str = Field(max_length=20, index=True)  # 验证码类型：邮箱验证/密码重置
     # 过期时间
     expires_at: datetime = Field(index=True)
     
@@ -109,9 +109,9 @@ class VerificationCode(SQLModel, table=True):
     # 使用时间
     used_at: Optional[datetime] = Field(default=None)
     # 已尝试次数
-    attempts: int = Field(default=0)  # Attempt count
+    attempts: int = Field(default=0)  # 已尝试次数
     # 最大尝试次数
-    max_attempts: int = Field(default=5)  # Maximum attempts
+    max_attempts: int = Field(default=5)  # 最大尝试次数
     
     # 时间戳
     created_at: datetime = Field(default_factory=datetime.utcnow)

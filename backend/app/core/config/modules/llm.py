@@ -59,10 +59,14 @@ class LLMSettings(EnvBaseSettings):
     # RAG 检索配置
     # 重排序模型（DashScope）
     RERANK_MODEL: str = Field(default="gte-rerank-v2", description="重排序模型")
+    # RAG 相关度阈值（重排得分低于此值将被丢弃）
+    RAG_RELEVANCE_THRESHOLD: float = Field(default=0.01, description="RAG相关度阈值")
     # BM25 初筛候选数
     RAG_BM25_TOP_K: int = Field(default=50, description="BM25初筛候选数量")
     # 语义检索保留数（在 BM25 候选内做向量检索）
     RAG_SEMANTIC_TOP_K: int = Field(default=20, description="语义检索保留数量")
+    # 最终返回给 LLM 的知识片段数量
+    RAG_FINAL_TOP_K: int = Field(default=3, description="最终返回给LLM的知识片段数量")
     # BM25 缓存 TTL（秒）
     RAG_BM25_CACHE_TTL: int = Field(default=600, description="BM25缓存过期时间（秒）")
     # chunk 摘要最大字符数（用于向量入库）
@@ -79,13 +83,13 @@ class LLMSettings(EnvBaseSettings):
     RAG_CHUNK_OVERLAP_DOCX: Optional[int] = Field(default=None, description="DOCX分块重叠大小")
     RAG_CHUNK_SIZE_MD: Optional[int] = Field(default=None, description="Markdown分块大小")
     RAG_CHUNK_OVERLAP_MD: Optional[int] = Field(default=None, description="Markdown分块重叠大小")
-    RAG_CHUNK_SIZE_TXT: Optional[int] = Field(default=None, description="TXT分块大小")
-    RAG_CHUNK_OVERLAP_TXT: Optional[int] = Field(default=None, description="TXT分块重叠大小")
+    RAG_CHUNK_SIZE_TXT: Optional[int] = Field(default=1500, description="TXT分块大小")
+    RAG_CHUNK_OVERLAP_TXT: Optional[int] = Field(default=150, description="TXT分块重叠大小")
     RAG_CHUNK_SIZE_PPTX: Optional[int] = Field(default=None, description="PPTX分块大小")
     RAG_CHUNK_OVERLAP_PPTX: Optional[int] = Field(default=None, description="PPTX分块重叠大小")
 
     MILVUS_COLLECTION_PREFIX: str = "kb_"
-    MILVUS_URI: str = Field(default="http://localhost:19530", description="Milvus连接URI")
+    MILVUS_URI: str = Field(default="tcp://localhost:19530", description="Milvus连接URI")
     # 如果是本地简单的 Milvus，user 和 password 可以为空
     MILVUS_USER: Optional[str] = Field(default=None, description="Milvus用户名")
     MILVUS_PASSWORD: Optional[str] = Field(default=None, description="Milvus密码")

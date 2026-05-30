@@ -83,6 +83,7 @@ class MySQLManager:
                 # 设置MySQL时区为UTC（会话级别）
                 connect_args={
                     "init_command": "SET SESSION time_zone = '+00:00'",
+                    "charset": "utf8mb4",
                 },
             )
             await self._create_tables()
@@ -103,6 +104,7 @@ class MySQLManager:
                 max_overflow=db.POOL_MAX_OVERFLOW,
                 connect_args={
                     "init_command": "SET SESSION time_zone = '+00:00'",
+                    "charset": "utf8mb4",
                 },
             )
             

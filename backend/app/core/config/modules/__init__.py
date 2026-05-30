@@ -1,4 +1,5 @@
-﻿"""core/config/modules/__init__.py."""
+"""配置子模块聚合导出。"""
+
 from .app import AppSettings
 from .logger import LoggingSettings
 from .database import DatabaseSettings

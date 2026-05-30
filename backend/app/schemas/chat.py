@@ -48,7 +48,7 @@ class KnowledgeSource(BaseModel):
     doc_id: Optional[int] = None
     # Web 标题
     title: Optional[str] = None
-    # Web URL
+    # 网页链接
     url: Optional[str] = None
     # Web 摘要
     snippet: Optional[str] = None
