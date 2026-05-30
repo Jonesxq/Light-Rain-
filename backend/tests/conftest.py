@@ -28,6 +28,8 @@ async def test_engine():
     from app.models.user import User  # noqa: F401
     from app.models.token import RefreshToken, VerificationCode  # noqa: F401
     from app.models.knowledge import KnowledgeBase, Document, DocumentChunk  # noqa: F401
+    from app.models.llm_settings import UserLLMSettings  # noqa: F401
+    from app.models.usage import UsageEvent, UserUsageSettings  # noqa: F401
     from app.models.chat import (  # noqa: F401
         ChatMessage,
         ChatSession,

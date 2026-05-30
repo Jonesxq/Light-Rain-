@@ -22,6 +22,8 @@ from app.models.token import RefreshToken, VerificationCode
 from app.models.knowledge import KnowledgeBase, Document, DocumentChunk
 from app.models.chat import ChatMessage, ChatSession, ChatAttachment, ChatPromptSnapshot
 from app.models.wiki import WikiLink, WikiPage, WikiPageRevision, WikiPatch, WikiRun
+from app.models.llm_settings import UserLLMSettings
+from app.models.usage import UsageEvent, UserUsageSettings
 
 # Alembic Config object
 config = context.config
