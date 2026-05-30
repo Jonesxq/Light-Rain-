@@ -80,6 +80,78 @@ def test_lint_reports_db_row_file_mismatches_when_db_pages_are_present(tmp_path)
     assert "missing_page_file" in _warning_codes(warnings)
 
 
+def test_lint_reports_missing_provenance_for_source_page(tmp_path):
+    storage = WikiStorage(root_dir=tmp_path)
+    storage.write_page(
+        1,
+        "sources/doc.md",
+        build_frontmatter({"title": "Doc", "page_type": "source"}) + "\n# Doc",
+    )
+    db_pages = [
+        WikiPage(kb_id=1, path="sources/doc.md", title="Doc", page_type="source"),
+    ]
+
+    warnings = WikiLint(storage).lint_files(kb_id=1, db_pages=db_pages)
+
+    assert "missing_provenance" in _warning_codes(warnings)
+
+
+def test_lint_accepts_source_page_with_db_provenance(tmp_path):
+    storage = WikiStorage(root_dir=tmp_path)
+    storage.write_page(
+        1,
+        "sources/doc.md",
+        build_frontmatter({"title": "Doc", "page_type": "source"}) + "\n# Doc",
+    )
+    db_pages = [
+        WikiPage(
+            kb_id=1,
+            path="sources/doc.md",
+            title="Doc",
+            page_type="source",
+            provenance={"source_doc_id": 1},
+        ),
+    ]
+
+    warnings = WikiLint(storage).lint_files(kb_id=1, db_pages=db_pages)
+
+    assert "missing_provenance" not in _warning_codes(warnings)
+
+
+def test_lint_accepts_source_page_with_markdown_source_marker(tmp_path):
+    storage = WikiStorage(root_dir=tmp_path)
+    storage.write_page(
+        1,
+        "sources/doc.md",
+        build_frontmatter({"title": "Doc", "page_type": "source"})
+        + "\n# Doc\n\n[source:doc=1 chunk=0]",
+    )
+    db_pages = [
+        WikiPage(kb_id=1, path="sources/doc.md", title="Doc", page_type="source"),
+    ]
+
+    warnings = WikiLint(storage).lint_files(kb_id=1, db_pages=db_pages)
+
+    assert "missing_provenance" not in _warning_codes(warnings)
+
+
+def test_lint_accepts_source_page_with_frontmatter_source_doc_id(tmp_path):
+    storage = WikiStorage(root_dir=tmp_path)
+    storage.write_page(
+        1,
+        "sources/doc.md",
+        build_frontmatter({"title": "Doc", "page_type": "source", "source_doc_id": 1})
+        + "\n# Doc",
+    )
+    db_pages = [
+        WikiPage(kb_id=1, path="sources/doc.md", title="Doc", page_type="source"),
+    ]
+
+    warnings = WikiLint(storage).lint_files(kb_id=1, db_pages=db_pages)
+
+    assert "missing_provenance" not in _warning_codes(warnings)
+
+
 def test_lint_reports_unsafe_index_link(tmp_path):
     storage = WikiStorage(root_dir=tmp_path)
     storage.write_page(

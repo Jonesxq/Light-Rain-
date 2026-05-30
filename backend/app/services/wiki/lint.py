@@ -15,6 +15,17 @@ from app.services.wiki.types import PAGE_INDEX, PAGE_LOG, WikiLintWarning
 _LOG_HEADING_RE = re.compile(
     r"^## \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}\] [A-Za-z0-9_-]+(?: \| .+)?$"
 )
+_PROVENANCE_PAGE_TYPES = {"automatic", "generated", "source"}
+_PROVENANCE_FRONTMATTER_FIELDS = {
+    "doc_id",
+    "provenance",
+    "source",
+    "source_count",
+    "source_doc_id",
+    "source_references",
+    "source_refs",
+    "sources",
+}
 
 
 class WikiLint:
@@ -31,11 +42,13 @@ class WikiLint:
         warnings: list[WikiLintWarning] = []
         file_paths = set(self.storage.list_markdown_pages(kb_id))
         db_page_list = list(db_pages)
+        db_pages_by_path = {page.path: page for page in db_page_list}
         db_paths = {page.path for page in db_page_list}
 
         for path in sorted(file_paths):
             markdown = self.storage.read_page(kb_id, path)
             frontmatter, body = extract_frontmatter(markdown)
+            db_page = db_pages_by_path.get(path)
 
             if path != PAGE_LOG and not frontmatter:
                 warnings.append(
@@ -59,6 +72,22 @@ class WikiLint:
                 warnings.extend(self._lint_index_links(kb_id, markdown, path))
             elif path == PAGE_LOG:
                 warnings.extend(self._lint_log_headings(body, path))
+
+            if self._needs_provenance_check(db_page, frontmatter) and not (
+                self._has_db_provenance(db_page)
+                or self._has_frontmatter_provenance(frontmatter)
+                or self._has_source_marker(kb_id, path, body)
+            ):
+                warnings.append(
+                    WikiLintWarning(
+                        code="missing_provenance",
+                        message=(
+                            f"Wiki page {path} is source/generated content "
+                            "but has no provenance references"
+                        ),
+                        path=path,
+                    )
+                )
 
         for page in db_page_list:
             if page.path not in file_paths:
@@ -121,6 +150,43 @@ class WikiLint:
                     )
                 )
         return warnings
+
+    @staticmethod
+    def _needs_provenance_check(
+        db_page: WikiPage | None,
+        frontmatter: dict,
+    ) -> bool:
+        if db_page is not None and db_page.page_type in _PROVENANCE_PAGE_TYPES:
+            return True
+
+        page_type = frontmatter.get("page_type")
+        if isinstance(page_type, str) and page_type in _PROVENANCE_PAGE_TYPES:
+            return True
+
+        return bool(frontmatter.get("automatic") or frontmatter.get("generated"))
+
+    @staticmethod
+    def _has_db_provenance(db_page: WikiPage | None) -> bool:
+        return bool(db_page is not None and db_page.provenance)
+
+    @staticmethod
+    def _has_frontmatter_provenance(frontmatter: dict) -> bool:
+        for field in _PROVENANCE_FRONTMATTER_FIELDS:
+            value = frontmatter.get(field)
+            if isinstance(value, int):
+                if value > 0:
+                    return True
+                continue
+            if value:
+                return True
+        return False
+
+    @staticmethod
+    def _has_source_marker(kb_id: int, path: str, body: str) -> bool:
+        return any(
+            link.link_type == "cites"
+            for link in WikiLinkExtractor.extract(kb_id, path, body)
+        )
 
     @staticmethod
     def _strip_fragment(target_path: str) -> str:
