@@ -1,4 +1,5 @@
 import importlib.util
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -8,7 +9,7 @@ from sqlalchemy import Column, Integer, MetaData, Table, create_engine, inspect
 from sqlmodel import SQLModel, select
 
 from app.models.knowledge import KnowledgeBase
-from app.models.wiki import WikiLink
+from app.models.wiki import WikiLink, WikiPage, WikiPageRevision, WikiPatch
 
 WIKI_TABLE_NAMES = {
     "wiki_pages",
@@ -82,6 +83,41 @@ def _migration_foreign_key_ondelete(inspector, table_name: str, column_name: str
 
     assert len(matches) == 1
     return (matches[0].get("options") or {}).get("ondelete")
+
+
+async def _create_kb(db_session, test_user_verified, name="Wiki CRUD KB"):
+    kb = KnowledgeBase(
+        user_id=test_user_verified.id,
+        name=name,
+        description="Exercises wiki CRUD helpers",
+    )
+    db_session.add(kb)
+    await db_session.commit()
+    await db_session.refresh(kb)
+    return kb
+
+
+async def _create_page(
+    db_session,
+    *,
+    kb_id: int,
+    path: str = "index.md",
+    title: str = "Index",
+    content_hash: str = "hash-1",
+    provenance: dict | None = None,
+):
+    page = WikiPage(
+        kb_id=kb_id,
+        path=path,
+        title=title,
+        page_type="overview",
+        content_hash=content_hash,
+        provenance=provenance or {},
+    )
+    db_session.add(page)
+    await db_session.commit()
+    await db_session.refresh(page)
+    return page
 
 
 def test_wiki_tables_are_registered_in_metadata():
@@ -336,3 +372,265 @@ async def test_wiki_crud_roundtrip(db_session, test_user_verified):
     )
     assert run.finished_at is not None
     assert run.metrics == {"pages": 1}
+
+
+@pytest.mark.asyncio
+async def test_upsert_page_preserves_and_clears_provenance(
+    db_session, test_user_verified
+):
+    from app.crud.wiki import wiki_crud
+
+    kb = await _create_kb(db_session, test_user_verified)
+
+    page = await wiki_crud.upsert_page(
+        db_session,
+        kb_id=kb.id,
+        path="index.md",
+        title="Index",
+        page_type="overview",
+        content_hash="hash-1",
+        provenance={"source": "original"},
+    )
+
+    preserved = await wiki_crud.upsert_page(
+        db_session,
+        kb_id=kb.id,
+        path="index.md",
+        title="Index Updated",
+        page_type="overview",
+        content_hash="hash-2",
+    )
+    assert preserved.id == page.id
+    assert preserved.provenance == {"source": "original"}
+
+    cleared = await wiki_crud.upsert_page(
+        db_session,
+        kb_id=kb.id,
+        path="index.md",
+        title="Index Cleared",
+        page_type="overview",
+        content_hash="hash-3",
+        provenance={},
+    )
+    assert cleared.id == page.id
+    assert cleared.provenance == {}
+
+
+@pytest.mark.asyncio
+async def test_upsert_page_recovers_from_unique_conflict(
+    db_session, test_user_verified, monkeypatch
+):
+    from app.crud.wiki import wiki_crud
+
+    kb = await _create_kb(db_session, test_user_verified)
+    existing_page = await _create_page(
+        db_session,
+        kb_id=kb.id,
+        path="index.md",
+        title="Original",
+        content_hash="hash-1",
+        provenance={"source": "original"},
+    )
+    calls = 0
+
+    async def stale_get_page_by_path(db, kb_id, path):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return None
+
+        result = await db.execute(
+            select(WikiPage).where(WikiPage.kb_id == kb_id, WikiPage.path == path)
+        )
+        return result.scalar_one_or_none()
+
+    monkeypatch.setattr(wiki_crud, "get_page_by_path", stale_get_page_by_path)
+
+    page = await wiki_crud.upsert_page(
+        db_session,
+        kb_id=kb.id,
+        path="index.md",
+        title="Recovered",
+        page_type="overview",
+        content_hash="hash-2",
+        provenance={"source": "recovered"},
+    )
+
+    assert page.id == existing_page.id
+    assert page.title == "Recovered"
+    assert page.content_hash == "hash-2"
+    assert page.provenance == {"source": "recovered"}
+
+
+@pytest.mark.asyncio
+async def test_revision_and_patch_lists_use_id_as_stable_descending_tiebreaker(
+    db_session, test_user_verified
+):
+    from app.crud.wiki import wiki_crud
+
+    kb = await _create_kb(db_session, test_user_verified)
+    page = await _create_page(db_session, kb_id=kb.id)
+    created_at = datetime(2026, 1, 1, 12, 0, 0)
+
+    first_revision = WikiPageRevision(
+        page_id=page.id,
+        kb_id=kb.id,
+        path=page.path,
+        content_hash="hash-1",
+        content_snapshot="# First",
+        change_reason="first",
+        created_at=created_at,
+    )
+    second_revision = WikiPageRevision(
+        page_id=page.id,
+        kb_id=kb.id,
+        path=page.path,
+        content_hash="hash-2",
+        content_snapshot="# Second",
+        change_reason="second",
+        created_at=created_at,
+    )
+    first_patch = WikiPatch(
+        kb_id=kb.id,
+        page_id=page.id,
+        target_path=page.path,
+        operation="append",
+        patch_markdown="First",
+        created_at=created_at,
+    )
+    second_patch = WikiPatch(
+        kb_id=kb.id,
+        page_id=page.id,
+        target_path=page.path,
+        operation="append",
+        patch_markdown="Second",
+        created_at=created_at,
+    )
+    db_session.add_all([first_revision, second_revision, first_patch, second_patch])
+    await db_session.commit()
+    for row in (first_revision, second_revision, first_patch, second_patch):
+        await db_session.refresh(row)
+
+    revisions = await wiki_crud.list_revisions(db_session, page.id)
+    patches = await wiki_crud.list_patches(db_session, kb.id)
+
+    assert [revision.id for revision in revisions] == [
+        second_revision.id,
+        first_revision.id,
+    ]
+    assert [patch.id for patch in patches] == [second_patch.id, first_patch.id]
+
+
+@pytest.mark.asyncio
+async def test_replace_links_does_not_mutate_input_objects(
+    db_session, test_user_verified
+):
+    from app.crud.wiki import wiki_crud
+
+    kb = await _create_kb(db_session, test_user_verified)
+    from_page = await _create_page(db_session, kb_id=kb.id, path="index.md")
+    to_page = await _create_page(db_session, kb_id=kb.id, path="guide.md")
+    link = WikiLink(
+        kb_id=kb.id,
+        from_page_id=from_page.id,
+        from_path=from_page.path,
+        to_page_id=to_page.id,
+        to_path=to_page.path,
+        link_type="related_to",
+        anchor_text="Guide",
+        provenance={"source": "test"},
+    )
+
+    await wiki_crud.replace_links(
+        db_session,
+        kb_id=kb.id,
+        from_path=from_page.path,
+        links=[link],
+    )
+
+    assert link.id is None
+    assert link.kb_id == kb.id
+    assert link.from_path == from_page.path
+    assert link.provenance == {"source": "test"}
+
+    rows = (
+        (
+            await db_session.execute(
+                select(WikiLink).where(
+                    WikiLink.kb_id == kb.id,
+                    WikiLink.from_path == from_page.path,
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(rows) == 1
+    assert rows[0].id is not None
+    assert rows[0].id != link.id
+    assert rows[0].provenance == {"source": "test"}
+
+
+@pytest.mark.asyncio
+async def test_replace_links_rejects_mismatched_scope_and_cross_kb_pages(
+    db_session, test_user_verified
+):
+    from app.crud.wiki import wiki_crud
+
+    kb = await _create_kb(db_session, test_user_verified, name="Primary KB")
+    other_kb = await _create_kb(db_session, test_user_verified, name="Other KB")
+    from_page = await _create_page(db_session, kb_id=kb.id, path="index.md")
+    to_page = await _create_page(db_session, kb_id=kb.id, path="guide.md")
+    other_from_page = await _create_page(
+        db_session, kb_id=other_kb.id, path="index.md"
+    )
+    other_to_page = await _create_page(db_session, kb_id=other_kb.id, path="guide.md")
+
+    valid_link = WikiLink(
+        kb_id=kb.id,
+        from_page_id=from_page.id,
+        from_path=from_page.path,
+        to_page_id=to_page.id,
+        to_path=to_page.path,
+    )
+
+    bad_links = [
+        WikiLink(kb_id=other_kb.id, from_path=from_page.path, to_path=to_page.path),
+        WikiLink(kb_id=kb.id, from_path="other.md", to_path=to_page.path),
+        WikiLink(
+            kb_id=kb.id,
+            from_page_id=other_from_page.id,
+            from_path=from_page.path,
+            to_path=to_page.path,
+        ),
+        WikiLink(
+            kb_id=kb.id,
+            from_page_id=from_page.id,
+            from_path=from_page.path,
+            to_page_id=other_to_page.id,
+            to_path=to_page.path,
+        ),
+        WikiLink(
+            kb_id=kb.id,
+            from_page_id=from_page.id,
+            from_path=from_page.path,
+            to_page_id=to_page.id,
+            to_path="other.md",
+        ),
+    ]
+
+    for bad_link in bad_links:
+        with pytest.raises(ValueError):
+            await wiki_crud.replace_links(
+                db_session,
+                kb_id=kb.id,
+                from_path=from_page.path,
+                links=[bad_link],
+            )
+
+    await wiki_crud.replace_links(
+        db_session,
+        kb_id=kb.id,
+        from_path=from_page.path,
+        links=[valid_link],
+    )

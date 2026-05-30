@@ -3,6 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import delete, desc, select
 
@@ -26,30 +27,74 @@ class WikiCRUD:
         status: str = "active",
     ) -> WikiPage:
         page = await self.get_page_by_path(db, kb_id, path)
-        if page is None:
-            page = WikiPage(
-                kb_id=kb_id,
-                path=path,
+        if page is not None:
+            self._apply_page_update(
+                page,
                 title=title,
                 page_type=page_type,
                 content_hash=content_hash,
                 source_doc_id=source_doc_id,
-                provenance=provenance or {},
+                provenance=provenance,
                 status=status,
             )
-        else:
-            page.title = title
-            page.page_type = page_type
-            page.content_hash = content_hash
-            page.source_doc_id = source_doc_id
-            page.provenance = provenance or {}
-            page.status = status
-            page.updated_at = datetime.utcnow()
+            db.add(page)
+            await db.commit()
+            await db.refresh(page)
+            return page
 
+        page = WikiPage(
+            kb_id=kb_id,
+            path=path,
+            title=title,
+            page_type=page_type,
+            content_hash=content_hash,
+            source_doc_id=source_doc_id,
+            provenance=provenance or {},
+            status=status,
+        )
         db.add(page)
-        await db.commit()
+        try:
+            await db.commit()
+        except IntegrityError:
+            await db.rollback()
+            page = await self.get_page_by_path(db, kb_id, path)
+            if page is None:
+                raise
+
+            self._apply_page_update(
+                page,
+                title=title,
+                page_type=page_type,
+                content_hash=content_hash,
+                source_doc_id=source_doc_id,
+                provenance=provenance,
+                status=status,
+            )
+            db.add(page)
+            await db.commit()
+
         await db.refresh(page)
         return page
+
+    def _apply_page_update(
+        self,
+        page: WikiPage,
+        *,
+        title: str,
+        page_type: str,
+        content_hash: str,
+        source_doc_id: Optional[int],
+        provenance: Optional[dict],
+        status: str,
+    ) -> None:
+        page.title = title
+        page.page_type = page_type
+        page.content_hash = content_hash
+        page.source_doc_id = source_doc_id
+        if provenance is not None:
+            page.provenance = provenance
+        page.status = status
+        page.updated_at = datetime.utcnow()
 
     async def get_page_by_path(
         self,
@@ -118,7 +163,7 @@ class WikiCRUD:
         statement = (
             select(WikiPageRevision)
             .where(WikiPageRevision.page_id == page_id)
-            .order_by(desc(WikiPageRevision.created_at))
+            .order_by(desc(WikiPageRevision.created_at), desc(WikiPageRevision.id))
         )
         result = await db.execute(statement)
         return list(result.scalars().all())
@@ -172,7 +217,7 @@ class WikiCRUD:
         statement = select(WikiPatch).where(WikiPatch.kb_id == kb_id)
         if status is not None:
             statement = statement.where(WikiPatch.status == status)
-        statement = statement.order_by(desc(WikiPatch.created_at))
+        statement = statement.order_by(desc(WikiPatch.created_at), desc(WikiPatch.id))
         result = await db.execute(statement)
         return list(result.scalars().all())
 
@@ -184,6 +229,11 @@ class WikiCRUD:
         from_path: str,
         links: list[WikiLink],
     ) -> None:
+        for link in links:
+            await self._validate_link_scope(
+                db, kb_id=kb_id, from_path=from_path, link=link
+            )
+
         await db.execute(
             delete(WikiLink).where(
                 WikiLink.kb_id == kb_id,
@@ -191,11 +241,42 @@ class WikiCRUD:
             )
         )
         for link in links:
-            link.id = None
-            link.kb_id = kb_id
-            link.from_path = from_path
-            db.add(link)
+            db.add(
+                WikiLink(
+                    kb_id=kb_id,
+                    from_page_id=link.from_page_id,
+                    from_path=from_path,
+                    to_page_id=link.to_page_id,
+                    to_path=link.to_path,
+                    link_type=link.link_type,
+                    anchor_text=link.anchor_text,
+                    provenance=dict(link.provenance or {}),
+                )
+            )
         await db.commit()
+
+    async def _validate_link_scope(
+        self,
+        db: AsyncSession,
+        *,
+        kb_id: int,
+        from_path: str,
+        link: WikiLink,
+    ) -> None:
+        if link.kb_id != kb_id:
+            raise ValueError("Wiki link kb_id must match replace_links kb_id")
+        if link.from_path != from_path:
+            raise ValueError("Wiki link from_path must match replace_links from_path")
+
+        if link.from_page_id is not None:
+            from_page = await self.get_page(db, kb_id, link.from_page_id)
+            if from_page is None or from_page.path != from_path:
+                raise ValueError("Wiki link from_page_id must match kb_id and from_path")
+
+        if link.to_page_id is not None:
+            to_page = await self.get_page(db, kb_id, link.to_page_id)
+            if to_page is None or to_page.path != link.to_path:
+                raise ValueError("Wiki link to_page_id must match kb_id and to_path")
 
     async def create_run(
         self,
