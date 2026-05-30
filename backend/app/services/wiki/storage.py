@@ -20,6 +20,32 @@ class WikiStorage:
     def kb_root(self, kb_id: int) -> Path:
         return self.root_dir / f"kb_{int(kb_id)}"
 
+    def _validated_kb_root(self, kb_id: int) -> Path:
+        storage_root = self.root_dir.resolve()
+        logical_kb_root = self.kb_root(kb_id)
+        expected_relative_root = Path(f"kb_{int(kb_id)}")
+
+        try:
+            relative_root = logical_kb_root.relative_to(self.root_dir)
+        except ValueError as exc:
+            raise ValueError("Wiki knowledge-base root escapes the storage root") from exc
+
+        if relative_root != expected_relative_root:
+            raise ValueError("Wiki knowledge-base root must be directly under storage root")
+
+        is_junction = getattr(logical_kb_root, "is_junction", None)
+        if logical_kb_root.is_symlink() or (is_junction is not None and is_junction()):
+            raise ValueError("Wiki knowledge-base root cannot be a symlink or junction")
+
+        if not logical_kb_root.exists():
+            return logical_kb_root
+
+        resolved_kb_root = logical_kb_root.resolve()
+        if not resolved_kb_root.is_relative_to(storage_root):
+            raise ValueError("Wiki knowledge-base root escapes the storage root")
+
+        return logical_kb_root
+
     def normalize_page_path(self, page_path: str) -> str:
         normalized = str(page_path).strip().replace("\\", "/")
         if not normalized:
@@ -41,10 +67,11 @@ class WikiStorage:
 
     def resolve_page_path(self, kb_id: int, page_path: str) -> Path:
         safe_page_path = self.normalize_page_path(page_path)
-        kb_root = self.kb_root(kb_id).resolve()
+        kb_root = self._validated_kb_root(kb_id)
+        resolved_kb_root = kb_root.resolve()
         resolved_path = (kb_root / safe_page_path).resolve()
 
-        if not resolved_path.is_relative_to(kb_root):
+        if not resolved_path.is_relative_to(resolved_kb_root):
             raise ValueError("Wiki page path escapes the knowledge-base root")
 
         return resolved_path
@@ -87,13 +114,13 @@ class WikiStorage:
         return target_path
 
     def list_markdown_pages(self, kb_id: int) -> list[str]:
-        kb_root = self.kb_root(kb_id)
+        kb_root = self._validated_kb_root(kb_id)
         if not kb_root.exists():
             return []
 
         resolved_root = kb_root.resolve()
         pages: list[str] = []
-        for path in resolved_root.rglob("*.md"):
+        for path in kb_root.rglob("*.md"):
             if not path.is_file():
                 continue
             resolved_path = path.resolve()
