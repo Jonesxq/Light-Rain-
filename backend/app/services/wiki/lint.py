@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from typing import Iterable
 
@@ -15,6 +16,7 @@ from app.services.wiki.types import PAGE_INDEX, PAGE_LOG, WikiLintWarning
 _LOG_HEADING_RE = re.compile(
     r"^## \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}\] [A-Za-z0-9_-]+(?: \| .+)?$"
 )
+_LOG_H2_LIKE_RE = re.compile(r"^##(?!#)")
 _PROVENANCE_PAGE_TYPES = {"automatic", "generated", "source"}
 _PROVENANCE_FRONTMATTER_FIELDS = {
     "doc_id",
@@ -139,7 +141,7 @@ class WikiLint:
     def _lint_log_headings(self, body: str, path: str) -> list[WikiLintWarning]:
         warnings: list[WikiLintWarning] = []
         for line in body.splitlines():
-            if not line.startswith("## "):
+            if _LOG_H2_LIKE_RE.match(line.strip()) is None:
                 continue
             if _LOG_HEADING_RE.fullmatch(line.strip()) is None:
                 warnings.append(
@@ -163,7 +165,10 @@ class WikiLint:
         if isinstance(page_type, str) and page_type in _PROVENANCE_PAGE_TYPES:
             return True
 
-        return bool(frontmatter.get("automatic") or frontmatter.get("generated"))
+        return any(
+            WikiLint._is_truthy_frontmatter_flag(frontmatter.get(field))
+            for field in ("automatic", "generated")
+        )
 
     @staticmethod
     def _has_db_provenance(db_page: WikiPage | None) -> bool:
@@ -173,13 +178,39 @@ class WikiLint:
     def _has_frontmatter_provenance(frontmatter: dict) -> bool:
         for field in _PROVENANCE_FRONTMATTER_FIELDS:
             value = frontmatter.get(field)
-            if isinstance(value, int):
-                if value > 0:
-                    return True
-                continue
-            if value:
+            if WikiLint._is_present_frontmatter_provenance(value):
                 return True
         return False
+
+    @staticmethod
+    def _is_truthy_frontmatter_flag(value: object) -> bool:
+        if value is True:
+            return True
+        if isinstance(value, str):
+            return value.strip().lower() in {"true", "yes", "1"}
+        return False
+
+    @staticmethod
+    def _is_present_frontmatter_provenance(value: object) -> bool:
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return False
+            if value.startswith(("[", "{")) and value.endswith(("]", "}")):
+                try:
+                    value = json.loads(value)
+                except json.JSONDecodeError:
+                    return True
+
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, int):
+            return value > 0
+        if isinstance(value, str):
+            return bool(value)
+        if isinstance(value, list | tuple | set | dict):
+            return bool(value)
+        return value is not None
 
     @staticmethod
     def _has_source_marker(kb_id: int, path: str, body: str) -> bool:

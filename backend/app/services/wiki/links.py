@@ -9,6 +9,7 @@ from app.models.wiki import WikiLink
 
 _MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[([^\]\n]+)\]\(([^)\n]+)\)")
 _SOURCE_MARKER_RE = re.compile(r"(?<!!)\[\s*source:([^\]\n]+)\]")
+_URI_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 
 
 class WikiLinkExtractor:
@@ -27,6 +28,8 @@ class WikiLinkExtractor:
         for match in _MARKDOWN_LINK_RE.finditer(markdown):
             label = match.group(1).strip()
             target = match.group(2).strip()
+            if not label or not target:
+                continue
             if cls._should_ignore_markdown_target(target):
                 continue
 
@@ -63,9 +66,4 @@ class WikiLinkExtractor:
 
     @staticmethod
     def _should_ignore_markdown_target(target: str) -> bool:
-        normalized = target.lower()
-        return (
-            normalized.startswith("http://")
-            or normalized.startswith("https://")
-            or target.startswith("#")
-        )
+        return _URI_SCHEME_RE.match(target) is not None or target.startswith("#")
