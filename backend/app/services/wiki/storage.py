@@ -9,13 +9,23 @@ from pathlib import Path, PurePosixPath
 
 from app.core.config import settings
 
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
+
 
 class WikiStorage:
     """Read and write Markdown wiki pages under per-knowledge-base roots."""
 
     def __init__(self, root_dir: str | Path | None = None) -> None:
-        configured_root = settings.wiki.WIKI_STORAGE_DIR if root_dir is None else root_dir
-        self.root_dir = Path(configured_root)
+        if root_dir is None:
+            configured_root = Path(settings.wiki.WIKI_STORAGE_DIR)
+            self.root_dir = (
+                configured_root
+                if configured_root.is_absolute()
+                else PROJECT_ROOT / configured_root
+            )
+            return
+
+        self.root_dir = Path(root_dir)
 
     def kb_root(self, kb_id: int) -> Path:
         return self.root_dir / f"kb_{int(kb_id)}"

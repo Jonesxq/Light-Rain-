@@ -1,6 +1,7 @@
 ﻿
 """MySQL数据库管理模块 - 提供异步和同步MySQL连接、会话管理和表创建"""
 from collections.abc import AsyncGenerator
+from importlib import import_module
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
@@ -10,6 +11,24 @@ from sqlmodel import SQLModel
 
 # SQLAlchemy声明基类
 Base = declarative_base()
+
+
+_SQLMODEL_MODULES = (
+    "app.models.user",
+    "app.models.token",
+    "app.models.knowledge",
+    "app.models.chat",
+    "app.models.llm_settings",
+    "app.models.usage",
+    "app.models.wiki",
+)
+
+
+def _register_sqlmodel_models() -> None:
+    """Import SQLModel table modules before metadata-driven table creation."""
+    for module_name in _SQLMODEL_MODULES:
+        import_module(module_name)
+
 
 class MySQLManager:
     """MySQL数据库管理器 - 管理异步和同步数据库连接、会话和表创建"""
@@ -223,13 +242,7 @@ class MySQLManager:
         显式导入所有数据模型以确保它们被注册到SQLModel元数据中，
         然后创建所有表
         """
-        from app.models.user import User
-        from app.models.token import RefreshToken, VerificationCode
-        from app.models.chat import ChatSession, ChatMessage, ChatAttachment, ChatPromptSnapshot
-        from app.models.llm_settings import UserLLMSettings
-        from app.models.usage import UsageEvent, UserUsageSettings
-        # 在这里显式导入所有模型，确保它们被注册到 SQLModel.metadata 中
-        # 如果不导入，SQLModel 就不知道有哪些表需要创建
+        _register_sqlmodel_models()
         self.logger.info("🚀 Creating database tables...")
         async with self.async_engine.begin() as conn:
             # 使用 run_sync 调用 SQLModel 的同步建表方法

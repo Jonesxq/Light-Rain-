@@ -1,6 +1,8 @@
 import pytest
+from pathlib import Path
 
 from app.services.wiki.storage import WikiStorage
+from app.services.wiki import storage as storage_module
 
 
 def _create_dir_symlink_or_skip(link_path, target_path):
@@ -51,6 +53,16 @@ def test_write_page_and_read_page_roundtrip_inside_kb_root(tmp_path):
 
     assert storage.read_page(7, "sources/12-api.md") == content
     assert (tmp_path / "kb_7" / "sources" / "12-api.md").exists()
+
+
+def test_default_relative_storage_dir_is_project_root_relative(monkeypatch, tmp_path):
+    monkeypatch.setattr(storage_module.settings.wiki, "WIKI_STORAGE_DIR", "storage/wiki")
+    monkeypatch.chdir(tmp_path)
+
+    storage = WikiStorage()
+
+    project_root = Path(__file__).resolve().parents[3]
+    assert storage.root_dir.resolve() == (project_root / "storage" / "wiki").resolve()
 
 
 def test_content_hash_uses_sha256_hex_digest():

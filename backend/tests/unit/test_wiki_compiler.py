@@ -6,8 +6,14 @@ from sqlmodel import select
 
 from app.models.knowledge import DocStatus, Document, KnowledgeBase
 from app.models.wiki import WikiPage, WikiPageRevision, WikiPatch, WikiRun
+from app.crud.wiki import wiki_crud
+from app.services.wiki import compiler as compiler_module
 from app.services.wiki.compiler import WikiCompiler
-from app.services.wiki.markdown import build_markdown_page, extract_frontmatter
+from app.services.wiki.markdown import (
+    build_frontmatter,
+    build_markdown_page,
+    extract_frontmatter,
+)
 from app.services.wiki.service import WikiService
 from app.services.wiki.storage import WikiStorage
 
@@ -96,8 +102,13 @@ async def test_compile_document_writes_wiki_pages_and_syncs_database(
     assert frontmatter["doc_id"] == doc.id
     assert frontmatter["chunk_count"] == 2
     assert frontmatter["source_count"] == 2
+    assert "## 来源摘要" in source_markdown
+    assert "## 原文片段" in source_markdown
+    assert "文档 ID" in source_markdown
+    assert "分块数" in source_markdown
+    assert "Source Metadata" not in source_markdown
     assert "[source:doc=" in source_markdown
-    assert f"chunk_index=0]" in source_markdown
+    assert "chunk_index=0]" in source_markdown
     assert "Milvus provides vector search." in source_markdown
 
     index_markdown = storage.read_page(kb.id, "index.md")
@@ -109,11 +120,7 @@ async def test_compile_document_writes_wiki_pages_and_syncs_database(
     assert f"ingest | doc_id={doc.id} | {doc.file_name}" in log_markdown
 
     page_rows = (
-        (
-            await db_session.execute(
-                select(WikiPage).where(WikiPage.kb_id == kb.id)
-            )
-        )
+        (await db_session.execute(select(WikiPage).where(WikiPage.kb_id == kb.id)))
         .scalars()
         .all()
     )
@@ -145,8 +152,14 @@ async def test_compile_document_writes_wiki_pages_and_syncs_database(
         .all()
     )
     assert pending_patches
-    assert pending_patches[0].target_path == "topics/vector-search.md"
+    assert pending_patches[0].target_path == f"topics/doc-{doc.id}-topic.md"
     assert pending_patches[0].operation == "create"
+    assert pending_patches[0].question == "是否将该来源整理成中文主题页？"
+    assert "中文主题页候选" in pending_patches[0].answer
+    assert "## 来源摘要" in pending_patches[0].patch_markdown
+    assert "## 关键要点" in pending_patches[0].patch_markdown
+    assert "Milvus provides vector search." in pending_patches[0].patch_markdown
+    assert "请审核该来源是否适合沉淀为独立主题页" not in pending_patches[0].patch_markdown
 
     runs = (
         (
@@ -164,6 +177,286 @@ async def test_compile_document_writes_wiki_pages_and_syncs_database(
     )
     assert len(runs) == 1
     assert runs[0].metrics["pages_changed"] == result.pages_changed
+
+
+@pytest.mark.asyncio
+async def test_compile_document_index_lists_all_compiled_sources(
+    db_session,
+    test_user_verified,
+    tmp_path,
+):
+    kb = await _create_kb(db_session, test_user_verified)
+    first_file = tmp_path / "中华人民共和国个人信息保护法.md"
+    second_file = tmp_path / "中华人民共和国数据安全法.md"
+    _write_chunks(first_file)
+    _write_chunks(second_file)
+    first_doc = await _create_document(
+        db_session,
+        kb_id=kb.id,
+        file_path=first_file,
+        file_name="中华人民共和国个人信息保护法.md",
+    )
+    second_doc = await _create_document(
+        db_session,
+        kb_id=kb.id,
+        file_path=second_file,
+        file_name="中华人民共和国数据安全法.md",
+    )
+    storage = WikiStorage(root_dir=tmp_path / "wiki")
+    compiler = WikiCompiler(storage=storage)
+
+    await compiler.compile_document(db_session, kb_id=kb.id, doc_id=first_doc.id)
+    await compiler.compile_document(db_session, kb_id=kb.id, doc_id=second_doc.id)
+
+    index_markdown = storage.read_page(kb.id, "index.md")
+
+    assert "中华人民共和国个人信息保护法.md" in index_markdown
+    assert "中华人民共和国数据安全法.md" in index_markdown
+    assert f"sources/{first_doc.id}-md.md" in index_markdown
+    assert f"sources/{second_doc.id}-md.md" in index_markdown
+    assert "来源页" in index_markdown
+    assert "文档 ID" in index_markdown
+    assert "分块数" in index_markdown
+    assert "Milvus provides vector search." in index_markdown
+
+
+@pytest.mark.asyncio
+async def test_compile_document_reads_project_root_relative_sidecar_chunks(
+    db_session,
+    test_user_verified,
+    tmp_path,
+    monkeypatch,
+):
+    project_root = tmp_path / "project"
+    upload_dir = project_root / "static" / "uploads" / "kb"
+    upload_dir.mkdir(parents=True)
+    backend_cwd = project_root / "backend"
+    backend_cwd.mkdir()
+    source_file = upload_dir / "relative.md"
+    _write_chunks(source_file)
+    monkeypatch.setattr(compiler_module, "PROJECT_ROOT", project_root)
+    monkeypatch.chdir(backend_cwd)
+    kb = await _create_kb(db_session, test_user_verified)
+    doc = await _create_document(
+        db_session,
+        kb_id=kb.id,
+        file_path=Path("static/uploads/kb/relative.md"),
+        file_name="relative.md",
+    )
+    storage = WikiStorage(root_dir=tmp_path / "wiki")
+    compiler = WikiCompiler(storage=storage)
+
+    await compiler.compile_document(db_session, kb_id=kb.id, doc_id=doc.id)
+
+    source_markdown = storage.read_page(kb.id, f"sources/{doc.id}-relative-md.md")
+    frontmatter, _body = extract_frontmatter(source_markdown)
+    assert frontmatter["chunk_count"] == 2
+    assert "Milvus provides vector search." in source_markdown
+    assert "No chunks found" not in source_markdown
+
+
+@pytest.mark.asyncio
+async def test_compile_document_schema_lists_all_documents_in_chinese(
+    db_session,
+    test_user_verified,
+    tmp_path,
+):
+    kb = await _create_kb(db_session, test_user_verified)
+    first_file = tmp_path / "中华人民共和国个人信息保护法.md"
+    second_file = tmp_path / "中华人民共和国数据安全法.md"
+    _write_chunks(first_file)
+    _write_chunks(second_file)
+    first_doc = await _create_document(
+        db_session,
+        kb_id=kb.id,
+        file_path=first_file,
+        file_name="中华人民共和国个人信息保护法.md",
+    )
+    second_doc = await _create_document(
+        db_session,
+        kb_id=kb.id,
+        file_path=second_file,
+        file_name="中华人民共和国数据安全法.md",
+    )
+    storage = WikiStorage(root_dir=tmp_path / "wiki")
+    compiler = WikiCompiler(storage=storage)
+
+    await compiler.compile_document(db_session, kb_id=kb.id, doc_id=first_doc.id)
+    await compiler.compile_document(db_session, kb_id=kb.id, doc_id=second_doc.id)
+
+    schema_markdown = storage.read_page(kb.id, "schema.md")
+
+    assert "# Wiki 维护协议" in schema_markdown
+    assert "## 知识库边界" in schema_markdown
+    assert "## 页面类型" in schema_markdown
+    assert "## 已上传文档" in schema_markdown
+    assert "## 回答流程" in schema_markdown
+    assert "## 写回规则" in schema_markdown
+    assert "一个 Wiki 只维护当前这一个知识库" in schema_markdown
+    assert "先查询当前知识库 Wiki" in schema_markdown
+    assert "Wiki 不足以回答时，再进入二阶段 RAG 检索" in schema_markdown
+    assert "把高质量答案沉淀回 Wiki" in schema_markdown
+    assert "中华人民共和国个人信息保护法.md" in schema_markdown
+    assert "中华人民共和国数据安全法.md" in schema_markdown
+    assert f"sources/{first_doc.id}-md.md" in schema_markdown
+    assert f"sources/{second_doc.id}-md.md" in schema_markdown
+    assert "Page Types" not in schema_markdown
+    assert "Current Ingest" not in schema_markdown
+
+
+@pytest.mark.asyncio
+async def test_compile_document_does_not_recreate_applied_topic_patch(
+    db_session,
+    test_user_verified,
+    tmp_path,
+):
+    kb = await _create_kb(db_session, test_user_verified)
+    source_file = tmp_path / "API Doc.md"
+    _write_chunks(source_file)
+    doc = await _create_document(db_session, kb_id=kb.id, file_path=source_file)
+    storage = WikiStorage(root_dir=tmp_path / "wiki")
+    service = WikiService(storage=storage)
+
+    await service.compile_document(db_session, kb_id=kb.id, doc_id=doc.id)
+    pending_patch = (
+        (
+            await db_session.execute(
+                select(WikiPatch).where(
+                    WikiPatch.kb_id == kb.id,
+                    WikiPatch.status == "pending",
+                    WikiPatch.target_path == f"topics/doc-{doc.id}-topic.md",
+                )
+            )
+        )
+        .scalars()
+        .one()
+    )
+    await service.apply_patch(db_session, kb_id=kb.id, patch_id=pending_patch.id)
+
+    result = await service.compile_document(db_session, kb_id=kb.id, doc_id=doc.id)
+
+    pending_patches = (
+        (
+            await db_session.execute(
+                select(WikiPatch).where(
+                    WikiPatch.kb_id == kb.id,
+                    WikiPatch.status == "pending",
+                    WikiPatch.target_path == f"topics/doc-{doc.id}-topic.md",
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert result.patches_created == 0
+    assert pending_patches == []
+
+
+@pytest.mark.asyncio
+async def test_compile_document_refreshes_legacy_placeholder_topic_page(
+    db_session,
+    test_user_verified,
+    tmp_path,
+):
+    kb = await _create_kb(db_session, test_user_verified)
+    source_file = tmp_path / "API Doc.md"
+    _write_chunks(source_file)
+    doc = await _create_document(db_session, kb_id=kb.id, file_path=source_file)
+    storage = WikiStorage(root_dir=tmp_path / "wiki")
+    topic_path = f"topics/doc-{doc.id}-topic.md"
+    title = f"{doc.file_name} 主题页"
+    legacy_markdown = (
+        build_frontmatter(
+            {
+                "title": title,
+                "page_type": "topic",
+                "status": "active",
+                "source_doc_id": doc.id,
+                "tags": ["topic", "中文主题页"],
+            }
+        )
+        + "\n\n"
+        + f"# {title}\n\n"
+        + f"本主题页候选来自 [{doc.file_name}](sources/{doc.id}-api-doc-md.md)。\n\n"
+        + "## 待整理要点\n\n"
+        + "- 请审核该来源是否适合沉淀为独立主题页。\n"
+    )
+    storage.write_page(kb.id, topic_path, legacy_markdown)
+    await wiki_crud.upsert_page(
+        db_session,
+        kb_id=kb.id,
+        path=topic_path,
+        title=title,
+        page_type="topic",
+        content_hash=storage.content_hash(legacy_markdown),
+        source_doc_id=doc.id,
+        provenance={"compiler": "wiki", "legacy_placeholder": True},
+    )
+    compiler = WikiCompiler(storage=storage)
+
+    result = await compiler.compile_document(db_session, kb_id=kb.id, doc_id=doc.id)
+
+    topic_markdown = storage.read_page(kb.id, topic_path)
+    assert result.patches_created == 0
+    assert "## 来源摘要" in topic_markdown
+    assert "## 关键要点" in topic_markdown
+    assert "Milvus provides vector search." in topic_markdown
+    assert "待整理要点" not in topic_markdown
+    assert "请审核该来源是否适合沉淀为独立主题页" not in topic_markdown
+
+
+@pytest.mark.asyncio
+async def test_compile_document_refreshes_compiler_generated_topic_page(
+    db_session,
+    test_user_verified,
+    tmp_path,
+):
+    kb = await _create_kb(db_session, test_user_verified)
+    source_file = tmp_path / "API Doc.md"
+    _write_chunks(source_file)
+    doc = await _create_document(db_session, kb_id=kb.id, file_path=source_file)
+    storage = WikiStorage(root_dir=tmp_path / "wiki")
+    topic_path = f"topics/doc-{doc.id}-topic.md"
+    title = f"{doc.file_name} 主题页"
+    generated_markdown = build_markdown_page(
+        {
+            "title": title,
+            "page_type": "topic",
+            "status": "active",
+            "source_doc_id": doc.id,
+            "source_count": 2,
+            "tags": ["topic", "中文主题页"],
+        },
+        title,
+        [
+            (
+                "来源摘要",
+                f"本主题页候选来自 [{doc.file_name}](sources/{doc.id}-api-doc-md.md)，"
+                "由已编译来源片段自动整理，采纳后可作为一阶段 Wiki 回答素材。",
+            ),
+            ("关键要点", "- 旧的自动整理内容。"),
+            ("后续维护", "- 保留来源链接或来源标记。"),
+        ],
+    )
+    storage.write_page(kb.id, topic_path, generated_markdown)
+    await wiki_crud.upsert_page(
+        db_session,
+        kb_id=kb.id,
+        path=topic_path,
+        title=title,
+        page_type="topic",
+        content_hash=storage.content_hash(generated_markdown),
+        source_doc_id=doc.id,
+        provenance={"compiler": "wiki", "source_doc_id": doc.id},
+    )
+    compiler = WikiCompiler(storage=storage)
+
+    await compiler.compile_document(db_session, kb_id=kb.id, doc_id=doc.id)
+
+    topic_markdown = storage.read_page(kb.id, topic_path)
+    assert "本主题页来自" in topic_markdown
+    assert "本主题页候选来自" not in topic_markdown
+    assert "Milvus provides vector search." in topic_markdown
 
 
 @pytest.mark.asyncio

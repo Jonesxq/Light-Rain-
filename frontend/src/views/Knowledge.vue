@@ -144,6 +144,139 @@
             </article>
           </div>
         </section>
+
+        <section class="panel patch-panel">
+          <div class="panel-head">
+            <h2 class="title-section">待写入 Wiki</h2>
+            <span class="count-chip">{{ wikiPatches.items.length }} 条</span>
+          </div>
+
+          <div v-if="!activeKb" class="empty-block">请选择知识库后查看待审核内容。</div>
+          <div v-else-if="wikiPatches.loading" class="empty-block">正在读取待审核内容...</div>
+          <div v-else-if="!wikiPatches.items.length" class="empty-block">
+            当前没有待写入 Wiki 的答案。
+          </div>
+
+          <div v-else class="patch-list">
+            <article v-for="patch in wikiPatches.items" :key="patch.id" class="patch-card">
+              <div class="patch-card-head">
+                <div class="patch-target">
+                  <span class="material-symbols-outlined" aria-hidden="true">rate_review</span>
+                  <span>{{ patch.target_path }}</span>
+                </div>
+                <span class="patch-confidence">{{ formatPatchConfidence(patch) }}</span>
+              </div>
+
+              <div class="patch-meta">
+                <span>{{ formatPatchOperation(patch.operation) }}</span>
+                <span>{{ formatRelativeTime(patch.created_at) }}</span>
+              </div>
+
+              <p v-if="patch.question" class="patch-question">{{ patch.question }}</p>
+              <p v-if="patch.answer" class="patch-answer">{{ clipText(patch.answer, 220) }}</p>
+
+              <pre class="patch-markdown">{{ clipText(patch.patch_markdown, 520) }}</pre>
+
+              <div class="patch-actions">
+                <button
+                  class="patch-action-btn accept"
+                  type="button"
+                  :disabled="wikiPatchBusyId === patch.id"
+                  @click="applyWikiPatch(patch)"
+                >
+                  采纳
+                </button>
+                <button
+                  class="patch-action-btn reject"
+                  type="button"
+                  :disabled="wikiPatchBusyId === patch.id"
+                  @click="rejectWikiPatch(patch)"
+                >
+                  拒绝
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel wiki-panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="title-section">知识库 Wiki</h2>
+            </div>
+            <div class="panel-head-actions">
+              <span class="count-chip">{{ wikiPages.items.length }} 页</span>
+              <button
+                class="icon-ghost"
+                type="button"
+                :title="wikiRefreshLoading ? '正在刷新 Wiki' : '刷新 Wiki'"
+                :disabled="!activeKb || wikiPages.loading || wikiRefreshLoading"
+                @click="refreshWikiPages"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+              </button>
+            </div>
+          </div>
+
+          <div v-if="!activeKb" class="empty-block">请选择知识库后查看 Wiki。</div>
+
+          <div v-else class="wiki-browser">
+            <aside class="wiki-page-list" aria-label="Wiki 页面列表">
+              <div v-if="wikiPages.loading" class="empty-block">正在读取 Wiki 页面...</div>
+              <div v-else-if="!wikiPages.items.length" class="empty-block">暂无 Wiki 页面。</div>
+
+              <template v-else>
+                <button
+                  v-for="page in wikiPages.items"
+                  :key="page.id"
+                  class="wiki-page-row"
+                  :class="{ active: selectedWikiPageId === page.id }"
+                  type="button"
+                  @click="selectWikiPage(page)"
+                >
+                  <span class="wiki-page-icon" :class="getWikiPageToneClass(page)">
+                    <span class="material-symbols-outlined" aria-hidden="true">
+                      {{ getWikiPageIcon(page) }}
+                    </span>
+                  </span>
+                  <span class="wiki-page-copy">
+                    <span class="wiki-page-title">{{ page.title || page.path }}</span>
+                    <span class="wiki-page-meta">
+                      {{ formatWikiPageType(page.page_type) }} · {{ page.path }}
+                    </span>
+                  </span>
+                </button>
+              </template>
+            </aside>
+
+            <article class="wiki-preview">
+              <div v-if="wikiPageContent.loading" class="empty-block">正在读取页面正文...</div>
+
+              <template v-else-if="wikiPageContent.page">
+                <header class="wiki-preview-head">
+                  <div>
+                    <p class="wiki-preview-type">
+                      {{ formatWikiPageType(wikiPageContent.page.page_type) }}
+                    </p>
+                    <h3>{{ wikiPageContent.page.title || wikiPageContent.page.path }}</h3>
+                  </div>
+                  <span class="wiki-preview-time">
+                    {{ formatRelativeTime(wikiPageContent.page.updated_at) }}
+                  </span>
+                </header>
+
+                <div class="wiki-path-row">
+                  <span class="material-symbols-outlined" aria-hidden="true">article</span>
+                  <span>{{ wikiPageContent.page.path }}</span>
+                </div>
+
+                <pre class="wiki-markdown">{{ wikiPageContent.page.content || '这个 Wiki 页面暂时没有正文。' }}</pre>
+              </template>
+
+              <div v-else class="empty-block">请选择一个 Wiki 页面。</div>
+            </article>
+          </div>
+        </section>
       </div>
     </div>
 
@@ -170,6 +303,12 @@ const knowledgeBases = ref([]);
 const kbForm = ref({ name: '', description: '' });
 const activeKb = ref(null);
 const documents = ref({ items: [] });
+const wikiPatches = ref({ items: [], loading: false });
+const wikiPatchBusyId = ref(null);
+const wikiPages = ref({ items: [], loading: false });
+const wikiRefreshLoading = ref(false);
+const selectedWikiPageId = ref(null);
+const wikiPageContent = ref({ page: null, loading: false });
 const uploadForm = ref({ file: null });
 const dropzoneActive = ref(false);
 const uploading = ref(false);
@@ -232,6 +371,165 @@ const fetchDocuments = async ({ silent = false } = {}) => {
   }
 };
 
+const fetchWikiPatches = async ({ silent = false } = {}) => {
+  if (!activeKb.value) {
+    wikiPatches.value.items = [];
+    wikiPatches.value.loading = false;
+    return;
+  }
+
+  wikiPatches.value.loading = true;
+  try {
+    const data = await apiFetch(`/knowledge/${activeKb.value.id}/wiki/patches?status=pending`);
+    wikiPatches.value.items = data || [];
+  } catch (err) {
+    if (!silent) setError(`获取 Wiki 待审核内容失败：${err.message}`);
+  } finally {
+    wikiPatches.value.loading = false;
+  }
+};
+
+const resetWikiBrowser = () => {
+  wikiPages.value.items = [];
+  wikiPages.value.loading = false;
+  wikiRefreshLoading.value = false;
+  selectedWikiPageId.value = null;
+  wikiPageContent.value = { page: null, loading: false };
+};
+
+const sortWikiPages = (items) => {
+  const pageTypeOrder = {
+    index: 0,
+    topic: 1,
+    source: 2,
+    schema: 3,
+    log: 4,
+  };
+  return [...items].sort((left, right) => {
+    const leftOrder = pageTypeOrder[left.page_type] ?? 9;
+    const rightOrder = pageTypeOrder[right.page_type] ?? 9;
+    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+    return String(left.path || '').localeCompare(String(right.path || ''), 'zh-Hans-CN');
+  });
+};
+
+const selectWikiPage = async (page, { silent = false } = {}) => {
+  if (!activeKb.value || !page) return;
+  const kbId = activeKb.value.id;
+  selectedWikiPageId.value = page.id;
+  wikiPageContent.value.loading = true;
+
+  try {
+    const data = await apiFetch(`/knowledge/${kbId}/wiki/pages/${page.id}`);
+    if (activeKb.value?.id !== kbId) return;
+    wikiPageContent.value.page = data;
+  } catch (err) {
+    if (!silent) setError(`获取 Wiki 页面失败：${err.message}`);
+    if (selectedWikiPageId.value === page.id) {
+      wikiPageContent.value.page = null;
+    }
+  } finally {
+    if (activeKb.value?.id === kbId) {
+      wikiPageContent.value.loading = false;
+    }
+  }
+};
+
+const findDefaultWikiPage = (items, currentId = null, preferPath = null) =>
+  items.find((page) => preferPath && page.path === preferPath) ||
+  items.find((page) => currentId && page.id === currentId) ||
+  items.find((page) => page.page_type === 'topic') ||
+  items.find((page) => page.path === 'index.md') ||
+  items[0] ||
+  null;
+
+const getSelectedWikiPagePath = () =>
+  wikiPageContent.value.page?.path ||
+  wikiPages.value.items.find((page) => page.id === selectedWikiPageId.value)?.path ||
+  null;
+
+const fetchWikiPages = async ({ silent = false, preferPath = null } = {}) => {
+  if (!activeKb.value) {
+    resetWikiBrowser();
+    return;
+  }
+
+  const kbId = activeKb.value.id;
+  wikiPages.value.loading = true;
+  try {
+    const data = await apiFetch(`/knowledge/${kbId}/wiki/pages`);
+    if (activeKb.value?.id !== kbId) return;
+
+    const items = sortWikiPages(data || []);
+    wikiPages.value.items = items;
+    const nextPage = findDefaultWikiPage(items, selectedWikiPageId.value, preferPath);
+
+    if (nextPage) {
+      await selectWikiPage(nextPage, { silent: true });
+    } else {
+      selectedWikiPageId.value = null;
+      wikiPageContent.value.page = null;
+    }
+  } catch (err) {
+    if (!silent) setError(`获取 Wiki 页面列表失败：${err.message}`);
+  } finally {
+    if (activeKb.value?.id === kbId) {
+      wikiPages.value.loading = false;
+    }
+  }
+};
+
+const refreshWikiPages = async () => {
+  if (!activeKb.value || wikiRefreshLoading.value) return;
+
+  const kbId = activeKb.value.id;
+  const preferPath = getSelectedWikiPagePath();
+  wikiRefreshLoading.value = true;
+  wikiPages.value.loading = true;
+
+  try {
+    const result = await apiFetch(`/knowledge/${kbId}/wiki/rebuild`, {
+      method: 'POST',
+      timeoutMs: 120000,
+    });
+    if (activeKb.value?.id !== kbId) return;
+
+    await Promise.all([
+      fetchWikiPatches({ silent: true }),
+      fetchWikiPages({ silent: true, preferPath }),
+    ]);
+
+    if (result?.success === false) {
+      const errorCount = result.errors?.length || 0;
+      setError(
+        errorCount
+          ? `Wiki 已刷新，但 ${errorCount} 个文档重新编译失败。`
+          : 'Wiki 刷新完成，但后端报告未完全成功。',
+      );
+      return;
+    }
+
+    setNotice('Wiki 已刷新');
+  } catch (err) {
+    if (activeKb.value?.id === kbId) {
+      setError(`刷新 Wiki 失败：${err.message}`);
+    }
+  } finally {
+    wikiRefreshLoading.value = false;
+    if (activeKb.value?.id === kbId) {
+      wikiPages.value.loading = false;
+    }
+  }
+};
+
+const fetchActiveKnowledgeBaseData = async ({ silent = false } = {}) => {
+  await Promise.all([
+    fetchDocuments({ silent }),
+    fetchWikiPatches({ silent }),
+    fetchWikiPages({ silent }),
+  ]);
+};
+
 const fetchKnowledgeBases = async ({ preferKbId = null } = {}) => {
   try {
     const data = await apiFetch('/knowledge/list');
@@ -239,6 +537,8 @@ const fetchKnowledgeBases = async ({ preferKbId = null } = {}) => {
     if (!knowledgeBases.value.length) {
       activeKb.value = null;
       documents.value.items = [];
+      wikiPatches.value.items = [];
+      resetWikiBrowser();
       stopDocumentPolling();
       return;
     }
@@ -250,7 +550,12 @@ const fetchKnowledgeBases = async ({ preferKbId = null } = {}) => {
     activeKb.value = nextKb;
 
     if (changed || !documents.value.items.length) {
-      await fetchDocuments({ silent: true });
+      await fetchActiveKnowledgeBaseData({ silent: true });
+    } else {
+      await Promise.all([
+        fetchWikiPatches({ silent: true }),
+        fetchWikiPages({ silent: true }),
+      ]);
     }
   } catch (err) {
     setError(`获取知识库失败：${err.message}`);
@@ -275,7 +580,9 @@ const selectKnowledgeBase = async (kb) => {
   if (activeKb.value?.id === kb.id) return;
   activeKb.value = kb;
   documents.value.items = [];
-  await fetchDocuments({ silent: true });
+  wikiPatches.value.items = [];
+  resetWikiBrowser();
+  await fetchActiveKnowledgeBaseData({ silent: true });
 };
 
 const deleteKnowledgeBase = async (kbId) => {
@@ -355,10 +662,56 @@ const deleteDocument = async (doc) => {
     await apiFetch(`/knowledge/${activeKb.value.id}/documents/${doc.id}`, { method: 'DELETE' });
     documents.value.items = documents.value.items.filter((item) => item.id !== doc.id);
     setNotice('文档删除成功');
-    await fetchKnowledgeBases({ preferKbId: activeKb.value.id });
+    await Promise.all([
+      fetchKnowledgeBases({ preferKbId: activeKb.value.id }),
+      fetchWikiPatches({ silent: true }),
+      fetchWikiPages({ silent: true }),
+    ]);
     updateDocumentPolling();
   } catch (err) {
     setError(`删除文档失败：${err.message}`);
+  }
+};
+
+const applyWikiPatch = async (patch) => {
+  if (!activeKb.value || wikiPatchBusyId.value) return;
+  const confirmed = window.confirm(`采纳后会写入「${patch.target_path}」，继续吗？`);
+  if (!confirmed) return;
+
+  wikiPatchBusyId.value = patch.id;
+  try {
+    const appliedPatch = await apiFetch(`/knowledge/${activeKb.value.id}/wiki/patches/${patch.id}/apply`, {
+      method: 'POST',
+    });
+    setNotice('已写入 Wiki');
+    await Promise.all([
+      fetchWikiPatches({ silent: true }),
+      fetchWikiPages({ silent: true, preferPath: appliedPatch?.target_path }),
+    ]);
+  } catch (err) {
+    setError(`写入 Wiki 失败：${err.message}`);
+    await fetchWikiPatches({ silent: true });
+  } finally {
+    wikiPatchBusyId.value = null;
+  }
+};
+
+const rejectWikiPatch = async (patch) => {
+  if (!activeKb.value || wikiPatchBusyId.value) return;
+  const confirmed = window.confirm('确认拒绝这条待写入内容吗？');
+  if (!confirmed) return;
+
+  wikiPatchBusyId.value = patch.id;
+  try {
+    await apiFetch(`/knowledge/${activeKb.value.id}/wiki/patches/${patch.id}/reject`, {
+      method: 'POST',
+    });
+    setNotice('已拒绝该条 Wiki 写入');
+    await fetchWikiPatches({ silent: true });
+  } catch (err) {
+    setError(`拒绝失败：${err.message}`);
+  } finally {
+    wikiPatchBusyId.value = null;
   }
 };
 
@@ -427,6 +780,56 @@ const formatDocMeta = (doc) =>
   `${formatFileSize(doc.file_size)} · ${formatRelativeTime(doc.created_at)}`;
 
 const formatChunkCount = (doc) => `${Math.max(0, Number(doc?.chunk_count || 0))} 切块`;
+
+const clipText = (value, maxLength = 180) => {
+  const text = String(value || '').trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength).trim()}...`;
+};
+
+const formatPatchConfidence = (patch) => {
+  const confidence = Number(patch?.confidence || 0);
+  return `${Math.round(Math.max(0, Math.min(1, confidence)) * 100)}%`;
+};
+
+const formatPatchOperation = (operation) => {
+  const labels = {
+    append: '追加',
+    create: '新建',
+    replace_section: '替换段落',
+  };
+  return labels[operation] || operation || '更新';
+};
+
+const formatWikiPageType = (pageType) => {
+  const labels = {
+    index: '首页',
+    topic: '主题页',
+    source: '来源页',
+    schema: '结构页',
+    log: '日志页',
+  };
+  return labels[pageType] || pageType || '页面';
+};
+
+const getWikiPageIcon = (page) => {
+  const pageType = page?.page_type;
+  if (pageType === 'index') return 'home';
+  if (pageType === 'topic') return 'auto_stories';
+  if (pageType === 'source') return 'article';
+  if (pageType === 'schema') return 'account_tree';
+  if (pageType === 'log') return 'history';
+  return 'description';
+};
+
+const getWikiPageToneClass = (page) => {
+  const pageType = page?.page_type;
+  if (pageType === 'topic') return 'tone-topic';
+  if (pageType === 'source') return 'tone-source';
+  if (pageType === 'schema') return 'tone-schema';
+  if (pageType === 'log') return 'tone-log';
+  return 'tone-index';
+};
 
 const extractExt = (doc) => {
   const direct = String(doc?.file_type || '').toLowerCase();
@@ -544,6 +947,16 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
+.patch-panel {
+  grid-column: span 7 / span 7;
+  padding: 2rem;
+}
+
+.wiki-panel {
+  grid-column: span 12 / span 12;
+  padding: 2rem;
+}
+
 .title-create,
 .title-section {
   margin: 0;
@@ -638,6 +1051,13 @@ onBeforeUnmount(() => {
   margin-bottom: 2rem;
 }
 
+.panel-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
 .icon-ghost {
   width: 2rem;
   height: 2rem;
@@ -655,6 +1075,12 @@ onBeforeUnmount(() => {
 .icon-ghost:hover {
   color: #003fab;
   background: #f2f4f6;
+}
+
+.icon-ghost:disabled {
+  color: #cbd5e1;
+  cursor: not-allowed;
+  background: transparent;
 }
 
 .upload-dropzone {
@@ -1006,6 +1432,291 @@ onBeforeUnmount(() => {
   background: rgba(255, 218, 214, 0.4);
 }
 
+.patch-list {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.patch-card {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: #fbfdff;
+}
+
+.patch-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.patch-target {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-weight: 800;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.patch-target .material-symbols-outlined {
+  color: #047857;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.patch-confidence {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
+.patch-meta {
+  margin-top: 0.375rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: #64748b;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.patch-question {
+  margin: 0.8rem 0 0;
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.patch-answer {
+  margin: 0.45rem 0 0;
+  color: #334155;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  word-break: break-word;
+}
+
+.patch-markdown {
+  margin: 0.75rem 0 0;
+  max-height: 11rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-radius: 0.625rem;
+  padding: 0.75rem;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  font-family: "Noto Sans SC", "Inter", sans-serif;
+}
+
+.patch-actions {
+  margin-top: 0.875rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.patch-action-btn {
+  border: none;
+  border-radius: 999px;
+  min-width: 4.75rem;
+  padding: 0.55rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+}
+
+.patch-action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.patch-action-btn:disabled {
+  cursor: wait;
+  opacity: 0.55;
+  transform: none;
+}
+
+.patch-action-btn.accept {
+  background: #047857;
+  color: #fff;
+}
+
+.patch-action-btn.reject {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.wiki-browser {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.4fr);
+  gap: 1rem;
+  min-height: 28rem;
+}
+
+.wiki-page-list {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  padding: 0.5rem;
+  overflow: auto;
+  max-height: 36rem;
+}
+
+.wiki-page-row {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  border-radius: 0.625rem;
+  background: transparent;
+  padding: 0.75rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 200ms ease-out, box-shadow 200ms ease-out;
+}
+
+.wiki-page-row:hover,
+.wiki-page-row.active {
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.wiki-page-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wiki-page-icon .material-symbols-outlined {
+  font-size: 1.15rem;
+}
+
+.wiki-page-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.125rem;
+}
+
+.wiki-page-title {
+  min-width: 0;
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-weight: 800;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.wiki-page-meta {
+  min-width: 0;
+  color: #64748b;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.wiki-preview {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 1.25rem;
+  overflow: hidden;
+}
+
+.wiki-preview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.wiki-preview-type {
+  margin: 0 0 0.25rem;
+  color: #2563eb;
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
+.wiki-preview-head h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.125rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.wiki-preview-time {
+  flex-shrink: 0;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.wiki-path-row {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: #eef2ff;
+  color: #3155a4;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.wiki-path-row .material-symbols-outlined {
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.wiki-path-row span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wiki-markdown {
+  margin: 1rem 0 0;
+  min-height: 21rem;
+  max-height: 48rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  padding: 1rem;
+  background: #fbfdff;
+  color: #1f2937;
+  font-family: "Noto Sans SC", "Inter", sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.8;
+}
+
 .empty-block {
   color: #64748b;
   font-size: 0.875rem;
@@ -1043,6 +1754,31 @@ onBeforeUnmount(() => {
 .tone-default {
   background: #f2f4f6;
   color: #475569;
+}
+
+.tone-index {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.tone-topic {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.tone-source {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.tone-schema {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.tone-log {
+  background: #fff7ed;
+  color: #c2410c;
 }
 
 .help-fab {
@@ -1090,13 +1826,32 @@ onBeforeUnmount(() => {
 
   .create-panel,
   .files-panel,
-  .list-panel {
+  .list-panel,
+  .patch-panel,
+  .wiki-panel {
     grid-column: auto;
     grid-row: auto;
   }
 
-  .files-panel {
+  .patch-panel {
+    order: 2;
+  }
+
+  .wiki-panel {
     order: 3;
+  }
+
+  .files-panel {
+    order: 4;
+  }
+
+  .wiki-browser {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .wiki-page-list {
+    max-height: 18rem;
   }
 
   .create-btn {

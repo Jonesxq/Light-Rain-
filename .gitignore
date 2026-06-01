@@ -15,6 +15,7 @@ __pycache__/
 *.so
 .Python
 *.egg-info/
+.pytest-tmp/
 .pytest_cache/
 .coverage
 htmlcov/
@@ -42,6 +43,10 @@ backend/static/uploads/
 backend/static/uploads/**
 backend/app/static/uploads/
 backend/app/static/uploads/**
+static/uploads/
+static/uploads/**
+storage/
+storage/**
 
 # Frontend
 frontend/node_modules/

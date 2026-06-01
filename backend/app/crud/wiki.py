@@ -221,6 +221,93 @@ class WikiCRUD:
         result = await db.execute(statement)
         return list(result.scalars().all())
 
+    async def list_patches_by_target(
+        self,
+        db: AsyncSession,
+        *,
+        kb_id: int,
+        target_path: str,
+        operation: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> list[WikiPatch]:
+        statement = select(WikiPatch).where(
+            WikiPatch.kb_id == kb_id,
+            WikiPatch.target_path == target_path,
+        )
+        if operation is not None:
+            statement = statement.where(WikiPatch.operation == operation)
+        if status is not None:
+            statement = statement.where(WikiPatch.status == status)
+        statement = statement.order_by(desc(WikiPatch.created_at), desc(WikiPatch.id))
+        result = await db.execute(statement)
+        return list(result.scalars().all())
+
+    async def reject_pending_create_patches_for_target(
+        self,
+        db: AsyncSession,
+        *,
+        kb_id: int,
+        target_path: str,
+        page_id: Optional[int] = None,
+    ) -> int:
+        patches = await self.list_patches_by_target(
+            db,
+            kb_id=kb_id,
+            target_path=target_path,
+            operation="create",
+            status="pending",
+        )
+        if not patches:
+            return 0
+
+        rejected_at = datetime.utcnow()
+        for patch in patches:
+            patch.status = "rejected"
+            patch.rejected_at = rejected_at
+            patch.applied_at = None
+            if page_id is not None:
+                patch.page_id = page_id
+            db.add(patch)
+
+        await db.commit()
+        return len(patches)
+
+    async def get_patch(
+        self,
+        db: AsyncSession,
+        kb_id: int,
+        patch_id: int,
+    ) -> Optional[WikiPatch]:
+        statement = select(WikiPatch).where(
+            WikiPatch.kb_id == kb_id,
+            WikiPatch.id == patch_id,
+        )
+        result = await db.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def update_patch_status(
+        self,
+        db: AsyncSession,
+        patch: WikiPatch,
+        *,
+        status: str,
+        page_id: Optional[int] = None,
+    ) -> WikiPatch:
+        patch.status = status
+        if page_id is not None:
+            patch.page_id = page_id
+        if status == "applied":
+            patch.applied_at = datetime.utcnow()
+            patch.rejected_at = None
+        elif status == "rejected":
+            patch.rejected_at = datetime.utcnow()
+            patch.applied_at = None
+
+        db.add(patch)
+        await db.commit()
+        await db.refresh(patch)
+        return patch
+
     async def replace_links(
         self,
         db: AsyncSession,
@@ -271,7 +358,9 @@ class WikiCRUD:
         if link.from_page_id is not None:
             from_page = await self.get_page(db, kb_id, link.from_page_id)
             if from_page is None or from_page.path != from_path:
-                raise ValueError("Wiki link from_page_id must match kb_id and from_path")
+                raise ValueError(
+                    "Wiki link from_page_id must match kb_id and from_path"
+                )
 
         if link.to_page_id is not None:
             to_page = await self.get_page(db, kb_id, link.to_page_id)

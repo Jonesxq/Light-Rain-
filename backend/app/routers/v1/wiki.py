@@ -13,6 +13,11 @@ from app.crud.wiki import wiki_crud
 from app.models.user import User
 from app.models.wiki import WikiPage, WikiPatch
 from app.services.wiki import wiki_service
+from app.services.wiki.service import (
+    WikiPatchConflictError,
+    WikiPatchNotFoundError,
+    WikiPatchUnsupportedOperationError,
+)
 from app.services.wiki.types import WikiCompileResult
 
 router = APIRouter(prefix="/knowledge/{kb_id}/wiki", tags=["Wiki"])
@@ -168,3 +173,43 @@ async def list_patches(
     await _require_owned_kb(db, current_user, kb_id)
     patches = await wiki_crud.list_patches(db, kb_id, status=status)
     return [_serialize_patch(patch) for patch in patches]
+
+
+@router.post("/patches/{patch_id}/apply")
+async def apply_patch(
+    kb_id: int,
+    patch_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _require_owned_kb(db, current_user, kb_id)
+    try:
+        patch = await wiki_service.apply_patch(db, kb_id=kb_id, patch_id=patch_id)
+    except WikiPatchNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Wiki patch not found") from exc
+    except WikiPatchConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except WikiPatchUnsupportedOperationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except (FileNotFoundError, OSError, UnicodeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return _serialize_patch(patch)
+
+
+@router.post("/patches/{patch_id}/reject")
+async def reject_patch(
+    kb_id: int,
+    patch_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _require_owned_kb(db, current_user, kb_id)
+    try:
+        patch = await wiki_service.reject_patch(db, kb_id=kb_id, patch_id=patch_id)
+    except WikiPatchNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Wiki patch not found") from exc
+    except WikiPatchConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    return _serialize_patch(patch)
