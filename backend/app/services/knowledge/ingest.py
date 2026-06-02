@@ -148,7 +148,12 @@ class KnowledgeIngest:
                         "file_size": doc.file_size,
                     }
                 }
-                chunks = self.service.chunker.load_and_split(doc.file_path, doc.file_type, base_meta=base_meta)
+                chunks = await asyncio.to_thread(
+                    self.service.chunker.load_and_split,
+                    doc.file_path,
+                    doc.file_type,
+                    base_meta=base_meta,
+                )
                 if not chunks:
                     raise ValueError("Document chunking produced empty result.")
 
@@ -235,7 +240,7 @@ class KnowledgeIngest:
                     for summary in summaries
                 ]
                 vector_db = self.service._get_vector_store(doc.kb_id)
-                ids = vector_db.add_documents(milvus_docs)
+                ids = await asyncio.to_thread(vector_db.add_documents, milvus_docs)
                 if not ids or len(ids) != len(prepared_rows):
                     raise ValueError("Milvus returned invalid ids for summary chunks.")
 

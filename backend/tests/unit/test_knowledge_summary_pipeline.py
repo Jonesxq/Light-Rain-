@@ -168,6 +168,7 @@ async def test_ingest_document_store_summary_in_db_and_raw_in_sidecar(tmp_path: 
 
     created_chunks = []
     status_updates = []
+    to_thread_calls = []
 
     async def _fake_create_chunk(
         _db,
@@ -209,6 +210,10 @@ async def test_ingest_document_store_summary_in_db_and_raw_in_sidecar(tmp_path: 
     async def _fake_get_kb(*_args, **_kwargs):
         return None
 
+    async def _fake_to_thread(func, /, *args, **kwargs):
+        to_thread_calls.append(getattr(func, "__name__", func.__class__.__name__))
+        return func(*args, **kwargs)
+
     monkeypatch.setattr(service, "chunker", _DummyChunker(), raising=False)
     monkeypatch.setattr(service, "_summarize_chunks", _fake_summaries)
     monkeypatch.setattr(service, "_get_vector_store", lambda _kb_id: _FakeVectorStore())
@@ -217,6 +222,7 @@ async def test_ingest_document_store_summary_in_db_and_raw_in_sidecar(tmp_path: 
     monkeypatch.setattr(ingest_module.kb_crud, "create_chunk", _fake_create_chunk)
     monkeypatch.setattr(ingest_module.kb_crud, "update_document_status", _fake_update_status)
     monkeypatch.setattr(ingest_module.kb_crud, "get_kb", _fake_get_kb)
+    monkeypatch.setattr(ingest_module.asyncio, "to_thread", _fake_to_thread)
 
     await service.ingest_document(1)
 
@@ -225,6 +231,8 @@ async def test_ingest_document_store_summary_in_db_and_raw_in_sidecar(tmp_path: 
     assert [c["parent_id"] for c in created_chunks] == ["1:0", "1:1"]
     assert status_updates[-1]["status"] == DocStatus.COMPLETED
     assert status_updates[-1]["chunk_count"] == 2
+    assert "load_and_split" in to_thread_calls
+    assert "add_documents" in to_thread_calls
 
     sidecar_path = Path(f"{doc.file_path}.chunks.jsonl")
     assert sidecar_path.exists()

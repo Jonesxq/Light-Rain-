@@ -48,9 +48,9 @@ class LLMSettings(EnvBaseSettings):
     )
 
     # 默认模型 (如果你有 qwen3-max 权限，在这里配置默认值，或者用 qwen-max)
-    DEFAULT_MODEL: str = Field(default="qwen3-max", description="默认大语言模型")
+    DEFAULT_MODEL: str = Field(default="qwen3.7-max", description="默认大语言模型")
     # 查询改写模型（用于 RAG 问题重写）
-    QUERY_REWRITE_MODEL: str = Field(default="qwen-max", description="查询改写模型")
+    QUERY_REWRITE_MODEL: str = Field(default="qwen3.7-max", description="查询改写模型")
 
     # Embedding 模型配置
     # 通义千问推荐使用: text-embedding-v1

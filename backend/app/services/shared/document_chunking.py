@@ -17,15 +17,37 @@ try:
     from docling.document_converter import DocumentConverter, PdfFormatOption
     from docling.datamodel.base_models import InputFormat
     from docling.datamodel.pipeline_options import PdfPipelineOptions, AcceleratorOptions, AcceleratorDevice
-    
-    # 恢复 GPU (CUDA) 加速模式
-    _acc_options = AcceleratorOptions(device=AcceleratorDevice.CUDA) 
+    from docling.datamodel.settings import settings as docling_settings
+
+    def _env_bool(name: str, default: bool) -> bool:
+        value = os.getenv(name)
+        if value is None:
+            return default
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+
+    def _env_int(name: str, default: int, minimum: int = 1) -> int:
+        try:
+            return max(minimum, int(os.getenv(name, str(default))))
+        except ValueError:
+            return default
+
+    _docling_num_threads = _env_int("DOCLING_NUM_THREADS", 1)
+    _docling_page_batch_size = _env_int("DOCLING_PAGE_BATCH_SIZE", 1)
+    docling_settings.perf.page_batch_size = _docling_page_batch_size
+    docling_settings.perf.page_batch_concurrency = _env_int("DOCLING_PAGE_BATCH_CONCURRENCY", 1)
+    docling_settings.perf.doc_batch_concurrency = _env_int("DOCLING_DOC_BATCH_CONCURRENCY", 1)
+
+    _docling_device = AcceleratorDevice.CUDA if _env_bool("DOCLING_USE_CUDA", False) else AcceleratorDevice.CPU
     _pipeline_options = PdfPipelineOptions(
-        accelerator_options=_acc_options,
-        num_threads=2,            # 适度并发，兼顾速度与 6GB 显存稳定性
-        images_scale=2.0,         # 恢复标准分辨率以保证表格识别精度
-        do_table_structure=True, 
-        do_ocr=True,
+        accelerator_options=AcceleratorOptions(num_threads=_docling_num_threads, device=_docling_device),
+        images_scale=max(0.5, float(os.getenv("DOCLING_IMAGES_SCALE", "1.0"))),
+        do_table_structure=_env_bool("DOCLING_TABLE_STRUCTURE", False),
+        do_ocr=_env_bool("DOCLING_OCR", False),
+        force_backend_text=_env_bool("DOCLING_FORCE_BACKEND_TEXT", True),
+        ocr_batch_size=_env_int("DOCLING_OCR_BATCH_SIZE", 1),
+        layout_batch_size=_env_int("DOCLING_LAYOUT_BATCH_SIZE", 1),
+        table_batch_size=_env_int("DOCLING_TABLE_BATCH_SIZE", 1),
+        queue_max_size=_env_int("DOCLING_QUEUE_MAX_SIZE", 4),
     )
     _pipeline_options.generate_page_images = False 
     
@@ -61,7 +83,7 @@ class DocumentChunkingService:
     """文档分块服务类：负责加载各类文档并智能切分为适合RAG检索的文本块
     
     支持的文档格式:
-        - PDF (.pdf): 使用PyMuPDF解析
+        - PDF (.pdf): 使用 Docling 转换为 Markdown 后解析
         - Word (.docx): 使用python-docx解析
         - PowerPoint (.pptx, .ppt): 使用unstructured解析
         - Markdown (.md): 支持标题层级结构
@@ -205,8 +227,57 @@ class DocumentChunkingService:
         logger.info(f"使用 Docling 转换文档: {file_path}")
         result = _GLOBAL_CONVERTER.convert(file_path)
         md_text = result.document.export_to_markdown()
+        recovered_pages = self._recover_missing_docling_pages(file_path, result)
+        if recovered_pages:
+            md_text = "\n\n".join([md_text.strip(), *recovered_pages])
         logger.info(f"Docling 转换文档完成，将其交接给 Markdown 切块算法处理...")
         return self._split_md_to_blocks(md_text)
+
+    def _recover_missing_docling_pages(self, file_path: str, result: Any) -> List[str]:
+        missing_pages = self._missing_docling_page_numbers(result)
+        if not missing_pages:
+            return []
+
+        logger.warning(f"Docling 整篇转换缺失页面 {missing_pages}，开始使用 page_range 单页恢复")
+        recovered_markdown: List[str] = []
+        for page_no in missing_pages:
+            try:
+                page_result = _GLOBAL_CONVERTER.convert(
+                    file_path,
+                    page_range=(page_no, page_no),
+                    raises_on_error=False,
+                )
+            except TypeError:
+                page_result = _GLOBAL_CONVERTER.convert(file_path, page_range=(page_no, page_no))
+            except Exception as exc:
+                logger.warning(f"Docling 单页恢复失败: page={page_no}, error={exc}")
+                continue
+
+            page_md = page_result.document.export_to_markdown().strip()
+            if not page_md:
+                logger.warning(f"Docling 单页恢复未返回内容: page={page_no}")
+                continue
+
+            logger.info(f"Docling 单页恢复成功: page={page_no}")
+            recovered_markdown.append(f"<!-- Docling page recovery: {page_no} -->\n\n{page_md}")
+        return recovered_markdown
+
+    @staticmethod
+    def _missing_docling_page_numbers(result: Any) -> List[int]:
+        page_count = getattr(getattr(result, "input", None), "page_count", None)
+        if not page_count:
+            return []
+
+        successful_pages = set()
+        for page in getattr(result, "pages", []) or []:
+            page_no = getattr(page, "page_no", None)
+            if page_no is None:
+                continue
+            try:
+                successful_pages.add(int(page_no))
+            except (TypeError, ValueError):
+                continue
+        return [page_no for page_no in range(1, int(page_count) + 1) if page_no not in successful_pages]
 
     def _split_md_to_blocks(self, text: str) -> List[TextBlock]:
         """将Markdown文本分割为带标题路径的块：支持标题层级结构
