@@ -52,6 +52,27 @@ async def test_summarize_chunk_truncates_to_max_chars():
     assert summary == "x" * 8
 
 
+@pytest.mark.asyncio
+async def test_summarize_chunks_skip_llm_for_large_documents(monkeypatch):
+    service = _new_service()
+
+    def _fail_get_summary_llm():
+        raise AssertionError("large documents should not invoke summary LLM")
+
+    monkeypatch.setattr(ingest_module.settings.llm, "RAG_SUMMARY_MAX_CHUNKS", 1)
+    monkeypatch.setattr(service, "_get_summary_llm", _fail_get_summary_llm)
+
+    summaries, usage = await service._summarize_chunks(["raw A", "raw B"])
+
+    assert summaries == ["raw A", "raw B"]
+    assert usage == {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "token_missing": 0,
+    }
+
+
 def test_sidecar_roundtrip_with_bad_lines(tmp_path: Path):
     service = _new_service()
     sidecar = tmp_path / "doc.txt.chunks.jsonl"

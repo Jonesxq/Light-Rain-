@@ -73,6 +73,8 @@ class LLMSettings(EnvBaseSettings):
     RAG_SUMMARY_MAX_CHARS: int = Field(default=180, description="块摘要最大字符数")
     # chunk 摘要并发度
     RAG_SUMMARY_CONCURRENCY: int = Field(default=5, description="块摘要并发度")
+    # 超过该 chunk 数时跳过 LLM 摘要，避免超大 PDF 入库耗时和成本失控；0 表示全部跳过
+    RAG_SUMMARY_MAX_CHUNKS: int = Field(default=400, description="启用块摘要的最大 chunk 数")
     # 通用分块参数
     RAG_CHUNK_SIZE_DEFAULT: int = Field(default=600, description="默认分块大小")
     RAG_CHUNK_OVERLAP_DEFAULT: int = Field(default=60, description="默认分块重叠大小")

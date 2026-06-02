@@ -86,6 +86,19 @@ class KnowledgeIngest:
         if not raw_chunks:
             return [], {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "token_missing": 0}
 
+        max_summary_chunks = max(0, int(settings.llm.RAG_SUMMARY_MAX_CHUNKS))
+        if len(raw_chunks) > max_summary_chunks:
+            logger.info(
+                "Skip chunk summaries for large document: "
+                f"chunk_count={len(raw_chunks)}, max_summary_chunks={max_summary_chunks}"
+            )
+            return list(raw_chunks), {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0,
+                "token_missing": 0,
+            }
+
         llm = self.service._get_summary_llm()
         max_chars = max(50, int(settings.llm.RAG_SUMMARY_MAX_CHARS))
         concurrency = max(1, int(settings.llm.RAG_SUMMARY_CONCURRENCY))

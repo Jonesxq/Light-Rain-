@@ -1,0 +1,1602 @@
+[
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 0,
+    "question": "NIST AI 100-1《人工智能风险管理框架（AI RMF 1.0）》的发布时间是什么时候？",
+    "ground_truth": "2023年1月。",
+    "source_excerpt": "<!-- image -->\n\nNIST AI 100-1\n\n<!-- image -->\n\nArtificial Intelligence Risk Management Framework (AI RMF 1.0)\n\n<!-- image -->\n\nNIST AI 100-1\n\nArtificial Intelligence Risk Management Framework (AI RMF 1.0)\n\nThis publication is available free of charge from: https://doi.org/10.6028/NIST.AI.100-1\n\nJanuary 2023\n\n<!-- image -->\n\nU.S. Department of Commerce Gina M. Raimondo, Secretary\n\nNational Institute of Standards and Technology Laurie E. Locascio, NIST Director and Under Secretary of Commerce for "
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 1,
+    "question": "根据文档，人工智能风险管理框架（AI RMF）被定位为什么性质的文档？",
+    "ground_truth": "人工智能风险管理框架（AI RMF）被定位为一份“活文档”（living document）。",
+    "source_excerpt": "Certain commercial entities, equipment, or materials may be identified in this document in order to describe an experimental procedure or concept adequately. Such identification is not intended to imply recommenda- tion or endorsement by the National Institute of Standards and Technology, nor is it intended to imply that the entities, materials, or equipment are necessarily the best available for the purpose.\n\nThis publication is available free of charge from: https://doi.org/10.6028/NIST.AI.100"
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 2,
+    "question": "人工智能风险管理框架（AI RMF）采用怎样的版本控制系统来跟踪和识别重大与次要更改？",
+    "ground_truth": "AI RMF采用两位数字的版本控制系统。第一个数字代表世代（如1.0），仅在重大修订时更改；次要修订则在世代号后使用“.n”进行跟踪（如1.1）。",
+    "source_excerpt": "NIST will review the content and usefulness of the Framework regularly to determine if an update is appropriate; a review with formal input from the AI community is expected to take place no later than 2028. The Framework will employ a two-number versioning system to track and identify major and minor changes. The first number will represent the generation of the AI RMF and its companion documents (e.g., 1.0) and will change only with major revisions. Minor revisions will be tracked using '.n' a"
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 3,
+    "question": "用户应如何提交对AI RMF Playbook的意见，这些意见的审查和整合频率是怎样的？",
+    "ground_truth": "用户可以随时通过电子邮件将意见发送至AIframework@nist.gov，这些意见将每半年进行一次审查和整合。",
+    "source_excerpt": "and description of change. NIST plans to update the AI RMF Playbook frequently. Comments on the AI RMF Playbook may be sent via email to AIframework@nist.gov at any time and will be reviewed and integrated on a semi-annual basis."
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 4,
+    "question": "文档在说明意见审查和整合频率之后，紧接着展示的文档结构部分是什么？",
+    "ground_truth": "目录（Table of Contents）。",
+    "source_excerpt": "nist.gov at any time and will be reviewed and integrated on a semi-annual basis.\n\nTable of Contents"
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 5,
+    "question": "在NIST AI风险管理框架的第一部分基础信息中，“构建风险（Framing Risk）”章节下包含了哪些具体的子章节？",
+    "ground_truth": "包含了“1.1 理解并应对风险、影响和危害（Understanding and Addressing Risks, Impacts, and Harms）”以及“1.2 AI风险管理的挑战（Challenges for AI Risk Management）”。",
+    "source_excerpt": "| Executive Summary | Executive Summary | Executive Summary | 1 |\n|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|----------------|\n| Part 1: Foundational Information"
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 6,
+    "question": "根据文档目录，AI风险与可信度（AI Risks and Trustworthiness）具体涵盖了哪些关键属性或特征？",
+    "ground_truth": "涵盖了有效且可靠（Valid and Reliable）、安全（Safe）、安全且有弹性（Secure and Resilient）、负责且透明（Accountable and Transparent）、可解释且可理解（Explainable and Interpretable）、隐私增强（Privacy-Enhanced）以及公平且管理有害偏见（Fair - with Harmful Bias Managed）。",
+    "source_excerpt": "ges for AI Risk Management | Challenges for AI Risk Management | 5 |\n| | 1.2.1 | Risk Measurement | 5 |\n| | 1.2.2 | Risk Tolerance | 7 |\n| | 1.2.3 | Risk Prioritization | 7 |\n| | 1.2.4 | Organizational Integration and Management of Risk | 8 |\n| 2 Audience | 2 Audience | 2 Audience | 9 |\n| AI Risks and Trustworthiness | AI Risks and Trustworthiness | AI Risks and Trustworthiness | 12 |\n| 3.1 | Valid and | Reliable | 13 |\n| 3.2 | Safe | | 14 |\n| | 3.3 | Secure and Resilient | 15 |\n| | 3.4 | Accoun"
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 7,
+    "question": "NIST AI风险管理框架的核心（AI RMF Core）由哪四个主要功能模块组成？",
+    "ground_truth": "由治理（Govern）、映射（Map）、测量（Measure）和管理（Manage）四个主要功能模块组成。",
+    "source_excerpt": "s of the AIRMF | 4 Effectiveness of the AIRMF | 20 |\n| Part 2: Core and Profiles AI RMFCore | Part 2: Core and Profiles AI RMFCore | Part 2: Core and Profiles AI RMFCore | |\n| 5 | 5 | 5 | 20 |\n| 5.1 | | Govern | 21 |\n| | 5.2 | Map | 24 |\n| | 5.3 | Measure | 28 |\n| 5.4 | | Manage | 31 |\n| 6 AI RMFProfiles | 6 AI RMFProfiles | 6 AI RMFProfiles | 33 |\n| Appendix A: Descriptions of AI Actor Tasks from Figures 2 and 3 | Appendix A: Descriptions of AI Actor Tasks from Figures 2 and 3 | Appendix A: Des"
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 8,
+    "question": "文档的附录C和附录D分别探讨了与AI风险管理相关的什么具体主题？",
+    "ground_truth": "附录C探讨了AI风险管理与人类-AI交互（Human-AI Interaction），附录D探讨了AIRMF的属性（Attributes of the AIRMF）。",
+    "source_excerpt": "r from Traditional Software Risks | 38 |\n| Appendix C: AI Risk Management and Human-AI Interaction | Appendix C: AI Risk Management and Human-AI Interaction | Appendix C: AI Risk Management and Human-AI Interaction | 40 |\n| Appendix D: Attributes of the AIRMF | Appendix D: Attributes of the AIRMF | Appendix D: Attributes of the AIRMF | 42 |\n| List of Tables | List of Tables | List of Tables | List of Tables |\n| Table 1 Categories and subcategories for the GOVERN function."
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 9,
+    "question": "文档中的表1至表4分别列出了AI RMF核心中哪些功能的类别和子类别？",
+    "ground_truth": "表1列出了治理（GOVERN）功能，表2列出了映射（MAP）功能，表3列出了测量（MEASURE）功能，表4列出了管理（MANAGE）功能的类别和子类别。",
+    "source_excerpt": "| Table 1 Categories and subcategories for the GOVERN function. | Table 1 Categories and subcategories for the GOVERN function. | 22 |\n| Table 2 Categories and subcategories for the MAP function. | Table 2 Categories and subcategories for the MAP function. | Table 2 Categories and subcategories for the MAP function. | 26 |\n| Table 3 Categories and subcategories for the MEASURE function. Table 4 Categories and subcategories for the MANAGE function. | Table 3 Categories and subcategories for the M"
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 10,
+    "question": "表4（Table 4）主要包含了哪个功能的类别和子类别信息？",
+    "ground_truth": "MANAGE（管理）功能。",
+    "source_excerpt": "E function. Table 4 Categories and subcategories for the MANAGE function. | 32 |\n\nList of Figures"
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 11,
+    "question": "根据图2的描述，理想情况下风险管理工作应从应用上下文中的哪个功能开始，并贯穿整个AI系统生命周期？",
+    "ground_truth": "计划与设计（Plan and Design）功能。",
+    "source_excerpt": "- Fig. 1 Examples of potential harms related to AI systems. Trustworthy AI systems and their responsible use can mitigate negative risks and contribute to benefits for people, organizations, and ecosystems. - Fig. 2 Lifecycle and Key Dimensions of an AI System. Modified from OECD (2022) OECD Framework for the Classification of AI systems - OECD Digital Economy Papers. The two inner circles show AI systems' key dimensions and the outer circle shows AI lifecycle stages. Ideally, risk management ef"
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 12,
+    "question": "在AI模型维度中，作为最佳实践，构建和使用模型的人员需要与负责什么任务的人员分离开来？",
+    "ground_truth": "验证和确认（verifying and validating）模型的人员。",
+    "source_excerpt": "e 3 for representative AI actors. - Fig. 3 AI actors across AI lifecycle stages. See Appendix A for detailed descriptions of AI actor tasks, including details about testing, evaluation, verification, and validation tasks. Note that AI actors in the AI Model dimension (Figure 2) are separated as a best practice, with those building and using the models separated from those verifying and validating the models. - Fig. 4 Characteristics of trustworthy AI systems. Valid &amp; Reliable is a necessary "
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 13,
+    "question": "在组织AI风险管理活动的最高层级功能中，哪个功能被设计为跨领域（cross-cutting）功能，以贯穿并融入其他三个功能？",
+    "ground_truth": "治理（Governance）功能。",
+    "source_excerpt": "shown as a vertical box because it relates to all other characteristics. - Fig. 5 Functions organize AI risk management activities at their highest level to govern, map, measure, and manage AI risks. Governance is designed to be a cross-cutting function to inform and be infused throughout the other three functions."
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 14,
+    "question": "在文本中“Executive Summary”（执行摘要）标题出现之前，列出的数字序列具体包含哪些数值？",
+    "ground_truth": "包含的数值有5、10、11、12和20。",
+    "source_excerpt": "-cutting function to inform and be infused throughout the other three functions.\n\n5\n\n10\n\n11\n\n12\n\n20\n\nExecutive Summary"
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 15,
+    "question": "根据文档，人工智能（AI）风险可以按照哪些特征维度进行分类或描述？",
+    "ground_truth": "AI风险可以被描述或分类为长期或短期、高概率或低概率、系统性或局部性，以及高影响或低影响。",
+    "source_excerpt": "Artificial intelligence (AI) technologies have significant potential to transform society and people's lives - from commerce and health to transportation and cybersecurity to the environment and our planet. AI technologies can drive inclusive economic growth and support scientific advancements that improve the conditions of our world. AI technologies, however, also pose risks that can negatively impact individuals, groups, organizations, communities, society, the environment, and the planet. Lik"
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 16,
+    "question": "在AI RMF（人工智能风险管理框架）中，是如何定义“AI系统”的？",
+    "ground_truth": "AI RMF将AI系统定义为一种工程或基于机器的系统，它能够针对给定的一组目标，生成诸如预测、建议或决策等输出，从而影响真实或虚拟环境，并且被设计为以不同级别的自主性运行。",
+    "source_excerpt": "The AI RMF refers to an AI system as an engineered or machine-based system that can, for a given set of objectives, generate outputs such as predictions, recommendations, or decisions influencing real or virtual environments. AI systems are designed to operate with varying levels of autonomy (Adapted from: OECD Recommendation on AI:2019; ISO/IEC 22989:2022)."
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 17,
+    "question": "与传统软件或基于信息的系统相比，AI系统带来的风险在哪些具体方面表现出独特性？",
+    "ground_truth": "AI系统风险的独特性表现在：1）可能在随时间发生显著且意外变化的数据上进行训练，以难以理解的方式影响系统功能和可信度；2）系统及其部署环境通常很复杂，导致故障发生时难以检测和响应；3）本质上是社会技术的，受社会动态和人类行为的影响。",
+    "source_excerpt": "While there are myriad standards and best practices to help organizations mitigate the risks of traditional software or information-based systems, the risks posed by AI systems are in many ways unique (See Appendix B). AI systems, for example, may be trained on data that can change over time, sometimes significantly and unexpectedly, affecting system functionality and trustworthiness in ways that are hard to understand. AI systems and the contexts in which they are deployed are frequently comple"
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 18,
+    "question": "根据文档，人工智能（AI）的风险和收益是通过什么机制产生的？",
+    "ground_truth": "AI的风险和收益产生于技术方面与社会因素的相互作用，这些社会因素包括系统的使用方式、它与其他AI系统的交互、操作它的人员以及它部署的社会背景。",
+    "source_excerpt": "in nature, meaning they are influenced by societal dynamics and human behavior. AI risks - and benefits can emerge from the interplay of technical aspects combined with societal factors related to how a system is used, its interactions with other AI systems, who operates it, and the social context in which it is deployed."
+  },
+  {
+    "doc": "01_nist_ai_risk_management_framework_1_0.pdf",
+    "doc_id": 5,
+    "chunk_index": 19,
+    "question": "在缺乏适当控制和具备适当控制的两种情况下，AI系统对个人和社区的不公平或不良结果分别会产生什么影响？",
+    "ground_truth": "在缺乏适当控制的情况下，AI系统可能会放大、延续或加剧对个人和社区的不公平或不良结果；而在具备适当控制的情况下，AI系统可以缓解和管理不公平的结果。",
+    "source_excerpt": "her AI systems, who operates it, and the social context in which it is deployed.\n\nThese risks make AI a uniquely challenging technology to deploy and utilize both for organizations and within society. Without proper controls, AI systems can amplify, perpetuate, or exacerbate inequitable or undesirable outcomes for individuals and communities. With proper controls, AI systems can mitigate and manage inequitable outcomes."
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 18,
+    "question": "生成式人工智能（GAI）风险在时间尺度上有什么特点？请结合具体例子说明。",
+    "ground_truth": "GAI风险可能突然发生，也可能在较长时间内发生。例如，传播有害的深度伪造图像可能导致即时或长期的情感伤害以及对人身安全的潜在风险；而虚假信息则可能对社会在公共机构方面的信任产生长期影响。",
+    "source_excerpt": "- the abuse, misuse, and unsafe repurposing by humans (adversarial or not), and others result from interactions between a human and an AI system.\n- Time scale: GAI risks may materialize abruptly or across extended periods . Example s include immediate (and/or prolonged) emotional harm and potential risks to physical safety due to the distribution of harmful deepfake images , or the lo ng-term effect of disinformation on soci etal trust in public institutions ."
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 24,
+    "question": "根据部分源自英国关于高级AI安全的国际科学报告的分类方法，生成式AI的风险可以被分为哪三大类？",
+    "ground_truth": "可以被分为三大类：1）技术/模型风险（或故障风险），包括幻觉、危险或暴力建议、数据隐私、价值链和组件集成、有害偏见和同质化；2）人类滥用（或恶意使用），包括CBRN信息或能力、数据隐私、人机配置、淫秽或虐待内容、信息完整性和信息安全；3）生态系统/社会风险（或系统性风险），包括数据隐私、环境和知识产权。",
+    "source_excerpt": "5 These risks can be further categorized by organizations depending on their unique approaches to risk definition and management. One possible way to further categorize these risks, derived in part from the UK's International Scientific Report on the Safety of Advanced AI, could be: 1) Technical / Model risks (or risk from malfunction): Confabulation; Dangerous or Violent Recommendations; Data Privacy; Value Chain and Component Integration; Harmful Bias, and Homogenization ; 2) Misuse by humans "
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 30,
+    "question": "在信息安全方面，生成式AI是如何降低攻击性网络能力门槛的？",
+    "ground_truth": "生成式AI通过自动发现和利用漏洞，从而简化黑客攻击、恶意软件、网络钓鱼和攻击性网络活动，降低了攻击性网络能力的门槛。",
+    "source_excerpt": "es, or could be leveraged for large -scale dis- and misinformation campaigns. 9. Information Security: Lowered barriers for offensive cyber capabilities, including via automated discovery and exploitation of vulnerabilities to ease hacking, malware, phishing, offensive cyber"
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 36,
+    "question": "关于大语言模型（LLM）在生物威胁创建和攻击规划方面的输出，近期研究得出了什么结论？",
+    "ground_truth": "近期研究发现，LLM在生物威胁创建和攻击规划方面的输出提供的帮助仅略高于传统搜索引擎查询，这表明在研究进行时，最先进的LLM并没有实质性地增加此类攻击的实际发生可能性。",
+    "source_excerpt": "Recent research on this topic found that LLM outputs regarding biological threat creation and attack planning provided minimal assistance beyond traditional search engine queries, suggesting that state-ofthe-art LLMs at the time these studies were conducted do not substantially increase the operational likelihood of such an attack. The physical synthesis development, production, and use of chemical or biological agents will continue to require both applicable expertise and supporting materials a"
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 41,
+    "question": "生成式AI（GAI）输出中的虚构逻辑或引用是如何误导人类并导致不当信任的？",
+    "ground_truth": "GAI输出可能包含旨在证明或解释系统答案的虚构逻辑或引用。例如，即使答案本身是错误的，LLM有时也会提供得出该答案的逻辑步骤；或者LLM可能虚假地声称自己是人类或具有人类特征，从而欺骗人类相信他们正在与另一个人类交谈，这会进一步误导人类不恰当地信任系统的输出。",
+    "source_excerpt": "GAI outputs may also include confabulated logic or citations that purport to justify or explain the system's answer, which may further mislead humans into inappropriately trusting the system's output . For instance, LLMs sometimes provide logical steps for how they arrived at an answer even when the answer itself is incorrect. Similarly, an LLM could falsely assert that it is human or has human traits, potentially deceiving humans into believing they are speaking with another human ."
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 47,
+    "question": "在生成式AI模型中，什么是“数据记忆”（data memorization）问题，它可能带来什么风险？",
+    "ground_truth": "数据记忆是指模型可能泄露、生成或正确推断出关于个人的敏感信息（例如在对抗性攻击期间，大语言模型泄露了训练数据中包含的敏感信息）。即使数据仅存在于少量训练样本中，这个问题也可能带来加剧的隐私风险。",
+    "source_excerpt": "Models may leak, generate, or correctly infer sensitive information about individuals . For example, during adversarial attacks, LLMs have revealed sensitive information (from the public domain) that was included in their training data. This problem has been referred to as data memorization, and may pose exacerbated privacy risks even for data present only in a small number of training samples."
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 53,
+    "question": "生成式AI（GAI）模型中的有害偏见可能源于什么，并会导致哪些负面后果？",
+    "ground_truth": "GAI模型中的有害偏见可能源于其训练数据。这些偏见会导致代表性伤害，或者延续并加剧基于种族、性别、残疾或其他受保护阶级的偏见。",
+    "source_excerpt": "specifically requests image features that are inconsistent with the stereotypes. Harmful b ias in GAI models, which may stem from their training data , can also cause representational harms or perpetuate or exacerbate bias based on race, gender, disability, or other protected classes ."
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 59,
+    "question": "什么是“自动化偏见”（automation bias），它可能会加剧生成式AI（GAI）的哪些其他风险？",
+    "ground_truth": "自动化偏见是指人类过度依赖GAI系统，或毫无根据地认为GAI生成的内容质量高于其他来源的现象（即对自动化系统的过度顺从）。它可能会加剧GAI的其他风险，如虚构（confabulation）风险、偏见风险或同质化风险。",
+    "source_excerpt": "Conversely , due to the complexity and increasing reliability of GAI technology, over time, humans may overrely on GAI systems or may unjustifiably perceive GAI content to be of higher quality than that produced by other sources. This phenomenon is an example of automation bias, or excessive deference to automated systems. Automation bias can exacerbate other risks of GAI, such as risks of confabulation or risks of bias or homogenization.\n\nThere may also be concerns about emotional entanglement "
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 65,
+    "question": "复杂的威胁行为者如何利用GAI驱动的安全副驾驶（security co-pilots）来加剧网络安全攻击风险？",
+    "ground_truth": "复杂的威胁行为者可以开发GAI驱动的安全副驾驶，用于攻击链的多个环节，包括指导攻击者如何在获得系统访问权限后主动逃避威胁检测并提升权限，从而加剧网络安全攻击风险。",
+    "source_excerpt": "Offensive cyber capabilities advanced by GAI systems may augment cyber security attacks such as hacking, malware, and phishing. Reports have indicated that LLMs are already able to discover some vulnerabilities in systems (hardware, software, data) and write code to exploit them. Sophisticated threat actors might further these risks by developing GAI -powered security co -pilots for use in several parts of the attack chain, including informing attackers on how to proactively evade threat detecti"
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 71,
+    "question": "即使使用“干净”的数据进行训练，能力不断增强的生成式AI（GAI）模型在生成CSAM和NCII方面仍存在什么风险？",
+    "ground_truth": "即使使用“干净”的数据进行训练，能力不断增强的GAI模型仍然能够合成或生成合成的NCII和CSAM。此外，生成合成NCII的网站、移动应用和定制模型已从利基互联网论坛发展为主流、自动化和规模化的在线业务。",
+    "source_excerpt": "Data used for training G AI models may unintentional ly include CSAM and NCII. A recent report noted that several commonly used GAI training datasets were found to contain hundreds of known images of\n\nCSAM. Even when trained on 'clean' data, increasingly capable GAI models can synthesize or produce synthetic NCII and CSAM. Websites, mobile apps, and custom -built models that generate synthetic NCII have moved from niche internet forums to mainstream, automated, and scaled online businesses.\n\nTru"
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 77,
+    "question": "在建议操作表中，Action ID的命名规则是什么，以及AI RMF功能有哪些标签缩写？",
+    "ground_truth": "Action ID对应相关的AI RMF功能和子类别（例如GV-1.1-001对应Govern 1.1的第一个建议操作）。AI RMF功能的标签缩写为：GV代表Govern，MP代表Map，MS代表Measure，MG代表Manage。",
+    "source_excerpt": "Each table of suggest ed actions includes:\n\n- Action ID: Each Action ID corresponds to the relevant AI RMF function and subcatego ry (e.g., GV -1.1001 corresponds to the first suggested action for Govern 1.1, GV -1.1-002 corresponds to the second suggested action for Govern 1.1). AI RMF functions are tagged as follows: GV = Govern; MP = Map; MS = Measure; MG = Manage .\n- Suggested Action: S teps an organization or AI actor can take to manage GAI risks .\n- GAI Risks: T ags linking suggested actio"
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 83,
+    "question": "根据文档，评估应该在什么阶段以及通过什么方式进行？",
+    "ground_truth": "评估应在部署阶段及持续进行的基础上，通过内部和外部评估（internal and external evaluations）来进行。",
+    "source_excerpt": "o deployment and on an ongoing basis, through internal and external evaluations. CBRN Information or Capabilities ; Information Security |\n|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 88,
+    "question": "文档中提到了哪些可能被滥用的信息或能力，以及涉及哪些风险类别标签？",
+    "ground_truth": "文档提到可能滥用CBRN信息或能力，和/或攻击性网络能力（offensive cyber capabilities）。涉及的风险类别标签包括CBRN信息或能力（CBRN Information or Capabilities）和信息安全（Information Security）。",
+    "source_excerpt": "may misuse CBRN information or capabilities and/or offensive cyber capabilities. CBRN Information or Capabilities ; Information Security |\n|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 94,
+    "question": "为了防止GAI系统生成CSAM、NCII或违法内容，组织应采取什么建议操作，这主要针对哪些GAI风险？",
+    "ground_truth": "组织应采取的建议操作是建立政策和机制以防止GAI系统生成CSAM、NCII或违反法律的内容（Action ID: GV-1.4-001）。这主要针对的GAI风险包括：淫秽、贬低和/或虐待内容；有害偏见和同质化；以及危险、暴力或仇恨内容。",
+    "source_excerpt": "| Action ID Suggested Action GAI Risks GV -1.4-001 Establish policies and mechanisms to prevent GAI systems from generating CSAM, NCII or content that violates the law. Obscene, Degrading, and/or Abusive Content; Harmful Bias and Homogenization ; Dangerous, Violent, or Hateful Content GV -1.4-002 Establish transparent acceptable use policies for GAI that address illegal use or applications of GAI."
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 100,
+    "question": "在管理GAI系统清单时，针对嵌入到应用软件中的GAI系统，组织应在政策中定义什么，以及调整AI系统清单要求的目的是什么？",
+    "ground_truth": "针对嵌入到应用软件中的GAI系统，组织应在组织政策中定义任何清单豁免（inventory exemptions）。调整AI系统清单要求的目的是为了考虑GAI风险（account for GAI risks），并将组织的GAI系统纳入AI系统清单中。",
+    "source_excerpt": "| Action ID Suggested Action GAI Risks GV -1.6-001 Enumerate organizational GAI systems for incorporation into AI system inventory and adjust AI system inventory requirements to account for GAI risks. Information Security GV -1.6-002 Define any inventory exemptions in organizational policies for GAI systems embedded into application software ."
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 106,
+    "question": "在AI部署、运营和监控任务中，GOVERN 2.1对组织内与AI风险相关的角色、职责和沟通渠道提出了什么具体要求？",
+    "ground_truth": "GOVERN 2.1要求与映射、测量和管理AI风险相关的角色、职责以及沟通渠道必须被记录下来，并且对组织内的个人和团队来说是清晰的。",
+    "source_excerpt": "-------------------------------------------------------------------------------|\n\nAI Actor Tasks: AI Deployment, Operation and Monitoring\n\nGOVERN 2.1: Roles and responsibilities and lines of communication related to mapping, measuring, and managing AI risks are documented and are clear to individuals and teams throughout the organization."
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 112,
+    "question": "针对人机配置（Human-AI Configuration），GV-3.2-003、GV-3.2-004和GV-3.2-005分别建议采取哪些具体行动？",
+    "ground_truth": "GV-3.2-003建议为GAI接口、模态和人机配置定义可接受的使用政策，包括GAI应用应拒绝回答的查询类型标准；GV-3.2-004建议为GAI系统的用户反馈机制建立政策，包含详细说明和补救机制；GV-3.2-005建议参与威胁建模以预测GAI系统的潜在风险。",
+    "source_excerpt": "bility of GAI tools, interfaces, and systems, Incident response and containment. Human- AI Configuration ; Information Security ; Harmful Bias and Homogenization GV - 3.2 - 003 Define acceptable use policies for GAI interfaces, modalities, and human -AI configurations (i.e., for chatbots and decision - making tasks), including criteria for the kinds of queries GAI applications should refuse to respond to. Human-AI Configuration GV - 3.2 -004 Establish policies for user feedback mechanisms for GA"
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 118,
+    "question": "根据GOVERN 4.2，组织团队在AI技术的设计、开发、部署、评估和使用过程中需要履行哪些文档记录和沟通职责？",
+    "ground_truth": "组织团队需要记录他们所设计、开发、部署、评估和使用的AI技术的风险和潜在影响，并更广泛地就这些影响进行沟通。",
+    "source_excerpt": "GOVERN 4.2: Organizational teams document the risks and potential impacts of the AI technology they design, develop, deploy, evaluate, and use, and they communicate about the impacts more broadly."
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 124,
+    "question": "在AI影响评估等任务中，GV-4.3-003建议验证哪些机制，并且这些机制主要涉及哪些GAI风险？",
+    "ground_truth": "GV-4.3-003建议验证个人和组织之间关于GAI系统任何负面影响的信息共享和反馈机制。这涉及到的GAI风险包括信息完整性（Information Integrity）和数据隐私（Data Privacy）。",
+    "source_excerpt": "-------------------------------------------------------------------------------|\n\n| GV - 4.3 -00 3 Verify information sharing and feedback mechanisms among individuals and organizations regarding any negative impact from G AI systems. Information Integrity ; Data Privacy ## AI Actor Tasks: AI Impact Assessment, Affected Individuals and Communities, Governance and Oversight |\n|-------------------------------------------------------------------------------------------------------------------------"
+  },
+  {
+    "doc": "02_nist_generative_ai_profile.pdf",
+    "doc_id": 6,
+    "chunk_index": 129,
+    "question": "为了管理涉及数据隐私、知识产权等第三方权利的GAI风险，GV-6.1-001建议对GAI内容采取什么具体行动？",
+    "ground_truth": "GV-6.1-001建议对具有相关第三方权利（例如版权、知识产权、数据隐私）的不同类型的GAI内容进行分类。",
+    "source_excerpt": "| Action ID Suggested Action GAI Risks GV -6.1-001 Categorize different types of GAI content with associated third-party rights (e .g. , copyright, intellectual property, data privacy). Data Privacy; Intellectual Property; Value Chain and Component Integration GV -6.1-002 Conduct joint educational activities and events in collaboration with third parties to promote best practices for managing GAI risks. Value Chain and Component Integration GV -6.1-00 3 Develop and validate approaches for measur"
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 6,
+    "question": "根据提供的目录片段，NIST网络安全框架文档的附录（Appendix）包含了哪些具体内容？",
+    "ground_truth": "附录包含了CSF Core（附录A）、CSF Tiers（附录B）和Glossary（附录C）。",
+    "source_excerpt": "ntegration ...................................................... 10 Appendix A. CSF Core ....................................................................................................................... 15 Appendix B. CSF Tiers ....................................................................................................................... 24 Appendix C. Glossary ....................................................................................................................... 2"
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 8,
+    "question": "在该文档片段中，长横线表格分隔符上方显示的英文字母是什么？",
+    "ground_truth": "ip",
+    "source_excerpt": "ip ............................................................................. 13 |\n|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 10,
+    "question": "CSF描述的预期结果（desired outcomes）具备哪些中立性特征，从而为组织提供应对独特风险的灵活性？",
+    "ground_truth": "这些预期结果在行业（sector）、国家（country）和技术（technology）方面是中立的。",
+    "source_excerpt": "Ideally, the CSF will be used to address cybersecurity risks alongside other risks of the enterprise, including those that are financial, privacy, supply chain, reputational, technological, or physical in nature.\n\nThe CSF describes desired outcomes that are intended to be understood by a broad audience, including executives, managers, and practitioners, regardless of their cybersecurity expertise. Because these outcomes are sector-, country-, and technology-neutral, they provide an organization "
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 12,
+    "question": "无论CSF如何应用，它都会提示用户在将CSF适应其特定需求之前，首先结合上下文考虑什么？",
+    "ground_truth": "提示用户结合上下文考虑他们的网络安全态势（cybersecurity posture）。",
+    "source_excerpt": "nd others should be viewed as a 'CSF portfolio' to help manage and reduce risks. Regardless of how it is applied, the CSF prompts its users to consider their cybersecurity posture in context and then adapt the CSF to their specific needs."
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 14,
+    "question": "根据CSF概述，面对不断扩大的网络安全风险，管理这些风险必须是一个怎样的过程？",
+    "ground_truth": "管理网络安全风险必须是一个持续的过程（continuous process）。",
+    "source_excerpt": "Cybersecurity risks are expanding constantly, and managing those risks must be a continuous process. This is true regardless of whether an organization is just beginning to confront its cybersecurity challenges or whether it has been active for many years with a sophisticated, well-resourced cybersecurity team. The CSF is designed to be valuable for any type of organization and is expected to provide appropriate guidance over a long time.\n\n1. Cybersecurity Framework (CSF) Overview\n\nThis document"
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 16,
+    "question": "CSF层级（CSF Tiers）在应用于CSF组织配置文件时有什么作用？",
+    "ground_truth": "CSF层级可用于描述组织网络安全风险治理和管理实践的严格程度，并为组织如何看待网络安全风险以及管理这些风险的现有流程提供背景信息。",
+    "source_excerpt": "current and/or target cybersecurity posture in terms of the CSF Core's outcomes. - CSF Tiers , which can be applied to CSF Organizational Profiles to characterize the rigor of an organization's cybersecurity risk governance and management practices. Tiers can also provide context for how an organization views cybersecurity risks and the processes in place to manage those risks."
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 18,
+    "question": "组织结合使用CSF核心、配置文件、层级以及补充资源可以实现什么目的？",
+    "ground_truth": "组织可以结合使用CSF核心、配置文件、层级以及补充资源来理解、评估、优先排序和沟通网络安全风险。",
+    "source_excerpt": "- Informative References that point to sources of guidance on each outcome from existing global standards, guidelines, frameworks, regulations, policies, etc.\n- Implementation Examples that illustrate potential ways to achieve each outcome\n- Quick-Start Guides that give actionable guidance on using the CSF and its online resources, including transitioning from previous CSF versions to version 2.0\n- Community Profiles and Organizational Profile Templates that help an organization put the CSF into"
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 20,
+    "question": "CSF（网络安全框架）的设计适用于哪些规模和领域的组织？",
+    "ground_truth": "CSF设计适用于所有规模和领域的组织，包括工业、政府、学术界和非营利组织，无论其网络安全计划的成熟度如何。",
+    "source_excerpt": "The CSF is designed to be used by organizations of all sizes and sectors, including industry, government, academia, and nonprofit organizations, regardless of the maturity level of their cybersecurity programs. The CSF is a foundational resource that may be adopted voluntarily and through governmental policies and mandates. The CSF's taxonomy and referenced standards, guidelines, and practices are not country-specific, and previous versions of the CSF have been leveraged successfully by many gov"
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 22,
+    "question": "在文档结构中，第5节（Section 5）主要讨论了什么内容？",
+    "ground_truth": "第5节讨论了组织如何将CSF与其他风险管理计划相集成。",
+    "source_excerpt": "- Section 2 explains the basics of the CSF Core: Functions, Categories, and Subcategories.\n- Section 3 defines the concepts of CSF Profiles and Tiers.\n- Section 4 provides an overview of selected components of the CSF's suite of online resources: Informative References, Implementation Examples, and Quick Start Guides.\n- Section 5 discusses how an organization can integrate the CSF with other risk management programs.\n- Appendix A is the CSF Core.\n- Appendix B contains a notional illustration of "
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 24,
+    "question": "CSF核心功能（CSF Core Functions）包含哪些具体功能，它们在最高层面上组织了什么？",
+    "ground_truth": "CSF核心功能包括治理（GOVERN）、识别（IDENTIFY）、保护（PROTECT）、检测（DETECT）、响应（RESPOND）和恢复（RECOVER），它们在最高层面上组织了网络安全成果。",
+    "source_excerpt": "The CSF Core Functions - GOVERN, IDENTIFY, PROTECT, DETECT, RESPOND, and RECOVER - organize cybersecurity outcomes at their highest level."
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 26,
+    "question": "在NIST网络安全框架中，IDENTIFY（识别）功能的主要目的是什么？它要求组织理解哪些具体的资产？",
+    "ground_truth": "IDENTIFY（识别）功能的主要目的是理解组织当前的网络安全风险，使组织能够根据其风险管理策略和在GOVERN（治理）下确定的任务需求来优先安排工作。它要求组织理解的具体资产包括数据、硬件、软件、系统、设施、服务、人员，以及供应商和相关的网络安全风险。",
+    "source_excerpt": "ibilities, and authorities; policy; and the oversight of cybersecurity strategy. - IDENTIFY (ID) -The organization's current cybersecurity risks are understood. Understanding the organization's assets (e.g., data, hardware, software, systems, facilities, services, people), suppliers, and related cybersecurity risks enables an organization to prioritize its efforts consistent with its risk management strategy and the mission needs identified under GOVERN. This Function also includes the identific"
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 28,
+    "question": "DETECT（检测）功能在网络安全框架中的核心机制是什么？它为哪些后续活动提供支持？",
+    "ground_truth": "DETECT（检测）功能的核心机制是及时发现和分析可能的网络安全攻击与入侵行为，包括异常、入侵指标以及其他可能表明正在发生网络攻击和事件的潜在不良事件。它为成功的事件响应（incident response）和恢复（recovery）活动提供支持。",
+    "source_excerpt": "l as to increase the likelihood and impact of taking advantage of opportunities. Outcomes covered by this Function include identity management, authentication, and access control; awareness and training; data security; platform security (i.e., securing the hardware, software, and services of physical and virtual platforms); and the resilience of technology infrastructure. - DETECT (DE) -Possible cybersecurity attacks and compromises are found and analyzed. DETECT enables the timely discovery and"
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 30,
+    "question": "降低网络安全风险的行动除了预防负面事件外，还能为组织带来什么额外益处？请根据文档提供的例子说明其具体操作方式。",
+    "ground_truth": "降低网络安全风险的行动还能支持组织利用积极机会，并在其他方面使组织受益，例如增加收入。具体操作方式的例子是：组织先将多余的设施空间提供给商业托管提供商用于托管其自身及其他组织的数据中心，随后将组织的主要金融系统从内部数据中心转移到该托管提供商，从而在降低网络安全风险的同时增加收入。",
+    "source_excerpt": "security incidents and enable appropriate communication during recovery efforts.\n\nWhile many cybersecurity risk management activities focus on preventing negative events from occurring, they may also support taking advantage of positive opportunities. Actions to reduce cybersecurity risk might benefit an organization in other ways, like increasing revenue (e.g., first offering excess facility space to a commercial hosting provider for hosting their own and other organizations' data centers, then"
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 32,
+    "question": "在NIST网络安全框架中，各项功能（Functions）在执行频率和应对网络安全事件的作用上有什么对比和区别？",
+    "ground_truth": "在执行频率上，支持GOVERN、IDENTIFY、PROTECT和DETECT的行动应持续不断地发生，而支持RESPOND和RECOVER的行动应随时准备并在网络安全事件发生时才执行。在应对事件的作用上，GOVERN、IDENTIFY和PROTECT的成果有助于预防和准备应对事件，而GOVERN、DETECT、RESPOND和RECOVER的成果有助于发现和管理事件。",
+    "source_excerpt": "The Functions should be addressed concurrently. Actions that support GOVERN, IDENTIFY, PROTECT, and DETECT should all happen continuously, and actions that support RESPOND and RECOVER should be ready at all times and happen when cybersecurity incidents occur. All Functions have vital roles related to cybersecurity incidents. GOVERN, IDENTIFY, and PROTECT outcomes help prevent and prepare for incidents, while GOVERN, DETECT, RESPOND, and RECOVER outcomes help discover and manage incidents."
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 34,
+    "question": "NIST网络安全框架核心（CSF Core）的功能、类别和子类别适用于哪些具体的技术和技术环境？其设计是否考虑了未来的技术发展？",
+    "ground_truth": "CSF Core的功能、类别和子类别适用于组织使用的所有信息通信技术（ICT），包括信息技术（IT）、物联网（IoT）和运营技术（OT）；也适用于所有类型的技术环境，包括云、移动和人工智能系统。其设计具有前瞻性（forward-looking），旨在适用于未来技术和环境的变化。",
+    "source_excerpt": "The Functions, Categories, and Subcategories apply to all ICT used by an organization, including information technology (IT), the Internet of Things (IoT), and operational technology (OT). They also apply to all types of technology environments, including cloud, mobile, and artificial intelligence systems. The CSF Core is forward-looking and intended to apply to future changes in technologies and environments.\n\n3. Introduction to CSF Profiles and Tiers\n\nThis section defines the concepts of CSF P"
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 36,
+    "question": "在网络安全框架中，当前配置文件（Current Profile）和目标配置文件（Target Profile）在定义和考虑因素上有什么区别？",
+    "ground_truth": "当前配置文件指定组织当前正在实现（或试图实现）的核心结果，并描述每个结果的实现方式或程度。目标配置文件指定组织为实现其网络安全风险管理目标而选择和优先排序的期望结果，并考虑组织网络安全态势的预期变化，如新要求、新技术采用和威胁情报趋势。",
+    "source_excerpt": "1. A Current Profile specifies the Core outcomes that an organization is currently achieving (or attempting to achieve) and characterizes how or to what extent each outcome is being achieved.\n2. A Target Profile specifies the desired outcomes that an organization has selected and prioritized for achieving its cybersecurity risk management objectives. A Target Profile considers anticipated changes to the organization's cybersecurity posture, such as new requirements, new technology adoption, and "
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 38,
+    "question": "在准备组织配置文件（Organizational Profile）时，确定其范围的具体步骤和原则是什么？",
+    "ground_truth": "具体步骤包括：1. 确定组织配置文件的范围，记录配置文件所基于的高级事实和假设以定义其范围；2. 收集准备组织配置文件所需的信息。原则上，组织可以根据需要拥有任意数量的组织配置文件，每个配置文件具有不同的范围，例如可以针对整个组织、特定的财务系统，或应对涉及这些财务系统的勒索软件威胁和处理相关事件。",
+    "source_excerpt": "1. Scope the Organizational Profile. Document the high-level facts and assumptions on which the Profile will be based to define its scope. An organization can have as many Organizational Profiles as desired, each with a different scope. For example, a Profile could address an entire organization or be scoped to an organization's financial systems or to countering ransomware threats and handling ransomware incidents involving those financial systems. 2. Gather the information needed to prepare th"
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 40,
+    "question": "在分析了当前配置文件和目标配置文件之间的差距后，组织应采取哪些后续步骤来实施改进？",
+    "ground_truth": "组织应采取以下后续步骤：1. 创建行动计划：进行差距分析以识别和分析差异，并制定优先行动计划（如风险登记册、风险详细报告、行动计划和里程碑[POA&M]）来解决这些差距。2. 实施行动计划并更新组织配置文件：遵循行动计划解决差距，使组织向目标配置文件迈进。该行动计划可以设定一个总体截止日期，也可以是持续进行的。",
+    "source_excerpt": "Also, consider using a Community Profile as the basis for the Target Profile. 4. Analyze the gaps between the Current and Target Profiles, and create an action plan. Conduct a gap analysis to identify and analyze the differences between the Current and Target Profiles, and develop a prioritized action plan (e.g., risk register, risk detail report, Plan of Action and Milestones [POA&amp;M]) to address those gaps. 5. Implement the action plan, and update the Organizational Profile. Follow the acti"
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 42,
+    "question": "网络安全框架中的层级（Tiers）分为哪几个级别？它们在组织配置文件中有什么用途？",
+    "ground_truth": "层级分为四个级别：部分（Tier 1）、风险知情（Tier 2）、可重复（Tier 3）和自适应（Tier 4）。在组织配置文件中的用途包括：组织可以选择使用层级来为其当前和目标配置文件提供信息；层级表征了组织网络安全风险治理和管理实践的严格程度，提供了组织如何看待网络安全风险以及管理这些风险的流程的背景；选择层级有助于设定组织管理其网络安全风险的整体基调。",
+    "source_excerpt": "An organization can choose to use the Tiers to inform its Current and Target Profiles. Tiers characterize the rigor of an organization's cybersecurity risk governance and management practices, and they provide context for how an organization views cybersecurity risks and the processes in place to manage those risks. The Tiers, as shown in Fig. 4 and notionally illustrated in Appendix B, reflect an organization's practices for managing cybersecurity risk as Partial (Tier 1), Risk Informed (Tier 2"
+  },
+  {
+    "doc": "03_nist_cybersecurity_framework_2_0.pdf",
+    "doc_id": 7,
+    "chunk_index": 44,
+    "question": "补充网络安全框架（CSF）的在线资源与CSF主文档在更新频率和格式上有什么区别？主要包括哪几种类型的在线资源？",
+    "ground_truth": "区别在于：由于在线资源托管在线上，它们的更新频率比CSF主文档更高（主文档不常更新以为用户提供稳定性），并且在线资源可以提供机器可读的格式。主要包括三种类型的在线资源：信息参考（Informative References）、实施示例（Implementation Examples）和快速入门指南（Quick Start Guides）。",
+    "source_excerpt": "1 For the purposes of this document, the terms 'organization-wide' and 'enterprise' have the same meaning.\n\n4. Introduction to Online Resources That Supplement the CSF\n\nNIST and other organizations have produced a suite of online resources that help organizations understand, adopt, and use the CSF. Since they are hosted online, these additional resources can be updated more frequently than this document, which is updated infrequently to provide stability to its users, and be available in machine"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 6,
+    "question": "REALM和ORQA这两个模型结合了哪两种技术或组件？",
+    "ground_truth": "REALM和ORQA结合了掩码语言模型（masked language models）和可微检索器（differentiable retriever）。",
+    "source_excerpt": "y revised and expanded, and accessed knowledge can be inspected and interpreted. REALM [20] and ORQA [31], two recently introduced models that combine masked language models [8] with a differentiable retriever, have shown promising results,"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 8,
+    "question": "在检索增强生成（RAG）模型中，参数记忆和非参数记忆分别由什么组件构成？",
+    "ground_truth": "在RAG模型中，参数记忆是预训练的seq2seq transformer，非参数记忆是维基百科的密集向量索引（dense vector index of Wikipedia），并通过预训练的神经检索器进行访问。",
+    "source_excerpt": "We endow pre-trained, parametric-memory generation models with a non-parametric memory through a general-purpose fine-tuning approach which we refer to as retrieval-augmented generation (RAG). We build RAG models where the parametric memory is a pre-trained seq2seq transformer, and the non-parametric memory is a dense vector index of Wikipedia, accessed with a pre-trained neural retriever. We combine these components in a probabilistic model trained end-to-end (Fig. 1). The retriever (Dense Pass"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 10,
+    "question": "与之前针对特定任务从头训练非参数记忆架构的工作相比，本文探索的设置有什么关键不同和优势？",
+    "ground_truth": "关键不同在于本文探索的设置中，参数和非参数记忆组件都是预训练的并预加载了广泛的知识。其优势是，通过使用预训练的访问机制，无需额外训练即可具备访问知识的能力。",
+    "source_excerpt": "any seq2seq task, whereby both the generator and retriever are jointly learned.\n\nThere has been extensive previous work proposing architectures to enrich systems with non-parametric memory which are trained from scratch for specific tasks, e.g. memory networks [64, 55], stackaugmented networks [25] and memory layers [30]. In contrast, we explore a setting where both parametric and non-parametric memory components are pre-trained and pre-loaded with extensive knowledge. Crucially, by using pre-tr"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 12,
+    "question": "根据文本，当世界发生变化时，如何更新模型的知识？",
+    "ground_truth": "可以通过替换非参数记忆（non-parametric memory）来更新模型的知识。",
+    "source_excerpt": "ate responses that are more factual, specific, and diverse than a BART baseline. For FEVER [56] fact verification, we achieve results within 4.3% of state-of-the-art pipeline models which use strong retrieval supervision. Finally, we demonstrate that the non-parametric memory can be replaced to update the models' knowledge as the world changes. 1"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 14,
+    "question": "在端到端训练检索器和生成器时，RAG-Sequence和RAG-Token这两种方法在预测目标token时有什么机制上的不同？",
+    "ground_truth": "在RAG-Sequence方法中，模型使用同一篇文档来预测每个目标token；而在RAG-Token方法中，模型可以基于不同的文档来预测每个目标token。",
+    "source_excerpt": "by θ that generates a current token based on a context of the previous i -1 tokens y 1: i -1 , the original input x and a retrieved passage z .\n\nTo train the retriever and generator end-to-end, we treat the retrieved document as a latent variable. We propose two models that marginalize over the latent documents in different ways to produce a distribution over generated text. In one approach, RAG-Sequence , the model uses the same document to predict each target token. The second approach, RAG-To"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 16,
+    "question": "当RAG模型用于序列分类任务时，RAG-Sequence和RAG-Token模型之间是什么关系？",
+    "ground_truth": "当RAG用于序列分类任务时，通过将目标类视为长度为1的目标序列，RAG-Sequence和RAG-Token模型是等价的。",
+    "source_excerpt": "RAG-Token Model In the RAG-Token model we can draw a different latent document for each target token and marginalize accordingly. This allows the generator to choose content from several documents when producing an answer. Concretely, the top K documents are retrieved using the retriever, and then the generator produces a distribution for the next output token for each document, before marginalizing, and repeating the process with the following output token, Formally, we define:\n\n<!-- formula-no"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 18,
+    "question": "在RAG模型的检索器中，计算具有最高先验概率的k个文档列表被视为什么问题？文档索引在系统中被称为什么？",
+    "ground_truth": "计算具有最高先验概率的k个文档列表被视为最大内积搜索（MIPS）问题。文档索引在系统中被称为非参数记忆（non-parametric memory）。",
+    "source_excerpt": "where d ( z ) is a dense representation of a document produced by a BERTBASE document encoder [8], and q ( x ) a query representation produced by a query encoder , also based on BERTBASE. Calculating top-k ( p η ( ·| x )) , the list of k documents z with highest prior probability p η ( z | x ) , is a Maximum Inner Product Search (MIPS) problem, which can be approximately solved in sub-linear time [23]. We use a pre-trained bi-encoder from DPR to initialize our retriever and to build the document"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 20,
+    "question": "在RAG模型的训练过程中，为什么不更新文档编码器和文档索引，而是保持它们固定？",
+    "ground_truth": "因为在训练期间更新文档编码器成本很高，需要定期更新文档索引，而研究发现这一步对于获得强大的性能并不是必需的，因此保持文档编码器和索引固定，仅微调查询编码器和BART生成器。",
+    "source_excerpt": "We jointly train the retriever and generator components without any direct supervision on what document should be retrieved. Given a fine-tuning training corpus of input/output pairs ( x j , y j ) , we\n\nminimize the negative marginal log-likelihood of each target, ∑ j -log p ( y j | x j ) using stochastic gradient descent with Adam [28]. Updating the document encoder BERT d during training is costly as it requires the document index to be periodically updated as REALM does during pre-training [2"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 23,
+    "question": "在RAG模型的解码过程中，什么是“快速解码”（Fast Decoding），它主要解决了什么问题？",
+    "ground_truth": "“快速解码”是一种更高效的解码过程，它通过近似假设未在beam search中生成的序列概率为0，避免了在生成候选集后运行额外前向传播的需要，主要解决了较长输出序列导致候选集变大、需要大量前向传播的问题。",
+    "source_excerpt": "longer output sequences, | Y | can become large, requiring many forward passes. For more efficient decoding, we can make a further approximation that p θ ( y | x, z i ) ≈ 0 where y was not generated during beam search from x, z i . This avoids the need to run additional forward passes once the candidate set Y has been generated. We refer to this decoding procedure as 'Fast Decoding.'"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 25,
+    "question": "在RAG模型的知识密集型任务实验中，非参数知识源是如何处理并构建索引以实现快速检索的？",
+    "ground_truth": "实验使用Wikipedia dump作为非参数知识源，将每篇文章分割成不相交的100词chunk，使用文档编码器计算每个文档的嵌入向量，并使用FAISS构建带有分层可导航小世界（HNSW）近似的单个最大内积搜索（MIPS）索引以实现快速检索。",
+    "source_excerpt": "We experiment with RAG in a wide range of knowledge-intensive tasks. For all experiments, we use a single Wikipedia dump for our non-parametric knowledge source. Following Lee et al. [31] and Karpukhin et al. [26], we use the December 2018 dump. Each Wikipedia article is split into disjoint 100-word chunks, to make a total of 21M documents. We use the document encoder to compute an embedding for each document, and build a single MIPS index using FAISS [23] with a Hierarchical Navigable Small Wor"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 27,
+    "question": "在评估CT和WQ模型时，由于它们的数据集较小，作者采取了什么初始化策略，并使用了什么评估指标？",
+    "ground_truth": "作者遵循DPR的方法，使用他们的NQ RAG模型来初始化CT和WQ模型，并报告了精确匹配（Exact Match, EM）分数。",
+    "source_excerpt": "(NQ) [29], TriviaQA (TQA) [24]. WebQuestions (WQ) [3] and CuratedTrec (CT) [2]. As CT and WQ are small, we follow DPR [26] by initializing CT and WQ models with our NQ RAG model. We use the same train/dev/test splits as prior work [31, 26] and report Exact Match (EM) scores. For TQA, to compare with T5 [52], we also evaluate on the TQA Wiki test set."
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 29,
+    "question": "在处理MSMARCO任务时，如果不使用黄金段落（gold passages），模型性能为什么会降低？RAG模型如何应对仅靠Wikipedia无法回答的问题？",
+    "ground_truth": "如果不使用黄金段落，性能会降低，因为MSMARCO中有些问题在没有黄金段落的情况下无法以匹配参考答案的方式回答。对于仅靠Wikipedia无法回答的问题，RAG可以依赖参数化知识（parametric knowledge）来生成合理的回答。",
+    "source_excerpt": "MSMARCO as an open-domain abstractive QA task. MSMARCO has some questions that cannot be answered in a way that matches the reference answer without access to the gold passages, such as 'What is the weather in Volcano, CA?' so performance will be lower without using gold passages. We also note that some MSMARCO questions cannot be answered using Wikipedia alone. Here, RAG can rely on parametric knowledge to generate reasonable responses.\n\n3.3 Jeopardy Question Generation"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 31,
+    "question": "在问题生成任务的人工评估中，作者是如何定义“事实性（factuality）”和“特异性（specificity）”这两个指标的？",
+    "ground_truth": "作者将“事实性”定义为陈述是否可以被可信的外部来源证实，将“特异性”定义为输入和输出之间的高度相互依赖性。",
+    "source_excerpt": "We use the splits from SearchQA [10], with 100K train, 14K dev, and 27K test examples. As this is a new task, we train a BART model for comparison. Following [67], we evaluate using the SQuAD-tuned Q-BLEU-1 metric [42]. Q-BLEU is a variant of BLEU with a higher weight for matching entities and has higher correlation with human judgment for question generation than standard metrics. We also perform two human evaluations, one to assess generation factuality, and one for specificity. We define fact"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 33,
+    "question": "在问题生成的成对比较评估中，评估者可以选择哪些具体的评价选项？",
+    "ground_truth": "评估者可以选择的评价选项包括：问题A更好（question A is better）、问题B更好（question B is better）、两者都好（both are good）、或两者都不好（neither is good）。",
+    "source_excerpt": "-quuestion A is better, question B is better, both are good, or neither is good.\n\n3.4 Fact Verification"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 35,
+    "question": "与大多数其他FEVER方法相比，本文方法在检索证据的监督方面有什么不同？这种不同在实际应用中带来了什么优势？",
+    "ground_truth": "与大多数其他FEVER方法不同，本文方法不对检索到的证据使用监督。其优势在于，许多实际应用中无法获取检索监督信号，因此不需要此类监督的模型能够适用于更广泛的任务。",
+    "source_excerpt": "most other approaches to FEVER, we do not use supervision on retrieved evidence. In many real-world applications, retrieval supervision signals aren't available, and models that do not require such supervision will be applicable to a wider range of tasks. We explore two variants: the standard 3-way classification task (supports/refutes/not enough info) and the 2-way (supports/refutes) task studied in Thorne and Vlachos [57]. In both cases we report label accuracy."
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 37,
+    "question": "与REALM和T5+SSM相比，RAG在预训练方面有什么优势？",
+    "ground_truth": "与REALM和T5+SSM不同，RAG无需昂贵且专门的显著跨度掩码（salient span masking）预训练即可取得优异的结果。",
+    "source_excerpt": "Table 1 shows results for RAG along with state-of-the-art models. On all four open-domain QA tasks, RAG sets a new state of the art (only on the T5-comparable split for TQA). RAG combines the generation flexibility of the 'closed-book' (parametric only) approaches and the performance of \"open-book\" retrieval-based approaches. Unlike REALM and T5+SSM, RAG enjoys strong results without expensive, specialized 'salient span masking' pre-training [20]. It is worth noting that RAG's retriever is initi"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 39,
+    "question": "在可以提取答案的情况下，生成答案相比标准提取方法有什么优势？",
+    "ground_truth": "包含答案线索但未逐字包含答案的文档仍然有助于生成正确答案，而这是标准提取方法无法做到的。",
+    "source_excerpt": "a re-ranker nor extractive reader is necessary for state-of-the-art performance.\n\nThere are several advantages to generating answers even when it is possible to extract them. Documents with clues about the answer but do not contain the answer verbatim can still contribute towards a correct answer being generated, which is not possible with standard extractive approaches, leading\n\nTable 1: Open-Domain QA Test Scores. For TQA, left column uses the standard test set for OpenDomain QA, right column "
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 41,
+    "question": "当正确答案不在任何检索到的文档中时，RAG在NQ任务上的准确率是多少，而提取模型的表现如何？",
+    "ground_truth": "当正确答案不在任何检索到的文档中时，RAG在NQ任务上仍能实现11.8%的准确率，而提取模型在这种情况下得分为0%。",
+    "source_excerpt": "| Model Jeopardy MSMARCO FVR3 FVR2 B-1 QB-1 R-L B-1 Label Acc. SotA - - 49.8 * 49.9 * 76.8 92.2 * BART 15.1 19.7 38.2 41.6 64.0 81.1 RAG-Tok. 17.3 22.2 40.1 41.5 72.5 89.5 RAG-Seq. 14.7 21.4 40.8 44.2 |\n|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|\n\nto more effective marginalization over documents. Furth"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 43,
+    "question": "在针对BART和RAG-Token生成结果的人工评估中，评估者认为RAG比BART更符合事实的比例是多少？",
+    "ground_truth": "评估者认为RAG比BART更符合事实的比例是42.7%。",
+    "source_excerpt": "Table 2 shows that RAG-Token performs better than RAG-Sequence on Jeopardy question generation, with both models outperforming BART on Q-BLEU-1. 4 shows human evaluation results, over 452 pairs of generations from BART and RAG-Token. Evaluators indicated that BART was more factual than RAG in only 7.1% of cases, while RAG was more factual in 42.7% of cases, and both RAG and BART were factual in a further 17% of cases, clearly demonstrating the effectiveness of RAG on the task over a state-of-the"
+  },
+  {
+    "doc": "04_retrieval_augmented_generation_for_knowledge_intensive_nlp.pdf",
+    "doc_id": 8,
+    "chunk_index": 45,
+    "question": "在模型中，参数记忆和非参数记忆是如何协同工作的？",
+    "ground_truth": "非参数组件有助于引导生成过程，从而提取出存储在参数记忆中的特定知识。",
+    "source_excerpt": "ypothesis by feeding the BART-only baseline with the partial decoding \"The Sun . BART completes the generation \"The Sun Also Rises\" is a novel by this author of \"The Sun Also Rises\" indicating the title \"The Sun Also Rises\" is stored in BART's parameters. Similarly, BART will complete the partial decoding \"The Sun Also Rises\" is a novel by this author of \"A with \"The Sun Also Rises\" is a novel by this author of \"A Farewell to Arms\" . This example shows how parametric and non-parametric memories "
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 3,
+    "question": "在Transformer模型的早期研究中，Noam提出了哪些关键机制和表示方法？",
+    "ground_truth": "Noam提出了缩放点积注意力（scaled dot-product attention）、多头注意力（multi-head attention）以及无参数的位置表示（parameter-free position representation）。",
+    "source_excerpt": "∗ Equal contribution. Listing order is random. Jakob proposed replacing RNNs with self-attention and started the effort to evaluate this idea. Ashish, with Illia, designed and implemented the first Transformer models and has been crucially involved in every aspect of this work. Noam proposed scaled dot-product attention, multi-head attention and the parameter-free position representation and became the other person involved in nearly every detail. Niki designed, implemented, tuned and evaluated "
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 4,
+    "question": "Lukasz和Aidan设计和实现tensor2tensor库对团队的研究产生了哪些积极影响？",
+    "ground_truth": "他们设计和实现tensor2tensor库替换了早期的代码库，极大地改善了实验结果，并大幅加速了研究进程。",
+    "source_excerpt": "esponsible for our initial codebase, and efficient inference and visualizations. Lukasz and Aidan spent countless long days designing various parts of and implementing tensor2tensor, replacing our earlier codebase, greatly improving results and massively accelerating our research."
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 5,
+    "question": "在序列建模和转换问题（如语言建模和机器翻译）中，哪些神经网络模型曾被牢固地确立为最先进的方法？",
+    "ground_truth": "循环神经网络（RNN），特别是长短期记忆网络（LSTM）和门控循环（GRU）神经网络，曾被牢固地确立为最先进的方法。",
+    "source_excerpt": "ier codebase, greatly improving results and massively accelerating our research.\n\n† Work performed while at Google Brain.\n\n‡ Work performed while at Google Research.\n\n1 Introduction\n\nRecurrent neural networks, long short-term memory [13] and gated recurrent [7] neural networks in particular, have been firmly established as state of the art approaches in sequence modeling and transduction problems such as language modeling and machine translation [35, 2, 5]. Numerous efforts have since continued "
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 6,
+    "question": "循环模型固有的顺序计算性质在处理较长序列时会带来什么主要限制？",
+    "ground_truth": "这种固有的顺序性质阻碍了训练样本内的并行化。在处理较长序列时这变得至关重要，因为内存限制会限制跨样本的批处理，顺序计算的根本限制依然存在。",
+    "source_excerpt": "Recurrent models typically factor computation along the symbol positions of the input and output sequences. Aligning the positions to steps in computation time, they generate a sequence of hidden states h t , as a function of the previous hidden state h t -1 and the input for position t . This inherently sequential nature precludes parallelization within training examples, which becomes critical at longer sequence lengths, as memory constraints limit batching across examples. Recent work has ach"
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 7,
+    "question": "与以往通常将注意力机制与循环网络结合使用的方法相比，Transformer模型在架构机制和训练表现上有哪些显著特点？",
+    "ground_truth": "在架构机制上，Transformer摒弃了循环结构，完全依赖注意力机制来提取输入和输出之间的全局依赖关系，从而允许显著更多的并行化；在训练表现上，它仅需在8个P100 GPU上训练短短12小时，就能在翻译质量上达到新的最先进水平。",
+    "source_excerpt": "Attention mechanisms have become an integral part of compelling sequence modeling and transduction models in various tasks, allowing modeling of dependencies without regard to their distance in the input or output sequences [2, 19]. In all but a few cases [27], however, such attention mechanisms are used in conjunction with a recurrent network.\n\nIn this work we propose the Transformer, a model architecture eschewing recurrence and instead relying entirely on an attention mechanism to draw global"
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 9,
+    "question": "在Transformer中，将学习远距离位置依赖的操作减少为常数级别会带来什么代价，以及如何抵消这种影响？",
+    "ground_truth": "代价是由于对注意力加权位置进行平均而导致有效分辨率降低。这种影响通过多头注意力（Multi-Head Attention）机制来抵消。",
+    "source_excerpt": "is makes it more difficult to learn dependencies between distant positions [12]. In the Transformer this is reduced to a constant number of operations, albeit at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as described in section 3.2."
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 10,
+    "question": "什么是自注意力（Self-attention）机制，它已成功应用于哪些任务？",
+    "ground_truth": "自注意力（有时称为内部注意力）是一种将单个序列的不同位置联系起来以计算该序列表示的注意力机制。它已成功应用于阅读理解、抽象摘要、文本蕴含和学习独立于任务的句子表示等多种任务。",
+    "source_excerpt": ", an effect we counteract with Multi-Head Attention as described in section 3.2.\n\nSelf-attention, sometimes called intra-attention is an attention mechanism relating different positions of a single sequence in order to compute a representation of the sequence. Self-attention has been used successfully in a variety of tasks including reading comprehension, abstractive summarization, textual entailment and learning task-independent sentence representations [4, 27, 28, 22].\n\nEnd-to-end memory netwo"
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 11,
+    "question": "据作者所知，Transformer在计算输入和输出表示时，与之前的转换模型相比有什么首创之处？",
+    "ground_truth": "据作者所知，Transformer是第一个完全依赖自注意力机制来计算其输入和输出表示的转换模型，而不使用序列对齐的循环神经网络（RNN）或卷积。",
+    "source_excerpt": "To the best of our knowledge, however, the Transformer is the first transduction model relying entirely on self-attention to compute representations of its input and output without using sequencealigned RNNs or convolution. In the following sections, we will describe the Transformer, motivate self-attention and discuss its advantages over models such as [17, 18] and [9].\n\n3 Model Architecture"
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 12,
+    "question": "在具有编码器-解码器结构的神经序列转换模型中，解码器是如何生成输出序列的？",
+    "ground_truth": "给定编码器生成的连续表示序列z，解码器每次生成一个符号元素来生成输出序列。在每一步，模型都是自回归的，在生成下一个符号时，会将之前生成的符号作为额外的输入。",
+    "source_excerpt": "Most competitive neural sequence transduction models have an encoder-decoder structure [5, 2, 35]. Here, the encoder maps an input sequence of symbol representations ( x 1 , ..., x n ) to a sequence of continuous representations z = ( z 1 , ..., z n ) . Given z , the decoder then generates an output sequence ( y 1 , ..., y m ) of symbols one element at a time. At each step the model is auto-regressive [10], consuming the previously generated symbols as additional input when generating the next.\n"
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 13,
+    "question": "Transformer的编码器层包含哪两个子层，并且为了促进残差连接，模型中所有子层和嵌入层的输出维度被设定为多少？",
+    "ground_truth": "编码器的每个层包含两个子层：第一个是多头自注意力机制，第二个是简单的逐位置全连接前馈网络。为了促进残差连接，模型中的所有子层以及嵌入层产生的输出维度均设定为 d_model = 512。",
+    "source_excerpt": "3.1 Encoder and Decoder Stacks\n\nEncoder: The encoder is composed of a stack of N = 6 identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, positionwise fully connected feed-forward network. We employ a residual connection [11] around each of the two sub-layers, followed by layer normalization [1]. That is, the output of each sub-layer is LayerNorm( x +Sublayer( x )) , where Sublayer( x ) is the function implemented by the"
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 14,
+    "question": "在Transformer的解码器中，通过什么机制确保位置i的预测仅依赖于小于i的已知输出？",
+    "ground_truth": "通过修改解码器堆栈中的自注意力子层以防止位置关注后续位置（即使用掩码机制），并结合输出嵌入偏移一个位置的事实来确保这一点。",
+    "source_excerpt": "Decoder: The decoder is also composed of a stack of N = 6 identical layers. In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack. Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization. We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions. This mask"
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 15,
+    "question": "注意力函数（Attention function）是如何定义和计算其输出的？",
+    "ground_truth": "注意力函数被描述为将查询（query）和一组键值对（key-value pairs）映射到输出的过程。输出被计算为值（values）的加权和，其中分配给每个值的权重是由查询与相应键的兼容性函数计算得出的。",
+    "source_excerpt": "An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors. The output is computed as a weighted sum\n\nScaled Dot-Product Attention\n\n<!-- image -->\n\nFigure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several attention layers running in parallel.\n\n<!-- image -->\n\nof the values, where the weight assigned to each value is computed by a compatibility function of the"
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 16,
+    "question": "在缩放点积注意力（Scaled Dot-Product Attention）中，获取值（values）权重的具体计算步骤是什么？",
+    "ground_truth": "具体步骤为：首先计算查询（query）与所有键（keys）的点积，然后将每个点积除以dk的平方根（√dk），最后应用softmax函数以获得值（values）的权重。",
+    "source_excerpt": "We call our particular attention \"Scaled Dot-Product Attention\" (Figure 2). The input consists of queries and keys of dimension d k , and values of dimension d v . We compute the dot products of the query with all keys, divide each by √ d k , and apply a softmax function to obtain the weights on the values.\n\nIn practice, we compute the attention function on a set of queries simultaneously, packed together into a matrix Q . The keys and values are also packed together into matrices K and V . We c"
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 18,
+    "question": "在缩放点积注意力中，为什么要对点积进行1/√dk的缩放操作？",
+    "ground_truth": "因为当dk的值较大时，点积的幅度会变大，从而将softmax函数推入梯度极小的区域。为了抵消这种影响，需要将点积缩放1/√dk。",
+    "source_excerpt": "While for small values of d k the two mechanisms perform similarly, additive attention outperforms dot product attention without scaling for larger values of d k [3]. We suspect that for large values of d k , the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients 4 . To counteract this effect, we scale the dot products by 1 √ d k .\n\n3.2.2 Multi-Head Attention"
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 19,
+    "question": "多头注意力（Multi-Head Attention）机制是如何对查询、键和值进行处理并得到最终输出的？",
+    "ground_truth": "该机制使用不同的学习线性投影，将查询、键和值分别线性投影h次到dk、dk和dv维度。然后在这些投影版本上并行执行注意力函数，产生dv维的输出值，最后将这些输出值拼接起来并再次进行投影，从而得到最终的值。",
+    "source_excerpt": "Instead of performing a single attention function with d model-dimensional keys, values and queries, we found it beneficial to linearly project the queries, keys and values h times with different, learned linear projections to d k , d k and d v dimensions, respectively. On each of these projected versions of queries, keys and values we then perform the attention function in parallel, yielding d v -dimensional\n\n4 To illustrate why the dot products get large, assume that the components of q and k "
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 20,
+    "question": "多头注意力机制相比单头注意力有什么优势？在本文模型中使用了多少个并行的注意力头，每个头的维度是多少？",
+    "ground_truth": "多头注意力允许模型在不同位置联合关注来自不同表示子空间的信息，而单头注意力的平均操作会抑制这一点。本文模型中使用了8个并行的注意力层（头），每个头的维度dk和dv均为64（即dmodel/h）。",
+    "source_excerpt": "Multi-head attention allows the model to jointly attend to information from different representation subspaces at different positions. With a single attention head, averaging inhibits this.\n\n<!-- formula-not-decoded -->\n\nWhere the projections are parameter matrices W Q i ∈ R d model × d k , W i K ∈ R d model × d k , W V i ∈ R d model × d v and W O ∈ R hd v × d model .\n\nIn this work we employ h = 8 parallel attention layers, or heads. For each of these we use d k = d v = d model /h = 64 . Due to "
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 21,
+    "question": "在Transformer模型中，“编码器-解码器注意力”层和“编码器自注意力”层的查询、键和值分别来自哪里？",
+    "ground_truth": "在“编码器-解码器注意力”层中，查询来自前一个解码器层，而记忆的键和值来自编码器的输出；在编码器的“自注意力”层中，所有的键、值和查询都来自同一个地方，即编码器中前一层的输出。",
+    "source_excerpt": "- In \"encoder-decoder attention\" layers, the queries come from the previous decoder layer, and the memory keys and values come from the output of the encoder. This allows every position in the decoder to attend over all positions in the input sequence. This mimics the typical encoder-decoder attention mechanisms in sequence-to-sequence models such as [38, 2, 9]. - The encoder contains self-attention layers. In a self-attention layer all of the keys, values and queries come from the same place, i"
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 22,
+    "question": "为了在解码器的自注意力层中保持自回归特性并防止信息向左流动，模型在缩放点积注意力中采取了什么具体实现步骤？",
+    "ground_truth": "模型在缩放点积注意力内部，通过将softmax输入中所有对应于非法连接的值掩码掉（设置为-∞）来实现这一点，从而防止解码器中的信息向左流动并保持自回归特性。",
+    "source_excerpt": "in the encoder can attend to all positions in the previous layer of the encoder. - Similarly, self-attention layers in the decoder allow each position in the decoder to attend to all positions in the decoder up to and including that position. We need to prevent leftward information flow in the decoder to preserve the auto-regressive property. We implement this inside of scaled dot-product attention by masking out (setting to -∞ ) all values in the input of the softmax which correspond to illegal"
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 23,
+    "question": "Transformer模型中逐位置前馈网络的结构是怎样的？其输入输出维度和内层维度分别是多少？",
+    "ground_truth": "逐位置前馈网络包含两个线性变换，中间有一个ReLU激活函数（也可以描述为两个核大小为1的卷积）。虽然线性变换在不同位置是相同的，但它们在层与层之间使用不同的参数。其输入和输出的维度为dmodel=512，内层维度为dff=2048。",
+    "source_excerpt": "the input of the softmax which correspond to illegal connections. See Figure 2.\n\n3.3 Position-wise Feed-Forward Networks\n\nIn addition to attention sub-layers, each of the layers in our encoder and decoder contains a fully connected feed-forward network, which is applied to each position separately and identically. This consists of two linear transformations with a ReLU activation in between.\n\n<!-- formula-not-decoded -->\n\nWhile the linear transformations are the same across different positions, "
+  },
+  {
+    "doc": "05_attention_is_all_you_need.pdf",
+    "doc_id": 9,
+    "chunk_index": 24,
+    "question": "在Transformer模型的嵌入层和Softmax层中，权重矩阵是如何共享和缩放的？",
+    "ground_truth": "模型在两个嵌入层（输入和输出）以及softmax前的线性变换之间共享相同的权重矩阵。在嵌入层中，这些权重会乘以√dmodel进行缩放。",
+    "source_excerpt": "Similarly to other sequence transduction models, we use learned embeddings to convert the input tokens and output tokens to vectors of dimension d model. We also use the usual learned linear transformation and softmax function to convert the decoder output to predicted next-token probabilities. In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation, similar to [30]. In the embedding layers, we multiply those weights by √ d model.\n"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 70,
+    "question": "在系统工程中，过程是如何被应用的，并且表2.1-1展示了什么内容的对齐？",
+    "ground_truth": "过程被递归和迭代地应用。表2.1-1展示了17个系统工程（SE）过程与AS9100的对齐。",
+    "source_excerpt": "m the information. Then the processes are applied recursively and iteratively to\n\nTABLE 2.1-1 Alignment of the 17 SE Processes to AS9100"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 93,
+    "question": "如果没有经过验证的基线和适当的配置控制，后期的修改可能会带来什么风险？",
+    "ground_truth": "后期的修改可能会成本高昂或导致重大的性能问题。",
+    "source_excerpt": "Verification testing relates back to the approved requirements set and can be performed at different stages in the product life cycle. The approved specifications, drawings, parts lists, and other configuration documentation establish the configuration baseline of that product, which may have to be modified at a later time. Without a verified baseline and appropriate configuration controls, later modifications could be costly or cause major performance problems."
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 115,
+    "question": "SE 2.5 产品过渡（Product Transition）过程包括哪些具体的准备和执行步骤？",
+    "ground_truth": "包括准备进行产品过渡、评估产品并使产品具备过渡准备条件、为过渡准备产品（包括搬运、存储和运输准备）、准备场地，以及生成随产品附带的所需文档。",
+    "source_excerpt": "the evidence of product conformance with the stakeholder expectations baseline. SE 2.5 Product Transition Transitioning the verified and validated product to the customer at the next level in the system structure. This includes preparing to conduct product transition, evaluating the product and enabling product readiness for product transition, preparing the product for transition (including handling, storing, and shipping preparation), preparing sites, and generating required documentation to a"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 138,
+    "question": "根据文档内容，“验证和确认结果”（Verification and validation results）经历了哪些状态或阶段？",
+    "ground_truth": "经历了初始（Initial）、初步（Preliminary）和基线（Baseline）状态。",
+    "source_excerpt": "nical Performance Measures definition **Approve Architecture definition **Baseline Allocation of requirements to next lower level **Baseline Required leading indicator trends **Initial Update Update Update Design solution definition Preliminary **Preliminary **Baseline Update Update Interface definition(s) Preliminary Baseline Update Update Implementation plans (Make/ code, buy, reuse) Preliminary Baseline Update Integration plans Preliminary Baseline Update **Update Verification and validation "
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 161,
+    "question": "在航天飞行的A阶段（Phase A），团队的工作重点是什么，且活动的重点转向了什么？",
+    "ground_truth": "团队的工作重点是分析任务需求并建立任务架构；活动的重点转向优化概念设计。",
+    "source_excerpt": "In Phase A, a team-often associated with a program or informal project office-readdresses the mission concept first developed in Pre-Phase A to ensure that the project justification and practicality are sufficient to warrant a place in NASA's budget. The team's effort focuses on analyzing mission requirements and establishing a mission architecture. Activities become formal, and the emphasis shifts toward optimizing the concept design. The effort addresses more depth and considers many alternati"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 183,
+    "question": "在制造阶段，系统工程师的主要职责是什么？",
+    "ground_truth": "在制造阶段，系统工程师负责随时解答问题并处理可能出现的任何接口问题。此外，他们在设计阶段还参与确保各系统的最终详细设计能够协同工作、相互兼容，并有望满足客户期望和适用要求。",
+    "source_excerpt": "valuations of the design, use, maintenance, training procedures, and interfaces. Engineering specialty and crosscutting analysis results are integrated into the design, and the manufacturing process and controls are defined and valid. Systems engineers are involved in this phase to ensure the final detailed designs of the various systems will work together, are compatible, and are likely to meet the customer expectations and applicable requirements. During fabrication, the systems engineer is av"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 206,
+    "question": "实施任务运行计划（mission operations plan）的主要目的是什么？",
+    "ground_truth": "实施任务运行计划的主要目的是执行任务、满足最初确定的需求，并维持对该需求的支持。",
+    "source_excerpt": "To conduct the mission and meet the initially identified need and maintain support for that need. Implement the mission operations plan.\n\nTypical Activities and Their Products"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 229,
+    "question": "对于小型项目，当NPR要求计划必须是独立文档会带来过重负担时，应如何处理这些计划信息？",
+    "ground_truth": "在这种情况下，不需要将计划作为独立文档，相关信息可以直接编写并作为项目计划或SEMP（系统工程管理计划）的一部分包含在内。",
+    "source_excerpt": "Depending on the project or program, some relief on the scope of a requirement may be appropriate. For example, although the governing project management directive (e.g., NPR 7120.5, 7150.2, 7120.7, 7120.8) for a program/project may require certain documents to be standalone, the SE NPR does not require any additional stand-alone documents. For small projects, many of the plans can be described in just a few paragraphs or pages. In these types of projects, any NPR requirements stating that the p"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 251,
+    "question": "该文档片段中包含了哪些具体的业务或技术信息？",
+    "ground_truth": "该文档片段没有包含任何具体的业务或技术信息，仅由大量的连字符组成，在文档中通常起分隔线的作用。",
+    "source_excerpt": "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 274,
+    "question": "在项目中，“其他利益相关方（Other interested parties）”是如何定义的？请列举几个具体的例子。",
+    "ground_truth": "“其他利益相关方”是指那些通过提供广泛的、总体的约束条件来影响项目的人，客户的需求应在这些约束条件内实现。他们可能会受到最终产品、产品使用方式的影响，或有责任提供生命周期支持服务。具体的例子包括国会、咨询规划团队、项目经理、维护人员和任务合作伙伴。",
+    "source_excerpt": "Other interested parties are those who affect the project by providing broad, overarching constraints within which the customers' needs should be achieved. These parties may be affected by the resulting product, the manner in which the product is used, or have a responsibility for providing life cycle support services. Examples include Congress, advisory planning teams, program managers, maintainers, and mission partners. It is important that the list of stakeholders be identified early in the p"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 296,
+    "question": "运行概念（ConOps）在系统工程项目中有哪些主要用途和作用？",
+    "ground_truth": "运行概念（ConOps）的主要用途和作用包括：1. 捕获利益相关者的期望；2. 用于定义项目的需求和架构，刺激与系统用户元素相关的需求和架构开发；3. 作为后续定义文件（如运行计划、发射和早期轨道计划、运行手册）的基础；4. 为长期运行规划活动（如运行设施、人员配备和网络调度）提供基础。",
+    "source_excerpt": "isions for fabrication, test, deployment, operations, sustainment, and disposal.\n\nThe ConOps is an important component in capturing stakeholder expectations and is used in defining requirements and the architecture of a project. It stimulates the development of the requirements and architecture related to the user elements of the system. It serves as the basis for subsequent definition documents such as the operations plan, launch and early orbit plan, and operations handbook, and it provides th"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 319,
+    "question": "基线化的运行概念（Baselined Concept of Operations）包含哪些具体内容，并且可以以什么形式呈现？",
+    "ground_truth": "基线化的运行概念包含场景、用例和/或适合项目的设计参考任务（DRMs）。它可以以文档、图形、视频、模型和/或模拟的形式呈现。",
+    "source_excerpt": "- Baselined Stakeholder Expectations: This is the agreed-to set of stakeholder expectations (e.g., needs, goals, objectives, assumptions, constraints, external interfaces) for the product(s) of this product layer. - Baselined Concept of Operations: This describes how the system will be operated during the life cycle phases to meet stakeholder expectations. It describes the system characteristics from an operational perspective and helps facilitate an understanding of the system goals, objectives"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 342,
+    "question": "在记录设计约束时，如果需求规定了特定的实现方法，应该如何处理相关的理由记录？",
+    "ground_truth": "如果需求规定了特定的实现方法，应该在理由中说明为什么做出决定将解决方案限制为这一种特定的实现方法。",
+    "source_excerpt": "use a product) should be documented. This may be done with a link to the ConOps. - Document Design Constraints: Constraints imposed by the results from decisions made as the design evolves should be documented. If the requirement states a method of implementation, the rationale should state why the decision was made to limit the solution to this one method of implementation."
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 364,
+    "question": "什么是功能分析（Functional analysis），它通常基于什么来进行？",
+    "ground_truth": "功能分析是系统架构开发和功能需求分解中使用的主要方法，它是一个识别、描述和关联系统为实现其目标和目的而应执行的功能的系统化过程。功能分析通常基于感兴趣系统的运行概念（ConOps）来进行。",
+    "source_excerpt": "4.3.1.2.2 Allocate Technical Requirements, Resolve Conflicts, and Baseline\n\nFunctional analysis is the primary method used in system architecture development and functional requirement decomposition. It is the systematic process of identifying, describing, and relating the functions a system should perform to fulfill its goals and objectives. Functional analysis identifies and links system functions, trade studies, interface characteristics, and rationales to requirements. It is usually based on"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 387,
+    "question": "为什么技术评估需要贯穿从概念开发到初步设计评审（PDR）的整个设计和开发过程？",
+    "ground_truth": "因为技术开发对计划或项目具有重大的潜在影响，所以技术评估需要贯穿从概念开发到初步设计评审（PDR）的整个设计和开发过程，以便系统地评估每个系统、子系统或组件的成熟度，并确定需要何种开发来推进其成熟度，从而确保其能在成本、进度和性能约束内被成功整合。",
+    "source_excerpt": "associated cost, schedule, and risk-it is necessary to systematically assess the maturity of each system, subsystem, or component in terms of the architecture and operational environment. It is then necessary to assess what is required in the way of development to advance the maturity to a point where it can successfully be incorporated within cost, schedule, and performance constraints. A process for accomplishing this assessment is described in Appendix G . Because technology development has t"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 410,
+    "question": "技术数据包（technical data package）在产品生命周期的各个阶段是如何演变的？",
+    "ground_truth": "技术数据包在各个阶段不断演变，从概念草图或模型开始，最终以完整的图纸、零件清单以及产品实现或产品集成所需的其他细节结束。",
+    "source_excerpt": "The scope and content of the full design description should be appropriate for the product life cycle phase, the phase success criteria, and the product position in the PBS (system structure). Depending on these factors, the form of the design solution definition could be simply a simulation model or a paper study report. The technical data package evolves from phase to phase, starting with conceptual sketches or models and ending with complete drawings, parts list, and other details needed for "
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 432,
+    "question": "本章是如何组织并讨论产品实现过程中每个步骤内的流程的？",
+    "ground_truth": "本章分为与图2.1-1中列出的步骤5至9相对应的各个小节。每个步骤内的流程都是从输入、活动和输出三个方面进行讨论的，并使用与NASA项目相关的示例提供额外指导。",
+    "source_excerpt": "T his chapter describes the activities in the product realization processes listed in FIGURE 2.1-1 . The chapter is separated into sections corresponding to steps 5 through 9 listed in FIGURE 2.1-1 . The processes within each step are discussed in terms of the inputs, the activities, and the outputs. Additional guidance is provided using examples that are relevant to NASA projects."
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 455,
+    "question": "在产品开发中，软件开发必须符合哪项具体的NASA要求？",
+    "ground_truth": "软件开发必须符合NPR 7150.2，即NASA软件工程要求（NASA Software Engineering Requirements）。",
+    "source_excerpt": "The product is then made or coded in accordance with the specified requirements, configuration documentation, and applicable standards. Software development must be consistent with NPR 7150.2, NASA Software Engineering Requirements. Throughout"
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 478,
+    "question": "产品集成过程（Product Integration Process）的最终目的是什么？",
+    "ground_truth": "产品集成的最终目的是确保系统要素作为一个整体发挥作用。",
+    "source_excerpt": "The Product Integration Process applies not only to hardware and software systems but also to service-oriented solutions, requirements, specifications, plans, and concepts. The ultimate purpose of product integration is to ensure that the system elements function as a whole."
+  },
+  {
+    "doc": "06_nasa_systems_engineering_handbook.pdf",
+    "doc_id": 11,
+    "chunk_index": 500,
+    "question": "验证测试（Validation testing）通常在什么条件下进行，其主要目的是确定什么？",
+    "ground_truth": "验证测试在真实条件（或模拟条件）下进行，主要目的是确定最终产品供典型用户用于任务操作时的有效性和适用性，并评估测试结果，以确保系统在置于真实环境中时能按预期运行。",
+    "source_excerpt": "Validation Testing: Validation relates back to the ConOps document. Validation testing is conducted under realistic conditions (or simulated conditions) on any end product to determine the effectiveness and suitability of the product for use in mission operations by typical users and to evaluate the results of such tests. It ensures that the system is operating as expected when placed in a realistic environment.\n\nThe outcome of the Product Verification Process is confirmation that the end produc"
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 43,
+    "question": "为了让患者和社区能够利用AI掌控自己的医疗保健，需要满足哪些前提条件或保障？",
+    "ground_truth": "需要保证患者和社区的权利和利益不会从属于科技公司的强大商业利益或政府在监视和社会控制方面的利益；同时，需要将AI检测患者或社区健康风险的潜力纳入卫生系统，且这种方式必须促进人类的自主权和尊严，不能将人类从健康决策的中心位置取代。",
+    "source_excerpt": "AI can also empower patients and communities to assume control of their own health care and better understand their evolving needs. To achieve this, patients and communities require assurance that their rights and interests will not be subordinated to the powerful commercial interests of technology companies or the interests of governments in surveillance and social control. It also requires that the potential of AI to detect risks to patient or community health is incorporated into health syste"
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 57,
+    "question": "在AI应用的可持续性方面，政府和公司需要采取哪些措施来应对工作场所的预期中断？",
+    "ground_truth": "政府和公司需要解决工作场所预期的中断问题，包括对医疗保健工作者进行培训以适应AI系统的使用，以及应对因使用自动化系统而导致的潜在失业问题。",
+    "source_excerpt": "e the impact of human beings on the Earth's environment, ecosystems and climate. Sustainability also requires governments and companies to address anticipated disruptions in the workplace, including training for health-care workers to adapt to the use of AI systems, and potential job losses due to use of automated systems."
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 71,
+    "question": "在医疗保健中，不受限制的“技术乐观主义”和不当使用AI可能会带来哪些风险或负面后果？",
+    "ground_truth": "“技术乐观主义”可能会加剧富裕国家和低收入国家内部及之间获取医疗技术的不平等分布；如果不采取适当措施，数字鸿沟可能会加剧因地理、性别、年龄或设备可用性导致的技术获取不平等。此外，不当使用AI（如使用有限、低质量、不具代表性的数据）可能会延续或加剧偏见，加深医疗保健中的偏见和差异。",
+    "source_excerpt": "Unchecked optimism in the potential benefits of AI could, however, veer towards habitual first recourse to technological solutions to complex problems. Such 'techno-optimism' could make matters worse, for example, by exacerbating the unequal distribution of access to health-care technologies within and among wealthy and low-income countries ( 2 ). Furthermore, the digital divide could exacerbate inequitable access to health-care technologies by geography, gender, age or availability of devices, "
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 85,
+    "question": "什么是机器学习？它是基于什么机制来执行任务或进行预测的？",
+    "ground_truth": "机器学习是AI技术的一个子集，它基于使用统计和数学建模技术来定义和分析数据。随后，将学习到的模式应用于执行或指导特定任务并进行预测。",
+    "source_excerpt": "The various types of AI technology include machine-learning applications such as pattern recognition, natural language processing, signal processing and expert systems. Machine learning, which is a subset of AI techniques, is based on use of statistical and mathematical modelling techniques to define and analyse data. Such learned patterns are then applied to perform or guide certain tasks and make predictions."
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 98,
+    "question": "临床医生可以使用AI来辅助哪些具体的医疗工作？如果AI取代了临床尽职调查，可能会引发什么风险？",
+    "ground_truth": "临床医生可以使用AI在会诊期间整合患者记录、识别有风险的患者和弱势群体、辅助困难的治疗决策以及捕捉临床错误。如果AI取代了临床尽职调查，临床医生可能会陷入“自动化偏见”，从而不去考虑AI技术是否真正满足他们或患者的需求。",
+    "source_excerpt": "Clinicians might use AI to integrate patient records during consultations, identify patients at risk and vulnerable groups, as an aid in difficult treatment decisions and to catch clinical errors. In LMIC, for example, AI could be used in the management of antiretroviral therapy by predicting resistance to HIV drugs and disease progression, to help physicians optimize therapy (23 ). Yet, clinical experience and knowledge about patients is essential, and AI will not be a substitute for clinical d"
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 112,
+    "question": "生物监测数据的增长带来了哪些伦理和法律风险？应如何保护这些数据？",
+    "ground_truth": "生物监测数据的增长带来的风险包括：未经明确同意将数据用于医疗和非医疗目的，或者政府或公司将其重新用于刑事司法或移民系统等非健康目的。对策是：这些数据应受到与在正式临床护理环境中收集的个体数据相同级别的数据保护和安全保护。",
+    "source_excerpt": "biometrics, such as facial features, fingerprints, temperature and pulse ( 32 ). The growth of biosurveillance poses significant ethical and legal concerns, including the use of such data for medical and non-medical purposes for which explicit consent might not have been obtained or the repurposing of such data for non-health purposes by a government or company, such as within criminal justice or immigration systems. (See section 6.3.) Thus, such data should be liable to the same levels of data "
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 126,
+    "question": "人工智能在中低收入国家的卫生系统资源分配中有哪些应用实例？使用AI分配稀缺卫生资源存在什么风险？",
+    "ground_truth": "应用实例包括：南非研究人员应用机器学习模型预测卫生工作者在欠发达社区的停留时间；巴西研究人员使用AI和政府数据集根据当前健康挑战按地理位置优化卫生系统资源的分配。存在的风险是：由于数据中存在偏差等原因，可能导致资源无法得到公平分配。",
+    "source_excerpt": "AI could also be useful in complex decision-making and planning, including in LMIC. For example, researchers in South Africa applied machine-learning models to administrative data to predict the length of stay of health workers in underserved communities ( 9 ). In a study in Brazil, researchers used several government data sets and AI to optimize the allocation of health-system resources by geographical location according to current health challenges ( 9 ). Allocation of scarce health resources "
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 140,
+    "question": "近距离追踪应用的工作机制是什么？它引发了哪些担忧，世界卫生组织（WHO）对此采取了什么行动？",
+    "ground_truth": "工作机制是：通知用户（可能还有卫生当局）他们曾在一段时间内与随后SARS-CoV2检测呈阳性的个体有过近距离接触。引发的担忧包括：隐私问题以及该应用的效用和准确性。WHO采取的行动是：在2020年发布了关于近距离追踪应用伦理使用的临时指南。",
+    "source_excerpt": "New applications ( 58 ) are intended to support the off-line response, although not all may involve use of AI. These have included proximity tracking applications intended to notify users (and possibly health authorities) that they have been in the proximity (for some duration) of an individual who subsequently tested positive for SARS-CoV2. Concern has been raised about privacy and the utility and accuracy of proximitytracking applications, and WHO issued interim guidance on the ethical use of "
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 154,
+    "question": "针对COVID-19疫情期间数据收集和使用带来的人权问题，联合国秘书长提出了什么呼吁？人权组织采取了哪些应对措施？",
+    "ground_truth": "联合国秘书长呼吁各国政府将人权置于数字技术开发和使用的监管框架和立法的中心。人权组织采取的应对措施包括：解释并在必要时调整现有的人权法律和标准以用于AI评估，并根据AI带来的挑战和机遇对这些法律和标准进行审查。",
+    "source_excerpt": "Secretary-General noted a number of concerns for human rights associated with the growing collection and use of data on the COVID-19 pandemic and called on governments to 'place human rights at the centre of regulatory frameworks and legislation on the development and use of digital technologies' ( 64 ). Human rights organizations have interpreted and, when necessary, adapted existing human rights laws and standards to AI assessment and are reviewing them in the face of the challenges and opport"
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 168,
+    "question": "欧盟、日本和中国在人工智能治理和伦理指南方面分别发布了哪些重要文件或原则？",
+    "ground_truth": "欧盟委员会发布了《可信AI伦理指南》；日本发布了关于AI使用、研发和利用的多项指南；中国发布了《新一代人工智能治理原则》作为国家AI治理原则，此外学术界和工业界联合发布了《北京人工智能原则》。",
+    "source_excerpt": "rtificial intelligence: 10 steps to protect human rights recommendations ( 84 ). - The European Commission appointed 52 representatives from academia, civil society and industry to its High-level Expert Group on Artificial Intelligence and issued Ethics Guidelines for Trustworthy AI ( 85 ). - Japan has issued several guidelines on the use of AI, including on research and development and utilization ( 86 ). - China has issued National Governance Principles for the New Generation Artificial Intell"
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 182,
+    "question": "在医疗伦理中，“尊重个人”或“自主权”原则要求如何对待个人的决策？",
+    "ground_truth": "要求以尊重个人在生活和医疗决策中利益的方式对待他们，确保他们基于对所做选择的性质、意义、个人利益以及替代方案可能后果的知情理解来做出决定。",
+    "source_excerpt": "t, manipulation, domination or abuse (sometimes called 'justice' or 'fairness'). - Deal with persons in ways that respect their interests in making decisions about their lives and their person, including health-care decisions, according to informed understanding of the nature of the choice to be made, its significance, the person's interests and the likely consequences of the alternatives (sometimes called 'respect for persons' or 'autonomy')."
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 196,
+    "question": "在医疗AI系统中，有意义的人类监督在实践中可以包括哪些具体做法？",
+    "ground_truth": "在实践中可以包括：决定是否在特定的医疗保健决策中使用AI系统；改变人类自由裁量权和决策的水平；以及在适当时开发能够对决策进行排序（而不是做出单一决策）的AI技术。",
+    "source_excerpt": "ns, whether they be medical providers or patients, in making informed decisions. Human oversight may depend on the risks associated with an AI system but should always be meaningful and should thus include effective, transparent monitoring of human values and moral considerations. In practice, this could include deciding whether to use an AI system for a particular health-care decision, to vary the level of human discretion and decision-making and to develop AI technologies that can rank decisio"
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 209,
+    "question": "在AI技术的开发和部署中，如何通过“人类保证”机制来确保责任？",
+    "ground_truth": "通过患者和临床医生的评估来应用“人类保证”，在算法的上游和下游建立人类监督点来应用监管原则。这些关键监督点由专业人员、患者和设计师通过讨论确定，以确保算法在医学上有效、可被审查且在伦理上负责任，并涉及与患者和公众的积极合作。",
+    "source_excerpt": "Responsibility can be assured by application of 'human warranty', which implies evaluation by patients and clinicians in the development and deployment of AI technologies. In human warranty, regulatory principles are applied upstream and downstream of the algorithm by establishing points of human supervision. The critical points of supervision are identified by discussions among professionals, patients and designers. The goal is to ensure that the algorithm remains on a machine-learning developm"
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 223,
+    "question": "在医疗AI的可持续性方面，政府和企业需要应对哪些由自动化系统引入工作场所所带来的预期中断？",
+    "ground_truth": "政府和企业需要应对的预期中断包括：需要培训医护人员以适应AI的使用，以及应对因在常规医疗保健功能和行政任务中使用自动化系统而可能导致的潜在失业问题。",
+    "source_excerpt": "e the impact of human beings on the earth's environment, ecosystems and climate. Sustainability also requires governments and companies to address anticipated disruptions to the workplace, including training of health-care workers to adapt to use of AI and potential job losses due to the use of automated systems for routine health-care functions and administrative tasks."
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 237,
+    "question": "为什么许多AI技术在中低收入国家可能无法正确运行或无法被当地人群使用？",
+    "ground_truth": "因为缺乏对中低收入国家语境（如多样的语言和文字）的充分考虑，例如缺乏对翻译的投资。更深层的原因是，许多AI技术是由高收入人群以及那些对中低收入国家目标人群特征了解不足的个人或公司设计的。",
+    "source_excerpt": "Fifthly, enough consideration may not be given to whether an AI technology is appropriate and adapted to the context of LMIC, such as diverse languages and scripts in a country or among countries ( 9 ). Lack of investment in, for example, translation can mean that certain applications do not operate correctly or simply cannot be used by a population. Such lack of foresight points to a wider problem, which is that many AI technologies are designed by and for high-income populations and by individ"
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 251,
+    "question": "在医疗保健领域，开发成功的AI系统需要依赖什么来进行算法训练和模型验证？",
+    "ground_truth": "在医疗保健领域，开发成功的AI系统需要依赖高质量的数据来进行算法训练和验证算法模型。",
+    "source_excerpt": "that wish to make use of such data and commercial and non-commercial applications. The development of a successful AI system for use in health care relies on high-quality data for both training the algorithm and validating the algorithmic model."
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 265,
+    "question": "在Dinerstein诉大学和Google的案件中，原告认为Google可以通过什么具体方式轻易地重新识别患者身份？",
+    "ground_truth": "原告认为，Google可以通过将医疗记录与其他可用数据集（例如来自Google Maps的地理位置数据）相结合，即通过所谓的“数据三角测量”（data triangulation）方式，轻易地重新识别患者身份。",
+    "source_excerpt": "Dinerstein brought several claims, including breach of contract, against the University and Google, alleging prima facie violation of the US Health Insurance Portability and Accountability Act. According to an article published in 2018 by the defendants ( 132 ), the patients' medical records shared with Google 'were de-identified, except that dates of service were maintained in the (…) dataset'. The dataset also included 'free-text medical notes' ( 132 ). Dinerstein accused the defendants of ins"
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 279,
+    "question": "为什么数据持有者的保密义务在保护AI健康技术相关数据的患者隐私方面存在局限性？",
+    "ground_truth": "因为保密义务可能不足以涵盖现在用于指导AI健康技术的许多类型的数据，并且也可能不足以控制健康数据的生产和转移。",
+    "source_excerpt": "iduals can provide consent for use of their organs for medical research ( 143 ).\n\nIf patients' privacy cannot be safeguarded by consent mechanisms, other privacy safeguards, including a data holder's duty of confidentiality, also have shortcomings. Although confidentiality is a well-recognized pillar of medical practice, the duty of confidentiality may not be sufficient to cover the many types of data now used to guide AI health technologies and may also not be sufficient to control the producti"
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 293,
+    "question": "在AI引导的医疗技术中，“多手问题”（many hands problem）对责任分配造成了什么困难？",
+    "ground_truth": "由于AI的开发涉及众多参与者的贡献，在法律和道德上都很难分配责任，责任被分散在所有贡献者中。此外，机器参与决策也可能阻碍将责任分配给参与技术设计、选择和使用的人类。",
+    "source_excerpt": "A second challenge is the 'many hands problem' or the ''traceability' of harm, which bedevils health-care decision-making systems ( 153 ) and other complex systems ( 154 ) even in the absence of AI. As the development of AI involves contributions from many agents, it is difficult, both legally and morally, to assign responsibility ( 150 ), which is diffused among all the contributors to the AI-guided technology. Participation of a machine in making decisions may also discourage assignment of res"
+  },
+  {
+    "doc": "07_who_ethics_governance_ai_for_health.pdf",
+    "doc_id": 12,
+    "chunk_index": 306,
+    "question": "完全将决策委托给自动化系统会给医疗服务提供者带来什么风险，且医学领域的AI在自主性方面最终可能达到什么程度？",
+    "ground_truth": "完全委托会给医疗服务提供者带来自动化偏见（automation bias）的风险。在自主性方面，医学中的AI不太可能实现完全自主，它可能只会实现条件自动化或需要人类后备支持。",
+    "source_excerpt": "solely automated decisions when such decisions would have a significant effect. Full delegation also creates a risk of automation bias on the part of the provider, as discussed above. Other concerns could emerge if human judgement is increasingly replaced by machine-guided judgement, and wider ethical concern would arise with loss of human control, especially if prediction-based health care becomes the norm. Yet, as for autonomous cars, it is unlikely that AI in medicine will ever achieve full a"
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 130,
+    "question": "以色列政府在2020年3月批准的紧急法规允许使用手机收集的个体级数据来实现什么目的？",
+    "ground_truth": "用于追踪人员，然后通过接触者追踪来遏制COVID-19的传播。",
+    "source_excerpt": "he factors linked to lockdown compliance and noncompliance and plan accordingly. Meanwhile, the government of Israel approved emergency regulations in March 2020 to allow the individual-level data collected from cellphones to be used to track people and then, through contact tracing, to curtail the spread of COVID-19."
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 172,
+    "question": "设计良好的数据治理框架在国家数据社会契约中扮演什么角色，它涉及哪些关键方面？",
+    "ground_truth": "它是国家围绕数据的社会契约的具体体现。它涉及在数据系统的完整性方面建立信任，同时确保数据的利益得到公平分享，从而使国家能够获取公共意图和私人意图数据的全部经济和社会价值，并利用它们之间的协同作用。",
+    "source_excerpt": "al statistical offices to perform nontraditional roles with private intent data.\n\nAligning data governance with the social contract\n\nA well-designed data governance framework allows countries to capture the full economic and social value of both public intent and private intent data and leverages synergies between them. This involves creating trust in the integrity of the data system, while ensuring that the benefits of data are equitably shared. Such a framework is the tangible expression of a "
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 214,
+    "question": "INDS在数据治理中是如何整合多方利益相关者并贯穿政府实体的规划与决策的？",
+    "ground_truth": "INDS建立在有意的、全政府的、多利益相关者的数据治理方法之上。它明确将数据的生产、保护、交换和使用纳入各政府实体的规划和决策中，并积极将来自公民社会、公共部门和私营部门的各个利益相关者整合到数据生命周期和系统的治理结构中。",
+    "source_excerpt": "The INDS is built on an intentional, whole-ofgovernment, multistakeholder approach to data governance. It explicitly builds data production, protection, exchange, and use into planning and decision-making across government entities and actively integrates the various stakeholders from civil society, the public sector, and the private sector into the data life cycle and into the governance structures of the system. 25"
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 256,
+    "question": "根据文档，当提及“数据”时，它具体包含关于人、事物和系统的哪些信息类型？",
+    "ground_truth": "关于人的数据包括个人数据（如基本联系方式、服务或网络交互记录、生物特征）和人口级数据（如人口统计）；关于系统和基础设施的数据包括企业和公共服务的行政记录；此外，数据还越来越多地用于描述位置（如地理空间参考细节）、环境（如生物多样性或天气数据），以及构成物联网的传感器网络生成的信息。",
+    "source_excerpt": "When we refer to data, we mean information about people, things and systems. . . . Data about people can include personal data, such as basic contact details, records generated through interaction with services or the web, or information about their physical characteristics (biometrics)-and it can also extend to population-level data, such as demographics. Data can also be about systems and infrastructure, such as administrative records about businesses and public services. Data is increasingly "
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 298,
+    "question": "基于人群的调查在了解血清阳性率的地区和人群差异方面得出了哪些具体结论，并说明了这种调查的必要性是什么？",
+    "ground_truth": "结论显示，全国平均血清阳性率为1.4%，但地区差异显著，南部和中西部大多数城市不到1%，而北部亚马逊地区的Breves市高达25%；血清阳性率最高的15个城市中有11个在北部，前6个沿亚马逊河分布；在族群中，原住民的血清阳性率最高（基线调查为3.7%）。必要性在于：如果没有基于人群的调查，就不可能了解整体问题的范围并确定需求最紧迫的地区和人群。",
+    "source_excerpt": "Second, there was a remarkably wide regional variation in seroprevalence around the 1.4 percent national average, ranging from less than 1 percent in most cities in the South and Center-West regions to 25 percent in the city of Breves in the Amazon (North region). Eleven of the 15 cities with the highest seroprevalence were in the North. The six cities with highest seroprevalence were located along a 2,000-kilometer stretch of the Amazon River. Beyond geography, seroprevalence varied across ethn"
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 340,
+    "question": "让个人能够更好地访问由政府、国际或私营部门行为者收集的自身数据，能够带来什么好处？",
+    "ground_truth": "这是使公民能够为自己发声并改善生活的一种途径，同时也有助于实现问责制和透明度。",
+    "source_excerpt": "accountability, and transparency. Simply providing individuals with better access to their own data collected by government, international, or private sector actors is another way to enable citizens to advocate for themselves and improve their lives."
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 383,
+    "question": "为什么在解决数据驱动型企业的市场力量监管等共同的数据治理挑战时，跨境合作显得尤为重要？",
+    "ground_truth": "因为在制度层面，较大全球市场的政策制定者和监管者做出的决定会对与其有密切经济联系的较小国家产生重要的溢出效应；此外，数据基础设施在很大程度上具有跨境性质，大量数据流向海外存储和处理设施，且存在围绕基础设施发展的区域合作机会。",
+    "source_excerpt": "in international trade or how to allocate taxation rights for data transactions. At the institutional level, decisions made by policy makers and regulators, particularly in the larger global markets, will have important spillover effects in smaller countries, particularly those with which the markets have strong economic ties. These effects underscore the importance of cross-border cooperation in addressing common data governance challenges such as the regulation of market power in data-driven b"
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 425,
+    "question": "Pedro Curi Hallal等人于2020年发表的关于巴西各地区SARS-CoV-2抗体显著差异的全国性血清学调查论文，发表在哪个预印本平台上？",
+    "ground_truth": "medRxiv。",
+    "source_excerpt": "21-28. - Hallal, Pedro Curi, Fernando P. Hartwig, Bernardo L. Horta, Gabriel D. Victora, Mariângela F. Silveira, Cláudio José Struchiner, Luís Paulo Vidaleti, et al. 2020. 'Remarkable Variability in SARS-CoV-2 Antibodies across Brazilian Regions: Nationwide Serological Household Survey in 27 States.' medRxiv (May 30). https://www.medrxiv.org /content/10.1101/2020.05.30.20117531v1. - Hallal, Pedro Curi, Bernardo L. Horta, Aluísio J. D. Barros, Odir A. Dellagostin, Fernando P. Hartwig, Lúcia C. Pe"
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 467,
+    "question": "以告知公共政策为目的收集的数据，应当如何促进政府、公民和商业之间的互动？",
+    "ground_truth": "这些数据应当丰富政策对话，并允许政府、公民和商业之间进行系统的信息和通信流动。",
+    "source_excerpt": "ion or some other means of communicating information between patient and doctor. In the same way, data gathered with the intent of informing public policy should enrich the policy dialogue and allow for systematic flows of information and communication among governments, their citizens, and commerce."
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 509,
+    "question": "公共意图数据在提升发展价值的同时，可能会带来哪些潜在的危害或风险？",
+    "ground_truth": "数据可能被滥用于政治监视和控制，或用于歧视和排斥，也可能无意中暴露有关个人的敏感信息。",
+    "source_excerpt": "s, these numbers can have major effects on global poverty and shared prosperity.\n\nMany of the features of public intent data that increase their value for development can also increase their potential for harm. Data may be misused for political surveillance and control or discrimination and exclusion, or they may inadvertently expose sensitive information about individuals. 33 For example, in República Bolivariana de Venezuela, a digital biometric fingerprint system was introduced initially for "
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 551,
+    "question": "为什么仅仅对数据进行去标识化处理有时不足以保护个人隐私？请结合具体案例说明，并提出一种减少此类担忧的方法。",
+    "ground_truth": "仅仅去标识化不足以保护隐私，因为研究人员可以通过将去标识化的数据与其他公开信息进行交叉比对来识别出个人。例如，在1990年代美国马萨诸塞州公开去标识化的州员工医疗记录后，有研究人员通过交叉比对成功识别出了州长及其他个人的医疗记录。为了减少这种担忧，应确保只生产适当的数据，即这些数据应测量感兴趣的概念、具有明确的政策目的，且不是为了收集过多信息或监视个人而产生的。",
+    "source_excerpt": "Similarly, deidentifying individuals has not always proved to be enough to maintain confidentiality. In the 1990s, the governor of Massachusetts in the United States approved making deidentified medical records of state employees available for researchers. Although key identifiers such as name and address were removed from the data, by triangulating the information available with other public information a researcher was able to identify the medical records of the governor and other individuals "
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 593,
+    "question": "基础设施的缺乏是如何限制数据的访问和使用的？",
+    "ground_truth": "基础设施的缺乏通过以下方式限制数据的访问和使用：1. 互联网普及率在较贫穷国家较低，仅通过在线渠道共享数据会排除大量受限于有限互联网连接的潜在用户；2. 某些用户可能不知道有数据可供使用；3. 缺乏互联网连接、可靠的电力和数据中心，这也是使用物联网系统和传感器数据面临的主要挑战。",
+    "source_excerpt": "Lack of infrastructure to access and use the data. A final reason for lack of data use is related to the infrastructure needed to access and use data. For example, internet access is key to obtaining data, but penetration rates are lower in poorer countries. The exclusive sharing of data via online channels may exclude large shares of potential data users who are hampered by limited internet connectivity. 118 And certain users may be unaware that data are available for use. 119 Lack of internet "
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 635,
+    "question": "根据文档注释，关于“公共意图数据”和“私人意图数据”的讨论分别分布在哪些章节？",
+    "ground_truth": "根据文档注释，关于“公共意图数据”和“私人意图数据”的区别在第1章讨论；关于“私人意图数据”的讨论在第3章；关于这两种数据如何被重新利用的讨论在第4章。",
+    "source_excerpt": "ent off when estimating primary enrollment figures. 3. Cameron et al. (2019). 4. See chapter 1 for more information on the distinction between public intent data and private intent data, chapter 3 for a discussion of private intent data, and chapter 4 for a discussion of how both kinds of data can be repurposed. 5. See Jolliffe et al. (forthcoming) for a lengthier discussion of these 12 features of public intent data and examples of how they can generate value for development. 6. World Bank (201"
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 677,
+    "question": "文献“Validation Exercise”发表在《Economic Development and Cultural Change》期刊的哪一卷哪一期，页码范围是多少？",
+    "ground_truth": "文献“Validation Exercise”发表在《Economic Development and Cultural Change》期刊的第67卷第3期，页码范围是595-624页。",
+    "source_excerpt": "Validation Exercise.' Economic Development and Cultural Change 67 (3): 595-624.\n\n<!-- image -->"
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 719,
+    "question": "全球针对妇女和女孩的暴力问题的严重程度如何？请列举相关的数据指标。",
+    "ground_truth": "针对妇女和女孩的暴力是一个全球性的大流行病。相关数据指标包括：全球15至49岁的妇女和女孩中，有三分之一（35%）经历过身体暴力、性暴力或两者兼有；至少有2亿女孩和妇女经历了女性生殖器切割；并且在至少11个国家中，超过一半的15至49岁妇女经历了女性生殖器切割。",
+    "source_excerpt": "the Global Burden of Disease Study 2017.' Lancet Planetary Health 4 (9): 386-98.\n\n<!-- image -->\n\nSpotlight 2.1 Deploying data to curtail violence against women and girls\n\nFor too long, violence against women and girls has been a deep, dark secret. Now, data collection efforts around the world are shedding light on this tragic problem and leading to solutions.\n\nViolence against women and girls (VAWG) is a global pandemic. One out of three women and girls (35 percent) worldwide between the ages o"
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 761,
+    "question": "在数据驱动经济的发展过程中，政策制定者应该警惕什么风险，以确保企业使用数据能带来广泛分享的利益？",
+    "ground_truth": "政策制定者应警惕个人因获取金融、教育水平、技能和技术的途径不同，而导致从数据驱动经济中受益程度不同的风险。",
+    "source_excerpt": "The degree to which individuals can benefit from the data-driven economy-including consumers, entrepreneurs, and job seekers-will differ according to their access to finance, education levels, skills, and technology. In charting a way forward, policy makers-across all stages of development of their country's data-driven economy-should remain alert to these risks so that the use of data by firms contributes to broadly shared benefits.\n\nThe role of data in the production process of firms"
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 803,
+    "question": "在中低收入国家，数字足迹除了用于预测还款行为外，还有哪些主要的应用扩展？",
+    "ground_truth": "应用扩展包括在整个经济中开发新产品和改善服务交付、开发企业分析工具，以及创建可用于销售广告服务的消费者画像（这种做法最终补贴了消费者今天使用的许多“免费”产品）。",
+    "source_excerpt": "Big data and ML algorithms enable firms to draw inferences about the characteristics of individuals (such as attitudes and socioeconomic status) and other businesses (such as performance, capacity, and reputation). In low- and middle-income countries, digital footprints are best known for their ability to predict repayment behavior. However, applications also extend to the development of new products and improvements in service delivery across the economy, to the development of analytical tools "
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 845,
+    "question": "在印度，移动货币对家庭分担风险的能力产生了什么具体影响和福利收益？",
+    "ground_truth": "在印度，移动货币提高了家庭分担风险的能力，平均提供了相当于收入3%到4%的福利收益。",
+    "source_excerpt": "Mobile payments in particular have reduced the transaction costs of transferring resources, enabling new ways for households and firms to make payments, save, and send remittances. The welldocumented benefits of mobile money in lowerincome countries include lowering transaction and transport costs; encouraging saving through the relatively safe storage of value in a digital format; empowering female users through greater privacy, thereby increasing their bargaining power within families; and all"
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 888,
+    "question": "在电子商务领域，网络流量的分布情况如何体现该领域的集中度？请以2019年非洲B2C在线市场的数据为例说明。",
+    "ground_truth": "网络流量的分布偏向少数几个较大的平台，体现了电子商务领域的集中度。例如，在2019年非洲的631个B2C在线市场中，56%的网络访问者流向了仅占1%的网站，其中仅Jumia一个平台就拥有24%的用户。",
+    "source_excerpt": "that incorporates more consumer data creates a more customized shopping experience, with more accurate product recommendations, more preordered shopping baskets, and more consumer reviews. A platform with a greater number of consumers will also attract more suppliers through indirect network effects, raising users' costs of switching to competing platforms. The distribution of web traffic, a proxy for concentration in the e-commerce sector, is skewed toward a few larger platforms. Among 631 busi"
+  },
+  {
+    "doc": "08_world_bank_wdr_2021_data_for_better_lives.pdf",
+    "doc_id": 13,
+    "chunk_index": 930,
+    "question": "根据提供的参考文献列表，估计挖掘潜在需求可能使行业规模每年增加0.5%的作者是谁？",
+    "ground_truth": "Bughin和van Zeebroeck（2017）。",
+    "source_excerpt": "33. Aghion, Jones, and Jones (2017); Cockburn, Henderson, and Stern (2019). 34. Brynjolfsson and McElheran (2016a). 35. MGI (2018). 36. IFC (2009). 37. Eisenmeier (2018). 38. Bughin and van Zeebroeck (2017). The authors estimate that tapping latent demand could increase industry size by 0.5 percent a year. 39. Brynjolfsson et al. (2019). 40. Alphabet Inc. (2019); Clement (2020). 41. Alibaba Group (2019); McNair (2018). 42. West and Biddle (2017). 43. Singh (2020). 44. Demirgüç-Kunt et al. (2018)"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 12,
+    "question": "IPCC 2023年综合报告决策者摘要的封面照片名称是什么，出自哪个比赛？",
+    "ground_truth": "封面照片名称为“Fog opening the dawn”，作者是Chung Jin Sil，出自韩国气象厅举办的2021年天气与气候摄影及视频比赛（The Weather and Climate Photography & Video Contest 2021）。",
+    "source_excerpt": "Noureddine Yassaa (Algeria), Taha M. Zatari (Saudi Arabia), Panmao Zhai (China)\n\nVisual Conception and Information Design\n\nArlene Birt (USA), Meeyoung Ha (Republic of Korea)\n\nCover: Designed by Meeyoung Ha, IPCC SYR TSU\n\nPhoto Reference\n\n'Fog opening the dawn' by Chung Jin Sil\n\nThe Weather and Climate Photography &amp; Video Contest 2021, Korea Meteorological Administration http://www.kma.go.kr/kma © KMA\n\nTHE INTERGOVERNMENTAL PANEL ON CLIMATE CHANGE\n\n© Intergovernmental Panel on Climate Change,"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 16,
+    "question": "在《气候变化2023：综合报告》中，“决策者摘要”（Summary for Policymakers）的页码范围是多少？",
+    "ground_truth": "在《气候变化2023：综合报告》中，“决策者摘要”的页码范围是第1至34页（pp. 1-34）。",
+    "source_excerpt": "IPCC, 2023: Summary for Policymakers. In: Climate Change 2023: Synthesis Report. Contribution of Working Groups I, II and III to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change [Core Writing Team, H. Lee and J. Romero (eds.)]. IPCC, Geneva, Switzerland, pp. 1-34, doi: 10.59327/IPCC/AR6-9789291691647.001\n\nSummary for Policymakers\n\nIntroduction"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 20,
+    "question": "IPCC的三份特别报告（SR1.5、SRCCL和SROCC）所涵盖的科学文献被接受发表的截止日期分别是什么时候？",
+    "ground_truth": "这三份特别报告涵盖的科学文献被接受发表的截止日期分别为：SR1.5是2018年5月15日，SRCCL是2019年4月7日，SROCC是2019年5月15日。",
+    "source_excerpt": "2 The three Special Reports are: Global Warming of 1.5°C (2018): an IPCC Special Report on the impacts of global warming of 1.5°C above pre-industrial levels and related global greenhouse gas emission pathways, in the context of strengthening the global response to the threat of climate change, sustainable development, and efforts to eradicate poverty (SR1.5); Climate Change and Land (2019): an IPCC Special Report on climate change, desertification, land degradation, sustainable land management,"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 25,
+    "question": "根据报告，1850-1900年至2010-2019年间，人类活动造成的全球表面温度总升高的可能范围和最佳估计值分别是多少？",
+    "ground_truth": "1850-1900年至2010-2019年间，人类活动造成的全球表面温度总升高的可能范围是0.8°C至1.3°C，最佳估计值为1.07°C。",
+    "source_excerpt": "s over land (1.59 [1.34 to 1.83]°C) than over the ocean (0.88 [0.68 to 1.01]°C). Global surface temperature in the first two decades of the 21 st century (2001-2020) was 0.99 [0.84 to 1.10]°C higher than 1850-1900. Global surface temperature has increased faster since 1970 than in any other 50-year period over at least the last 2000 years ( high confidence ). { 2.1.1, Figure 2.1 }\n- A.1.2 The likely range of total human-caused global surface temperature increase from 1850-1900 to 2010-2019 7 is "
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 29,
+    "question": "2010年至2019年间的温室气体排放年均增长率与2000年至2009年间相比有何变化？",
+    "ground_truth": "2010年至2019年间的年均增长率（1.3% yr-1）低于2000年至2009年间的年均增长率（2.1% yr-1）。",
+    "source_excerpt": "and 2019 (1.3% yr -1 ) was lower than that between 2000 and 2009 (2.1% yr -1 ). In 2019, approximately 79% of global GHG"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 33,
+    "question": "根据文档，由于GDP能源强度和能源碳强度的改善而减少的CO2-FFI排放量，与全球活动水平上升导致的排放增加量相比，情况如何？",
+    "ground_truth": "由于GDP能源强度和能源碳强度的改善而减少的CO2-FFI排放量，少于工业、能源供应、交通、农业和建筑领域全球活动水平上升所导致的排放量增加。",
+    "source_excerpt": "emissions came from the sectors of energy, industry, transport, and buildings together and 22% 10 from agriculture, forestry and other land use (AFOLU). Emissions reductions in CO 2 -FFI due to improvements in energy intensity of GDP and carbon intensity of energy, have been less than emissions increases from rising global activity levels in industry, energy supply, transport, agriculture and buildings. ( high confidence ) { 2.1.1 }"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 37,
+    "question": "在1901年至2018年期间，全球平均海平面上升的具体指标数据是多少？",
+    "ground_truth": "在1901年至2018年期间，全球平均海平面上升了0.20米（范围在0.15至0.25米之间）。",
+    "source_excerpt": "- A.2 Widespread and rapid changes in the atmosphere, ocean, cryosphere and biosphere have occurred. Human-caused climate change is already affecting many weather and climate extremes in every region across the globe. This has led to widespread adverse impacts and related losses and damages to nature and people ( high confidence ). Vulnerable communities who have historically contributed the least to current climate change are disproportionately affected ( high confidence ). { 2.1, Table 2.1, Fi"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 41,
+    "question": "气候变化对陆地、淡水、冰冻圈以及沿海和开阔海洋生态系统造成了哪些接近不可逆转的风险和损失？",
+    "ground_truth": "气候变化在这些生态系统中造成了重大损害和日益不可逆转的损失。极端高温强度的增加导致了数百次局部物种丧失，并在陆地和海洋中记录了大规模死亡事件。一些生态系统的影响正接近不可逆转，例如冰川退缩导致的水文变化影响，或永久冻土融化驱动的部分山地和北极生态系统的变化。",
+    "source_excerpt": "r in highly vulnerable regions, compared to regions with very low vulnerability. ( high confidence ) { 2.1.2, 4.4 } ( Figure SPM.1 )\n- A.2.3 Climate change has caused substantial damages, and increasingly irreversible losses, in terrestrial, freshwater, cryospheric, and coastal and open ocean ecosystems ( high confidence ). Hundreds of local losses of species have been driven by increases in the magnitude of heat extremes ( high confidence ) with mass mortality events recorded on land and in the"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 45,
+    "question": "极端高温事件的增加对人类健康和疾病发生有什么具体影响？",
+    "ground_truth": "在所有地区，极端高温事件的增加导致了人类的死亡和发病。此外，与气候相关的食源性和水源性疾病的发生率以及媒介传播疾病的发病率都有所增加。",
+    "source_excerpt": "fisheries and shellfish aquaculture in some oceanic regions (high confidence) . Roughly half of the world's population currently experience severe water scarcity for at least part of the year due to a combination of climatic and non-climatic drivers ( medium confidence ). { 2.1.2, Figure 2.3 } ( Figure SPM.1 )\n- A.2.5 In all regions increases in extreme heat events have resulted in human mortality and morbidity ( very high confidence ). The occurrence of climate-related food-borne and water-born"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 50,
+    "question": "归因于气候变化的广泛和实质性影响及相关损失和损害主要涵盖哪些大类领域？",
+    "ground_truth": "主要涵盖的大类领域包括：水资源可用性和粮食生产（如物理水资源可用性、农业或作物生产、渔业产量和水产养殖、动物和牲畜健康与生产力）、城市、定居点和基础设施（如内陆洪水及相关损害）、健康和福祉（如传染病、心理健康、高温、营养不良和野火伤害）以及生物多样性和生态系统（如陆地生态系统、淡水生态系统、海洋生态系统）。",
+    "source_excerpt": "a) Observed widespread and substantial impacts and related losses and damages attributed to climate change\n\nWater availability and food production\n\n<!-- image -->\n\nPhysical water availability\n\n<!-- image -->\n\n<!-- image -->\n\n<!-- image -->\n\nAgriculture/ crop production\n\nFisheries yields and aquaculture production\n\nAnimal and livestock health and productivity\n\nCities, settlements and infrastructure\n\nInland flooding and associated damages\n\n<!-- image -->\n\n<!-- image -->\n\n<!-- image -->\n\nHealth and"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 54,
+    "question": "在评估气候变化对人类系统和生态系统影响的全球评估中，对气候变化归因的置信度分为哪几个等级？",
+    "ground_truth": "对气候变化归因的置信度分为三个等级：高或非常高置信度（High or very high confidence）、中等置信度（Medium confidence）和低置信度（Low confidence）。",
+    "source_excerpt": "how the climate has already changed and will change along the lifespan of three\n\n<!-- image -->\n\nDisplacement\n\n<!-- image -->\n\nKey\n\nObserved increase in climate impacts to human systems and ecosystems assessed at global level\n\n<!-- image -->\n\nAdverse impacts\n\n<!-- image -->\n\nAdverse and positive impacts\n\n<!-- image -->\n\nClimate-driven changes observed, no global assessment of impact direction\n\nConfidence in attribution to climate change\n\n- High or very high confidence\n- Medium confidence\n- Low c"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 58,
+    "question": "根据报告，当前全球适应资金流动对适应选项的实施产生了什么影响？",
+    "ground_truth": "目前全球适应资金流动不足以支持并限制了适应选项的实施，特别是在发展中国家。",
+    "source_excerpt": "- A.3 Adaptation planning and implementation has progressed across all sectors and regions, with documented benefits and varying effectiveness. Despite progress, adaptation gaps exist, and will continue to grow at current rates of implementation. Hard and soft limits to adaptation have been reached in some ecosystems and regions. Maladaptation is happening in some sectors and regions. Current global financial flows for adaptation are insufficient for, and constrain implementation of, adaptation "
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 62,
+    "question": "导致一些低洼沿海地区的小规模农户和家庭经历适应软性限制的主要原因是什么？",
+    "ground_truth": "导致他们经历适应软性限制的主要原因是财务、治理、机构和政策方面的限制。",
+    "source_excerpt": "s of implementation, with the largest adaptation gaps among lower income groups. ( high confidence ) { 2.3.2 }\n- A.3.4 There is increased evidence of maladaptation in various sectors and regions. Maladaptation especially affects marginalised and vulnerable groups adversely. ( high confidence ) { 2.3.2 }\n- A.3.5 Soft limits to adaptation are currently being experienced by small-scale farmers and households along some lowlying coastal areas ( medium confidence ) resulting from financial, governanc"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 66,
+    "question": "不利的气候影响是通过什么机制进一步增加适应的财务限制的？",
+    "ground_truth": "不利的气候影响通过造成损失和损害以及阻碍国家经济增长来减少金融资源的可用性，从而进一步增加适应的财务限制，特别是对发展中国家和最不发达国家。",
+    "source_excerpt": "adaptation and an overwhelming majority to mitigation ( very high confidence ). Although global tracked climate finance has shown an upward trend since AR5, current global financial flows for adaptation, including from public and private finance sources, are insufficient and constrain implementation of adaptation options, especially in developing countries ( high confidence ). Adverse climate impacts can reduce the availability of financial resources by incurring losses and damages and through i"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 70,
+    "question": "在WGI评估的温室气体排放情景中，高和非常高排放情景（SSP3-7.0和SSP5-8.5）的二氧化碳排放量将如何变化？",
+    "ground_truth": "在高和非常高温室气体排放情景（SSP3-7.0和SSP5-8.5）下，二氧化碳排放量将分别在2100年和2050年从当前水平大致翻一番。",
+    "source_excerpt": "WGI assessed the climate response to five illustrative scenarios based on Shared Socio-economic Pathways (SSPs) 21 that cover the range of possible future development of anthropogenic drivers of climate change found in the literature. High and very high GHG emissions scenarios (SSP3-7.0 and SSP5-8.5 22 ) have CO2 emissions that roughly double from current levels by 2100 and 2050, respectively. The intermediate GHG emissions scenario (SSP2-4.5) has CO 2 emissions remaining around current levels u"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 75,
+    "question": "SSP情景与RCP情景在温室气体和空气污染物未来以及总体有效辐射强迫方面有何对比和差异？",
+    "ground_truth": "SSP情景涵盖了比RCP更广泛的温室气体和空气污染物未来。两者相似但不完全相同，在浓度轨迹上存在差异。在具有相同标签的情况下，SSP的总体有效辐射强迫往往高于RCP（中等信度）。",
+    "source_excerpt": "23 RCP-based scenarios are referred to as RCPy, where 'y' refers to the level of radiative forcing (in watts per square metre, or W m -2 ) resulting from the scenario in the year 2100. The SSP scenarios cover a broader range of greenhouse gas and air pollutant futures than the RCPs. They are similar but not identical, with differences in concentration trajectories. The overall effective radiative forcing tends to be higher for the SSPs compared to the RCPs with the same label ( medium confidence"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 79,
+    "question": "截至2021年10月宣布的国家自主贡献（NDCs）对21世纪全球变暖有何影响，且在政策和资金方面存在哪些差距？",
+    "ground_truth": "截至2021年10月宣布的NDCs隐含的2030年全球温室气体排放，使得21世纪全球变暖超过1.5°C的可能性很大，并使限制升温低于2°C变得更加困难。在差距方面，实施政策的预计排放与NDCs的排放之间存在差距，且资金流动未达到所有部门和地区实现气候目标所需的水平。",
+    "source_excerpt": "- A.4 Policies and laws addressing mitigation have consistently expanded since AR5. Global GHG emissions in 2030 implied by nationally determined contributions (NDCs) announced by October 2021 make it likely that warming will exceed 1.5°C during the 21st century and make it harder to limit warming below 2°C. There are gaps between projected emissions from implemented policies and those from NDCs and finance flows fall short of the levels needed to meet climate goals across all sectors and region"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 83,
+    "question": "法律和行政命令等政策对全球温室气体排放产生了怎样的具体减排效果，这些减排主要与哪些方面的变化有关？",
+    "ground_truth": "据估计，越来越多的法律和行政命令使2016年的全球温室气体排放量比原本情况减少了5.9 GtCO2-eq/年（中等信度），其中经济和监管工具的效果至少可计为1.8 GtCO2-eq/年。这些减排主要与能源供应脱碳、能源效率提高和能源需求减少有关，是由政策和经济结构变化引起的（高信度）。",
+    "source_excerpt": "ble, are becoming increasingly cost effective and are generally supported by the\n\n24 At least 1.8 GtCO 2 -eq yr -1 can be accounted for by aggregating separate estimates for the effects of economic and regulatory instruments. Growing numbers of laws and executive orders have impacted global emissions and were estimated to result in 5.9 GtCO 2 -eq yr -1 less emissions in 2016 than they otherwise would have been. ( medium confidence ) { 2.2.2 }\n\n25 Reductions were linked to energy supply decarboni"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 87,
+    "question": "如果不加强现有政策，预计到2100年全球变暖将达到什么程度？此外，大多数发展中国家在采用低排放技术方面面临哪些滞后原因？",
+    "ground_truth": "如果不加强政策，预计到2100年全球变暖将达到3.2 [2.2至3.5] °C（中等信度）。大多数发展中国家（特别是最不发达国家）在采用低排放技术方面滞后，部分原因是资金有限、技术开发和转让不足以及能力有限（中等信度）。",
+    "source_excerpt": "3.1, 4.1 }\n- A.4.4 Policy coverage is uneven across sectors ( high confidence ). Policies implemented by the end of 2020 are projected to result in higher global GHG emissions in 2030 than emissions implied by NDCs, indicating an 'implementation gap' ( high confidence ). Without a strengthening of policies, global warming of 3.2 [2.2 to 3.5] °C is projected by 2100 ( medium confidence ). { 2.2.2, 2.3.1, 3.1.1, Figure 2.5 } ( Box SPM.1, Figure SPM.5 )\n- A.4.5 The adoption of low-emission technolo"
+  },
+  {
+    "doc": "09_ipcc_ar6_synthesis_report_spm.pdf",
+    "doc_id": 14,
+    "chunk_index": 91,
+    "question": "深度、快速和持续地减少温室气体排放会对全球变暖和大气成分产生怎样的时间效应？",
+    "ground_truth": "深度、快速和持续地减少温室气体排放将在大约二十年内导致全球变暖出现明显的放缓，并在几年内引起大气成分的明显变化（高信度）。",
+    "source_excerpt": "- B.1 Continued greenhouse gas emissions will lead to increasing global warming, with the best estimate of reaching 1.5°C in the near term in considered scenarios and modelled pathways. Every increment of global warming will intensify multiple and concurrent hazards ( high confidence ). Deep, rapid, and sustained reductions in greenhouse gas emissions would lead to a discernible slowdown in global warming within around two decades, and also to discernible changes in atmospheric composition withi"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 3,
+    "question": "根据文档目录，与安全战术和客户建议相关的章节有哪些？",
+    "ground_truth": "与安全战术和客户建议相关的章节包括：安全设计战术（Secure-by-Design Tactics）、默认安全战术（Secure-by-Default Tactics）、加固与放宽指南（Hardening vs loosening guides）以及给客户的建议（Recommendations for Customers）。",
+    "source_excerpt": "................................................................................ 6 Software Product Security Principles .......................................................................................... 6 Secure-by-Design Tactics ............................................................................................................. 8 Secure-by-Default Tactics ......................................................................................................... 10 Hardening vs lo"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 4,
+    "question": "根据文档目录，“免责声明”（Disclaimer）和“资源”（Resources）这两个部分位于第几页？",
+    "ground_truth": "根据文档目录，“免责声明”（Disclaimer）和“资源”（Resources）这两个部分均位于第13页。",
+    "source_excerpt": "................................................................................ 12 Disclaimer .......................................................................................................................................... 13 Resources .........................................................................................................................................."
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 5,
+    "question": "该文档片段中是否包含关于软件安全原则或战术的具体文本内容？",
+    "ground_truth": "该文档片段中没有包含关于软件安全原则或战术的具体文本内容，仅显示了一些排版分隔符和空白区域。",
+    "source_excerpt": "................................................................................ 13 |\n|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 6,
+    "question": "根据文档概述，不安全的技术和关键系统中的漏洞可能会引发哪些具体的负面影响和潜在风险？",
+    "ground_truth": "不安全的技术和关键系统中的漏洞可能会招致恶意网络入侵，导致严重的安全风险。具体的负面影响包括导致医院取消手术并在全球范围内转移患者护理等。",
+    "source_excerpt": "-------------------------------------------------------------------------------|\n\n<!-- image -->\n\n<!-- image -->\n\nOVERVIEW: VULNERABLE BY DESIGN\n\nTechnology is integrated into nearly every facet of daily life. Internet-facing systems are connected to critical systems that directly impact our economic prosperity, livelihoods, and even health, ranging from personal identity management to medical care. As only one example, cyber breaches have resulted in hospitals cancelling surgeries and diverting"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 7,
+    "question": "为了减轻客户在缓解网络入侵方面的负担，作者机构对技术制造商的产品构建方式提出了什么具体期望？",
+    "ground_truth": "作者机构期望技术制造商构建产品的方式能够防止客户为了缓解网络入侵而不得不持续对其系统进行监控、常规更新和损害控制，并鼓励制造商主动承担起改善客户安全结果的责任。",
+    "source_excerpt": "Now more than ever, it is crucial for technology manufacturers to make Secure-by-Design and Secure-by-Default the focal points of product design and development processes. Some vendors have made great strides driving the industry forward in software assurance, while others lag behind. The authoring agencies strongly encourage every technology manufacturer to build their products in a way that prevents customers from having to constantly perform monitoring, routine updates, and damage control on "
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 9,
+    "question": "根据欧盟《网络弹性法案》（Cyber Resilience Act），制造商应在产品的整个生命周期中实施安全措施的主要目的是什么？",
+    "ground_truth": "主要目的是防止制造商将存在漏洞的产品引入市场。",
+    "source_excerpt": "Design practices will we break the vicious cycle of creating and applying fixes.\n\nTo accomplish this high standard of software security, the authoring agencies encourage manufacturers to prioritize the integration of product security as a critical prerequisite to features and speed to market. Over time, engineering teams will be able to establish a new steady-state rhythm where security is truly designed-in and takes less effort to maintain. Reflecting this perspective, the European Union reinfo"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 10,
+    "question": "在指南中，“Secure-by-Design”（安全设计）产品的定义是什么？",
+    "ground_truth": "“Secure-by-Design”产品是指将客户的安全作为核心业务目标，而不仅仅是一个技术功能的产品，并且在开发开始之前就确立了这一目标。",
+    "source_excerpt": "To create a future where technology and associated products are safer for customers, the authoring agencies urge manufacturers to revamp their design and development programs to permit only Secure-by-Design and -Default products to be shipped to customers. Products that are Secure-by-Design are those where the security of the customers is a core business goal, not just a technical feature. Secure-by-Design products start with that goal before development starts. Secure-by-Default products are th"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 11,
+    "question": "在本指南的特定语境下，“safety”（安全）一词的具体定义是什么？",
+    "ground_truth": "在本指南中，“safety”是指提高技术安全标准，以保护客户免受恶意网络活动的侵害。",
+    "source_excerpt": "1 The authoring agencies recognize that the term 'safety' has multiple meanings depending on the context its used. For the purposes of this guide, 'safety' will refer to raising technology security standards to protect customers from malicious cyber activity.\n\n<!-- image -->\n\n<!-- image -->\n\n<!-- image -->\n\nadditional cost. Together, these two principles move much of the burden of staying secure to manufacturers and reduce the chances that customers will fall victim to security incidents resulti"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 12,
+    "question": "除了美国的CISA、NSA和FBI之外，还有哪些国际合作伙伴共同提供了本指南中的建议？",
+    "ground_truth": "参与的国际合作伙伴包括：澳大利亚网络安全中心（ACSC）、加拿大网络安全中心（CCCS）、英国国家网络安全中心（NCSC-UK）、德国联邦信息安全办公室（BSI）、荷兰国家网络安全中心（NCSC-NL）、新西兰计算机应急响应团队（CERT NZ）以及新西兰国家网络安全中心（NCSC-NZ）。",
+    "source_excerpt": "The Cybersecurity and Infrastructure Security Agency (CISA), National Security Agency (NSA), Federal Bureau of Investigation (FBI) and the following international partners 2 provide the recommendations in this guide as a roadmap for technology manufacturers to ensure security of their products:\n\n- Australian Cyber Security Centre (ACSC)\n- Canadian Centre for Cyber Security (CCCS)\n- United Kingdom's National Cyber Security Centre (NCSC-UK)\n- Germany's Federal Office for Information Security (BSI)"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 13,
+    "question": "为了进一步完善和推进指南以实现共同目标，编写机构计划采取哪些具体行动来收集反馈？",
+    "ground_truth": "编写机构向相关利益方寻求对该产品的反馈，并计划召开一系列倾听会议（listening sessions）来进一步细化、明确和推进指导。",
+    "source_excerpt": "The authoring agencies recognize the contributions by many private sector partners in advancing security-by-design and security-by-default. This product is intended to progress an international conversation about key priorities, investments, and decisions necessary to achieve a future where technology is safe, secure, and resilient by design and default. Toward that end, the authoring agencies seek feedback on this product from interested parties and intend to convene a series of listening sessi"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 14,
+    "question": "“安全设计”（Secure-by-Design）的定义是什么？软件制造商应采取哪些措施来应对不断演变的网络威胁？",
+    "ground_truth": "“安全设计”是指技术产品的构建方式能够合理地防止恶意网络行为者成功访问设备、数据和连接的基础设施。软件制造商应进行风险评估，以识别和列举对关键系统的普遍网络威胁，然后在产品蓝图中包含考虑到不断演变的网络威胁环境的保护措施。此外，还建议采用安全的信息技术开发实践和多层防御（即纵深防御），以防止对手活动破坏系统或未经授权访问敏感数据。",
+    "source_excerpt": "'Secure-by-Design' means that technology products are built in a way that reasonably protects against malicious cyber actors successfully gaining access to devices, data, and connected infrastructure. Software manufacturers should perform a risk assessment to identify and enumerate prevalent cyber threats to critical systems, and then include protections in product blueprints that account for the evolving cyber threat landscape.\n\nSecure information technology (IT) development practices and multi"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 15,
+    "question": "在产品开发阶段，起草机构建议制造商使用定制的威胁模型来解决什么问题？",
+    "ground_truth": "起草机构建议制造商在产品开发阶段使用定制的威胁模型，以解决对系统的所有潜在威胁，并考虑每个系统的部署过程。",
+    "source_excerpt": "2 Hereafter referred to as the 'authoring agencies.'\n\n<!-- image -->\n\n<!-- image -->\n\ndevelopment stage to address all potential threats to a system and account for each system's deployment process."
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 16,
+    "question": "为什么“安全设计”开发不能在以后“临时附加”（bolted on），它需要企业高管提供怎样的支持？",
+    "ground_truth": "“安全设计”开发需要软件制造商在产品设计和开发过程的每一层投入大量资源，因此不能在以后“临时附加”。它需要制造商的最高业务高管提供强有力的领导，将安全作为业务优先事项，而不仅仅是一个技术特性。",
+    "source_excerpt": "The authoring agencies urge manufacturers to take a holistic security approach for their products and platforms. Secure-by-Design development requires the investment of significant resources by software manufacturers at each layer of the product design and development process that cannot be 'bolted on' later. It requires strong leadership by the manufacturer's top business executives to make security a business priority, not just a technical feature. This collaboration between business leaders a"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 17,
+    "question": "在产品开发中，制造商应如何权衡保护客户的功能与看似吸引人但会扩大攻击面的产品功能？",
+    "ground_truth": "制造商被鼓励做出艰难的权衡和投资（包括对客户“不可见”的投资，如迁移到能消除广泛漏洞的编程语言）。他们应优先考虑保护客户的功能、机制和工具的实现，而不是那些看似吸引人但会扩大攻击面的产品功能。",
+    "source_excerpt": "y stages of design and development, through customer deployment and maintenance. Manufacturers are encouraged make hard tradeoffs and investments, including those that will be 'invisible' to the customers, such as migrating to programming languages that eliminate widespread vulnerabilities. They should prioritize features, mechanisms, and implementation of tools that protect customers rather than product features that seem appealing but enlarge the attack surface."
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 18,
+    "question": "既然“安全设计”的产品仍会继续存在漏洞，制造商应采取什么具体步骤来使其现有产品组合与“安全设计”实践保持一致？",
+    "ground_truth": "制造商应制定书面路线图（written roadmaps），使其现有产品组合与更多的“安全设计”实践保持一致，并确保仅在特殊情况下才偏离这些实践。",
+    "source_excerpt": "rather than product features that seem appealing but enlarge the attack surface.\n\nThere is no single solution to end the persistent threat of malicious cyber actors exploiting technology vulnerabilities, and products that are 'Secure-by-Design' will continue to suffer vulnerabilities; however, a large set of vulnerabilities are due to a relatively small subset of root causes. Manufacturers should develop written roadmaps to align their existing product portfolios with more Secure-by-Design pract"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 20,
+    "question": "“默认安全”（Secure-by-Default）产品的定义是什么？当用户偏离安全默认设置时，产品会如何提醒用户？",
+    "ground_truth": "“默认安全”意味着产品开箱即用，无需额外付费即可抵御普遍的攻击技术，无需最终用户采取额外步骤即可防范最常见的威胁和漏洞。当用户偏离安全默认设置时，产品旨在让客户敏锐地意识到，除非实施额外的补偿性控制措施，否则会增加被攻陷的可能性。",
+    "source_excerpt": "'Secure-by-Default' means products are resilient against prevalent exploitation techniques out of the box without additional charge. These products protect against the most prevalent threats and vulnerabilities without end-users having to take additional steps to secure them. Secure-by-Default products are designed to make customers acutely aware that when they deviate from safe defaults, they are increasing the likelihood of compromise unless they implement additional compensating controls.\n\n<!"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 21,
+    "question": "为什么安全配置的复杂性不应该成为客户的问题？",
+    "ground_truth": "因为组织的IT人员经常超负荷承担安全和运营责任，导致他们没有足够的时间去理解和实施构建强大网络安全态势所需的安全影响和缓解措施。",
+    "source_excerpt": "- A secure configuration should be the default baseline. Secure-by-Default products automatically enable the most important security controls needed to protect enterprises from malicious cyber actors, as well as provide the ability to use and further configure security controls at no additional cost. - The complexity of security configuration should not be a customer problem. Organizational IT staff are frequently overloaded with security and operational responsibilities, thus resulting in limit"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 22,
+    "question": "制造商如何通过优化安全产品配置（保护“默认路径”）来帮助他们的客户？",
+    "ground_truth": "制造商通过优化安全产品配置，确保其产品按照“默认安全”标准进行制造、分发和安全使用，从而帮助他们的客户。",
+    "source_excerpt": "curity implications and mitigations required for a robust cybersecurity posture. Through optimizing secure product configuration-securing the 'default path'manufacturers can aid their customers by ensuring their products are manufactured, distributed, and used securely in accordance with 'Secure-by-Default' standards."
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 23,
+    "question": "“默认安全”产品的制造商如何处理额外安全配置的费用？这与汽车中的什么配置类似？",
+    "ground_truth": "“默认安全”产品的制造商不会对实施额外的安全配置收取额外费用，而是将其包含在基础产品中。这与所有新车都标配安全带类似，表明安全不是奢侈选项，而是客户无需谈判或额外付费就应期望的标准。",
+    "source_excerpt": "distributed, and used securely in accordance with 'Secure-by-Default' standards.\n\nManufacturers of products that are 'Secure-by-Default' do not charge extra for implementing additional security configurations. Instead, they include them in the base product like seatbelts are included in all new cars. Security is not a luxury option but is closer to the standard every customer should expect without negotiating or paying more.\n\nRECOMMENDATIONS FOR SOFTWARE MANUFACTURERS"
+  },
+  {
+    "doc": "10_cisa_secure_by_design_principles.pdf",
+    "doc_id": 15,
+    "chunk_index": 24,
+    "question": "编写机构制定的三项核心原则旨在指导软件制造商在哪些具体阶段之前将软件安全性融入其设计流程？",
+    "ground_truth": "旨在指导软件制造商在开发、配置和交付其产品之前，将软件安全性融入其设计流程中。",
+    "source_excerpt": "This joint guide provides recommendations to manufacturers for developing a written roadmap to implement and ensure IT security. The authoring agencies recommend software manufacturers implement the strategies outlined in the sections below to take ownership of the security outcomes of their customers through Secure-by-Design and -Default principles.\n\nSoftware Product Security Principles\n\nTechnology manufacturers are encouraged to adopt a strategic focus that prioritizes software security. The a"
+  }
+]
