@@ -100,6 +100,41 @@ def test_sidecar_roundtrip_with_bad_lines(tmp_path: Path):
     assert [c.content for c in candidates] == ["raw A", "raw B"]
 
 
+def test_sidecar_candidates_clean_legacy_noisy_content(tmp_path: Path):
+    service = _new_service()
+    sidecar = tmp_path / "doc.pdf.chunks.jsonl"
+    rows = [
+        {
+            "parent_id": "1:0",
+            "content": (
+                "<!-- image -->\n\n"
+                "NIST AI 100-1\n\n"
+                "-------------------------------------------------------------------------------|\n\n"
+                "January 2023\n\n"
+                "The framework helps organizations manage AI risks."
+            ),
+            "structured_meta": {"doc": {"doc_id": 1}, "chunk": {"index": 0}},
+            "token_count": 0,
+        },
+        {
+            "parent_id": "1:1",
+            "content": "-------------------------------------------------------------------------------|\n\n|---|---|",
+            "structured_meta": {"doc": {"doc_id": 1}, "chunk": {"index": 1}},
+            "token_count": 0,
+        },
+    ]
+    service._write_sidecar_atomic(str(sidecar), rows)
+
+    candidates = service._read_sidecar_candidates(str(sidecar))
+
+    assert len(candidates) == 1
+    assert candidates[0].parent_id == "1:0"
+    assert "<!-- image -->" not in candidates[0].content
+    assert "-------------------------------------------------------------------------------|" not in candidates[0].content
+    assert "NIST AI 100-1" in candidates[0].content
+    assert "January 2023" in candidates[0].content
+
+
 @pytest.mark.asyncio
 async def test_items_from_documents_replace_summary_with_raw_chunk(monkeypatch):
     service = _new_service()
@@ -121,6 +156,38 @@ async def test_items_from_documents_replace_summary_with_raw_chunk(monkeypatch):
     items = await service._items_from_documents(docs, raw_lookup=raw_lookup)
     assert len(items) == 1
     assert items[0].content == "raw text"
+
+
+@pytest.mark.asyncio
+async def test_items_from_documents_clean_raw_lookup_content(monkeypatch):
+    service = _new_service()
+
+    async def _fake_load_meta(_vector_ids):
+        return {"77": {"parent_id": "1:0", "doc": {"doc_id": 1}, "chunk": {"index": 0}}}
+
+    monkeypatch.setattr(service, "_load_structured_meta_by_vector_ids", _fake_load_meta)
+
+    docs = [LangChainDocument(page_content="summary text", metadata={"pk": "77"})]
+    raw_lookup = {
+        "1:0": ChunkCandidate(
+            parent_id="1:0",
+            content=(
+                "<!-- image -->\n\n"
+                "Artificial Intelligence Risk Management Framework\n\n"
+                "|---|---|\n\n"
+                "January 2023"
+            ),
+            structured_meta={"parent_id": "1:0", "doc": {"doc_id": 1}, "chunk": {"index": 0}},
+        )
+    }
+
+    items = await service._items_from_documents(docs, raw_lookup=raw_lookup)
+
+    assert len(items) == 1
+    assert "<!-- image -->" not in items[0].content
+    assert "|---|---|" not in items[0].content
+    assert "Artificial Intelligence Risk Management Framework" in items[0].content
+    assert "January 2023" in items[0].content
 
 
 @pytest.mark.asyncio

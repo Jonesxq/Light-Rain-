@@ -19,6 +19,7 @@ from app.models.knowledge import DocumentChunk
 from app.services.knowledge.types import ChunkCandidate, SearchItem
 from app.services.shared.bm25 import BM25Index, _tokenize
 from app.services.shared.query_rewrite import query_rewrite_service
+from app.services.shared.rag_text_cleaning import clean_rag_text, is_artifact_only_text
 
 logger = logger_manager.get_logger(__name__)
 
@@ -55,17 +56,21 @@ class KnowledgeRetrieval:
             cached_chunks = await redis_manager.get_async(redis_key)
             if cached_chunks:
                 data = json.loads(cached_chunks)
-                candidates = [
-                    ChunkCandidate(
-                        parent_id=str(item.get("parent_id") or "").strip(),
-                        content=(item.get("content") or "").strip(),
-                        structured_meta=item.get("structured_meta")
-                        if isinstance(item.get("structured_meta"), dict)
-                        else {},
+                candidates = []
+                for item in data:
+                    parent_id = str(item.get("parent_id") or "").strip()
+                    content = clean_rag_text(item.get("content"))
+                    if not parent_id or is_artifact_only_text(content):
+                        continue
+                    candidates.append(
+                        ChunkCandidate(
+                            parent_id=parent_id,
+                            content=content,
+                            structured_meta=item.get("structured_meta")
+                            if isinstance(item.get("structured_meta"), dict)
+                            else {},
+                        )
                     )
-                    for item in data
-                    if item.get("parent_id") and item.get("content")
-                ]
                 if candidates:
                     bm25 = BM25Index([_tokenize(candidate.content) for candidate in candidates])
                     self.service._bm25_cache[kb_id] = (now, candidates, bm25)
@@ -151,7 +156,13 @@ class KnowledgeRetrieval:
 
     def _items_from_bm25(self, candidates: List[ChunkCandidate]) -> List[SearchItem]:
         """将 BM25 候选转换为统一的 SearchItem 结构。"""
-        return [SearchItem(content=candidate.content, meta=candidate.structured_meta) for candidate in candidates]
+        items: List[SearchItem] = []
+        for candidate in candidates:
+            content = clean_rag_text(candidate.content)
+            if is_artifact_only_text(content):
+                continue
+            items.append(SearchItem(content=content, meta=candidate.structured_meta))
+        return items
 
     def _rrf_fusion_items(self, ranked_lists: List[List[SearchItem]], rrf_k: int = 60) -> List[SearchItem]:
         """使用 RRF 融合多路排序结果，降低单路检索偏差。"""
@@ -273,12 +284,16 @@ class KnowledgeRetrieval:
             parent_id = self.service._extract_parent_id_from_meta(merged_meta)
 
             if parent_id and parent_id in raw_lookup:
-                enriched.append(SearchItem(content=raw_lookup[parent_id].content, meta=merged_meta))
+                content = clean_rag_text(raw_lookup[parent_id].content)
+                if not is_artifact_only_text(content):
+                    enriched.append(SearchItem(content=content, meta=merged_meta))
                 continue
 
             if parent_id:
                 logger.warning(f"Raw chunk not found for parent_id={parent_id}, fallback to summary text.")
-            enriched.append(SearchItem(content=item.content, meta=merged_meta))
+            content = clean_rag_text(item.content)
+            if not is_artifact_only_text(content):
+                enriched.append(SearchItem(content=content, meta=merged_meta))
 
         return enriched
 
@@ -393,7 +408,7 @@ class KnowledgeRetrieval:
                 if not semantic_items:
                     return "", []
                 reranked_items = await self.service._gte_rerank_items(effective_query, semantic_items, top_k)
-                context = "\n\n".join(item.content for item in reranked_items)
+                context = "\n\n".join(item.content for item in reranked_items if not is_artifact_only_text(item.content))
                 sources = self.service._build_sources(reranked_items, max_sources=top_k)
                 return context, sources
 
@@ -409,7 +424,7 @@ class KnowledgeRetrieval:
                 if not semantic_items:
                     return "", []
                 reranked_items = await self.service._gte_rerank_items(effective_query, semantic_items, top_k)
-                context = "\n\n".join(item.content for item in reranked_items)
+                context = "\n\n".join(item.content for item in reranked_items if not is_artifact_only_text(item.content))
                 sources = self.service._build_sources(reranked_items, max_sources=top_k)
                 return context, sources
 
@@ -429,7 +444,7 @@ class KnowledgeRetrieval:
             if not reranked_items:
                 return "", []
 
-            context = "\n\n".join(item.content for item in reranked_items)
+            context = "\n\n".join(item.content for item in reranked_items if not is_artifact_only_text(item.content))
             sources = self.service._build_sources(reranked_items, max_sources=top_k)
             return context, sources
         except Exception as exc:

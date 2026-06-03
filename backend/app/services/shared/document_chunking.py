@@ -8,6 +8,7 @@ import os
 from collections import defaultdict
 
 from app.core.logger import logger_manager
+from app.services.shared.rag_text_cleaning import clean_rag_text, is_artifact_only_text
 
 logger = logger_manager.get_logger(__name__)
 
@@ -150,6 +151,9 @@ class DocumentChunkingService:
 
         documents: List[Document] = []
         for idx, c in enumerate(chunks):
+            cleaned_text = clean_rag_text(c.text)
+            if is_artifact_only_text(cleaned_text):
+                continue
             # 组装结构化元数据：来源 + 位置 + 分块信息 + 业务注入
             meta: Dict[str, Any] = {}
             if base_meta:
@@ -168,12 +172,12 @@ class DocumentChunkingService:
             # 分块统计信息
             meta["chunk"] = {
                 "index": idx,
-                "char_len": len(c.text),
+                "char_len": len(cleaned_text),
                 "size": chunk_size,
                 "overlap": chunk_overlap,
             }
 
-            documents.append(Document(page_content=c.text, metadata=meta))
+            documents.append(Document(page_content=cleaned_text, metadata=meta))
 
         return documents
 
@@ -230,6 +234,7 @@ class DocumentChunkingService:
         recovered_pages = self._recover_missing_docling_pages(file_path, result)
         if recovered_pages:
             md_text = "\n\n".join([md_text.strip(), *recovered_pages])
+        md_text = clean_rag_text(md_text)
         logger.info(f"Docling 转换文档完成，将其交接给 Markdown 切块算法处理...")
         return self._split_md_to_blocks(md_text)
 

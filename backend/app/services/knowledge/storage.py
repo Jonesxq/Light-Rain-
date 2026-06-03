@@ -12,6 +12,7 @@ from app.core.logger import logger_manager
 from app.crud.knowledge import kb_crud
 from app.models.knowledge import Document
 from app.services.knowledge.types import ChunkCandidate
+from app.services.shared.rag_text_cleaning import clean_rag_text, is_artifact_only_text
 
 logger = logger_manager.get_logger(__name__)
 
@@ -78,8 +79,8 @@ class KnowledgeStorage:
                         continue
 
                     parent_id = str(item.get("parent_id") or "").strip()
-                    content = (item.get("content") or "").strip()
-                    if not parent_id or not content:
+                    content = clean_rag_text(item.get("content"))
+                    if not parent_id or is_artifact_only_text(content):
                         continue
 
                     structured_meta = item.get("structured_meta")
@@ -117,7 +118,9 @@ class KnowledgeStorage:
                     parent_id = str(item.get("parent_id") or "").strip()
                     if parent_id != target_parent_id:
                         continue
-                    content = (item.get("content") or "").strip()
+                    content = clean_rag_text(item.get("content"))
+                    if is_artifact_only_text(content):
+                        return None
                     structured_meta = item.get("structured_meta")
                     if not isinstance(structured_meta, dict):
                         structured_meta = {}

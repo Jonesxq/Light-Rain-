@@ -14,7 +14,8 @@ import os
 import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from collections.abc import Awaitable, Callable
+from typing import Any, TypeVar
 
 os.environ.setdefault("RAGAS_DO_NOT_TRACK", "true")
 os.environ.setdefault("DO_NOT_TRACK", "true")
@@ -36,10 +37,13 @@ from app.core.database import db_manager, mysql_manager
 from app.core.logger import logger_manager
 from app.core.redis import redis_manager
 from app.services.knowledge import kb_service
+from app.services.shared.rag_text_cleaning import clean_rag_text, is_artifact_only_text
 from app.services.shared.query_rewrite import query_rewrite_service
 from app.utils.llm_factory import build_chat_llm, build_embeddings
 
 logger = logger_manager.get_logger(__name__)
+
+T = TypeVar("T")
 
 logging.getLogger().setLevel(logging.WARNING)
 for _logger_name in (
@@ -77,6 +81,106 @@ def _load_dataset(path: Path, limit: int | None = None) -> list[dict[str, Any]]:
         )
 
     return records[:limit] if limit else records
+
+
+def _write_json_atomic(path: Path, payload: Any) -> None:
+    """Write JSON through a same-directory temp file so partial checkpoints stay readable."""
+    tmp_path = path.with_name(f"{path.name}.tmp")
+    tmp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp_path.replace(path)
+
+
+def _load_answer_checkpoint(
+    path: Path,
+    records: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], set[str]]:
+    """Restore completed answer rows from a previous interrupted evaluation run."""
+    if not path.exists():
+        return [], [], set()
+
+    record_by_question = {record["question"]: record for record in records}
+    try:
+        rows = json.loads(path.read_text(encoding="utf-8-sig"))
+    except Exception as exc:  # pragma: no cover - defensive corruption path
+        logger.warning(f"无法读取已有答案 checkpoint，将从头开始：path={path}, error={exc}")
+        return [], [], set()
+    if not isinstance(rows, list):
+        logger.warning(f"已有答案 checkpoint 不是 JSON 数组，将从头开始：path={path}")
+        return [], [], set()
+
+    raw_by_question: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        question = (row.get("question") or "").strip()
+        answer = (row.get("answer") or "").strip()
+        if not question or not answer or question not in record_by_question:
+            continue
+        contexts = row.get("contexts") if isinstance(row.get("contexts"), list) else []
+        cleaned_contexts = [
+            clean_rag_text(str(context))
+            for context in contexts
+            if context and not is_artifact_only_text(str(context))
+        ]
+        raw_by_question[question] = {
+            "doc": row.get("doc") or record_by_question[question].get("doc") or "",
+            "question": question,
+            "rewritten_query": row.get("rewritten_query") or question,
+            "answer": answer,
+            "reference": row.get("reference") or record_by_question[question]["reference"],
+            "sources": row.get("sources") if isinstance(row.get("sources"), list) else [],
+            "contexts": cleaned_contexts,
+        }
+
+    raw_rows: list[dict[str, Any]] = []
+    eval_rows: list[dict[str, Any]] = []
+    for record in records:
+        raw_row = raw_by_question.get(record["question"])
+        if not raw_row:
+            continue
+        raw_rows.append(raw_row)
+        eval_rows.append(
+            {
+                "user_input": raw_row["question"],
+                "response": raw_row["answer"],
+                "retrieved_contexts": raw_row["contexts"],
+                "reference": raw_row["reference"],
+            }
+        )
+    return raw_rows, eval_rows, set(raw_by_question)
+
+
+def _remaining_records(
+    records: list[dict[str, Any]],
+    completed_questions: set[str],
+) -> list[dict[str, Any]]:
+    return [record for record in records if record["question"] not in completed_questions]
+
+
+async def _run_with_retries(
+    operation: Callable[[], Awaitable[T]],
+    *,
+    label: str,
+    attempts: int = 4,
+    base_delay: float = 2.0,
+) -> T:
+    """Retry transient network-sensitive async operations with exponential backoff."""
+    last_error: BaseException | None = None
+    max_attempts = max(1, attempts)
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return await operation()
+        except Exception as exc:
+            last_error = exc
+            if attempt >= max_attempts:
+                break
+            delay = base_delay * (2 ** (attempt - 1))
+            logger.warning(
+                f"{label} failed on attempt {attempt}/{max_attempts}; retrying in {delay:.1f}s: {exc}"
+            )
+            await asyncio.sleep(delay)
+    assert last_error is not None
+    raise last_error
 
 
 async def _retrieve_contexts(
@@ -118,7 +222,11 @@ async def _retrieve_contexts(
     fused_items = kb_service._rrf_fusion_items(ranked_lists)
     reranked_items = await kb_service._gte_rerank_items(rewritten_query, fused_items, top_k)
 
-    contexts = [item.content for item in reranked_items if item.content]
+    contexts = [
+        clean_rag_text(item.content)
+        for item in reranked_items
+        if item.content and not is_artifact_only_text(item.content)
+    ]
     sources = kb_service._build_sources(reranked_items, max_sources=top_k)
     return contexts, sources, rewritten_query
 
@@ -152,7 +260,11 @@ async def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     output_dir = Path(args.output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(pytz.timezone("Asia/Shanghai")).strftime("%Y%m%d_%H%M%S")
-    answers_path = output_dir / f"ragas_answers_kb{args.kb_id}_{timestamp}.json"
+    answers_path = (
+        Path(args.resume_answers).resolve()
+        if args.resume_answers
+        else output_dir / f"ragas_answers_kb{args.kb_id}_{timestamp}.json"
+    )
     report_path = output_dir / f"ragas_report_kb{args.kb_id}_{timestamp}.json"
     summary_path = output_dir / f"ragas_summary_kb{args.kb_id}_{timestamp}.json"
 
@@ -160,19 +272,36 @@ async def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
     await redis_manager.initialize_async()
 
     try:
-        eval_rows: list[dict[str, Any]] = []
-        raw_rows: list[dict[str, Any]] = []
+        raw_rows, eval_rows, completed_questions = _load_answer_checkpoint(answers_path, records)
+        if completed_questions:
+            logger.info(
+                f"恢复已有答案 checkpoint：completed={len(completed_questions)}, path={answers_path}"
+            )
+        remaining_records = _remaining_records(records, completed_questions)
+
         for index, record in enumerate(records, start=1):
+            if record["question"] in completed_questions:
+                continue
             question = record["question"]
             logger.info(f"[{index}/{len(records)}] 检索并回答：{question}")
-            contexts, sources, rewritten_query = await _retrieve_contexts(
-                kb_id=args.kb_id,
-                question=question,
-                top_k=args.top_k,
-                user_id=args.user_id,
-                use_query_rewrite=args.use_query_rewrite,
+            contexts, sources, rewritten_query = await _run_with_retries(
+                lambda: _retrieve_contexts(
+                    kb_id=args.kb_id,
+                    question=question,
+                    top_k=args.top_k,
+                    user_id=args.user_id,
+                    use_query_rewrite=args.use_query_rewrite,
+                ),
+                label=f"retrieve row {index}",
+                attempts=args.retry_attempts,
+                base_delay=args.retry_base_delay,
             )
-            answer = await _answer_question(question, contexts, args.answer_model)
+            answer = await _run_with_retries(
+                lambda: _answer_question(question, contexts, args.answer_model),
+                label=f"answer row {index}",
+                attempts=args.retry_attempts,
+                base_delay=args.retry_base_delay,
+            )
 
             eval_rows.append(
                 {
@@ -193,8 +322,16 @@ async def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
                     "contexts": contexts,
                 }
             )
+            completed_questions.add(question)
+            _write_json_atomic(answers_path, raw_rows)
 
-        answers_path.write_text(json.dumps(raw_rows, ensure_ascii=False, indent=2), encoding="utf-8")
+        if len(eval_rows) != len(records):
+            raise RuntimeError(
+                f"答案数量不完整，无法进入 RAGas 打分：answers={len(eval_rows)}, records={len(records)}, "
+                f"remaining={len(remaining_records)}"
+            )
+
+        _write_json_atomic(answers_path, raw_rows)
 
         evaluator_llm = LangchainLLMWrapper(
             build_chat_llm(model=args.judge_model, temperature=0.0, streaming=False)
@@ -232,6 +369,7 @@ async def run_evaluation(args: argparse.Namespace) -> dict[str, Any]:
             "use_query_rewrite": args.use_query_rewrite,
             "answer_model": args.answer_model or settings.llm.DEFAULT_MODEL,
             "judge_model": args.judge_model or settings.llm.DEFAULT_MODEL,
+            "retry_attempts": args.retry_attempts,
             "summary": summary,
             "answers_path": str(answers_path),
             "report_path": str(report_path),
@@ -258,6 +396,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--answer-model", default=None, help="答案生成模型，默认读取项目配置")
     parser.add_argument("--judge-model", default=None, help="RAGas 裁判模型，默认读取项目配置")
     parser.add_argument("--output-dir", default="scripts/ragas_reports", help="报告输出目录")
+    parser.add_argument("--resume-answers", default=None, help="从已有 answers JSON checkpoint 恢复")
+    parser.add_argument("--retry-attempts", type=int, default=5, help="网络敏感步骤的最大重试次数")
+    parser.add_argument("--retry-base-delay", type=float, default=2.0, help="重试指数退避初始秒数")
     parser.add_argument(
         "--use-query-rewrite",
         action=argparse.BooleanOptionalAction,

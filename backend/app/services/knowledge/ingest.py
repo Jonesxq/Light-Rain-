@@ -18,6 +18,7 @@ from app.core.logger import logger_manager
 from app.crud.knowledge import kb_crud
 from app.models.knowledge import DocStatus, Document
 from app.services.shared.usage import UsageTimer, usage_service
+from app.services.shared.rag_text_cleaning import clean_rag_text, is_artifact_only_text
 from app.services.wiki import wiki_service
 
 logger = logger_manager.get_logger(__name__)
@@ -171,8 +172,8 @@ class KnowledgeIngest:
                     raise ValueError("Document chunking produced empty result.")
 
                 for chunk in chunks:
-                    raw_content = (chunk.page_content or "").strip()
-                    if not raw_content:
+                    raw_content = clean_rag_text(chunk.page_content)
+                    if is_artifact_only_text(raw_content):
                         continue
 
                     chunk_index = len(prepared_rows)

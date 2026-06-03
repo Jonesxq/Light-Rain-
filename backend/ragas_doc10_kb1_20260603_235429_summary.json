@@ -1,0 +1,18 @@
+{
+  "kb_id": 1,
+  "dataset": "E:\\code\\official_proj2.0\\backend\\ragas_doc10_qa_dataset_20260603.json",
+  "rows": 200,
+  "top_k": 4,
+  "use_query_rewrite": true,
+  "answer_model": "qwen3.7-max",
+  "judge_model": "qwen3.7-max",
+  "retry_attempts": 8,
+  "summary": {
+    "faithfulness": 0.9669571253308095,
+    "answer_relevancy": 0.8209077969872314,
+    "context_precision": 0.8409722221554884,
+    "context_recall": 0.8625
+  },
+  "answers_path": "E:\\code\\official_proj2.0\\backend\\scripts\\ragas_reports\\ragas_answers_kb1_20260603_235429.json",
+  "report_path": "E:\\code\\official_proj2.0\\backend\\scripts\\ragas_reports\\ragas_report_kb1_20260603_235429.json"
+}

@@ -8,6 +8,7 @@ from app.services.shared.bm25 import BM25Index, _tokenize
 from app.services.shared import llm_runtime as llm_runtime_module
 from app.services.shared import document_chunking as document_chunking_module
 from app.services.shared.document_chunking import DocumentChunkingService
+from app.services.shared.rag_text_cleaning import clean_rag_text, is_artifact_only_text
 
 
 _MINIMAL_TEXT_PDF = b"""%PDF-1.4
@@ -73,6 +74,64 @@ def test_pdf_uses_docling_markdown_conversion(tmp_path, monkeypatch):
     assert docs
     assert "Hello from Docling markdown" in docs[0].page_content
     assert docs[0].metadata["loc"]["md_headings"] == "Docling PDF"
+
+
+def test_docling_markdown_noise_is_removed_before_chunking(tmp_path, monkeypatch):
+    pdf_path = tmp_path / "noisy.pdf"
+    pdf_path.write_bytes(_MINIMAL_TEXT_PDF)
+
+    class _FakeDoclingDocument:
+        def export_to_markdown(self):
+            return (
+                "<!-- image -->\n\n"
+                "NIST AI 100-1\n\n"
+                "Artificial Intelligence Risk Management Framework (AI RMF 1.0)\n\n"
+                "-------------------------------------------------------------------------------|\n\n"
+                "<!-- image -->\n\n"
+                "January 2023\n\n"
+                "|---|---|\n\n"
+                "The framework helps organizations manage AI risks."
+            )
+
+    class _FakeDoclingResult:
+        document = _FakeDoclingDocument()
+
+    class _FakeConverter:
+        def convert(self, file_path):
+            return _FakeDoclingResult()
+
+    monkeypatch.setattr(document_chunking_module, "_GLOBAL_CONVERTER", _FakeConverter())
+
+    docs = DocumentChunkingService().load_and_split(str(pdf_path), ".pdf")
+    combined = "\n".join(doc.page_content for doc in docs)
+
+    assert "<!-- image -->" not in combined
+    assert "-------------------------------------------------------------------------------|" not in combined
+    assert "|---|---|" not in combined
+    assert "NIST AI 100-1" in combined
+    assert "Artificial Intelligence Risk Management Framework" in combined
+    assert "January 2023" in combined
+    assert "The framework helps organizations manage AI risks." in combined
+
+
+def test_rag_text_cleaning_preserves_real_table_content():
+    cleaned = clean_rag_text(
+        "| Metric | Value |\n"
+        "|---|---|\n"
+        "| Valid and Reliable | Required characteristic |\n"
+        "-------------------------------------------------------------------------------|\n"
+    )
+
+    assert "|---|---|" not in cleaned
+    assert "-------------------------------------------------------------------------------|" not in cleaned
+    assert "| Metric | Value |" in cleaned
+    assert "| Valid and Reliable | Required characteristic |" in cleaned
+
+
+def test_rag_text_cleaning_detects_artifact_only_text():
+    assert is_artifact_only_text("-------------------------------------------------------------------------------|\n\n|---|---|")
+    assert is_artifact_only_text("ip")
+    assert not is_artifact_only_text("NIST AI 100-1\n\nJanuary 2023")
 
 
 def test_docling_partial_pdf_recovers_missing_pages_with_page_range(tmp_path, monkeypatch):
